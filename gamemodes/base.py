@@ -1,6 +1,6 @@
 import json
 from abc import ABC, abstractmethod
-from typing import Any, Optional
+from typing import Any, Optional, Tuple, List
 
 from core.api_client import GeminiClient
 from core.prompt_manager import PromptManager
@@ -41,35 +41,44 @@ class GameModeBase(ABC):
     def check_answer(self, user_input: Any, correct: Any) -> dict:
         pass
 
+    @abstractmethod
+    def _format_anki_note(self, data: dict) -> Tuple[str, str]:
+        """Return (front, back) for a single Anki note from game data item."""
+        pass
+
     def save_context(self, data: dict) -> dict:
         return {"gamemode": self.name, "data": data}
 
     def load_context(self, ctx: dict) -> Optional[dict]:
-        raw = ctx.get("data") if isinstance(ctx, dict) else None
-        if raw and isinstance(raw, dict):
+        raw = ctx.get("data") if ctx else None
+        if raw:
             return self.render_ui_data(raw)
         return None
 
-    def save_to_anki(self, data: dict, deck_name: str = "AI Learning") -> int:
+    def save_to_anki(self, items: List[dict], deck_name: str = "AI Learning") -> int:
         from aqt import mw
         from anki.notes import Note
 
         model = mw.col.models.by_name("Basic")
         if not model:
             model = mw.col.models.current()
+
         deck = mw.col.decks.by_name(deck_name)
         if not deck:
             deck_id = mw.col.decks.add_normal_deck_with_name(deck_name)
         else:
             deck_id = deck["id"]
 
-        note = Note(mw.col, model)
-        front, back = self._format_anki_note(data)
-        note["Front"] = front
-        note["Back"] = back
-        note.note_type()["did"] = deck_id
-        mw.col.add_note(note, deck_id)
-        return 1
+        count = 0
+        for item in items:
+            front, back = self._format_anki_note(item)
+            if not front and not back:
+                continue
+            note = Note(mw.col, model)
+            note["Front"] = front
+            note["Back"] = back
+            note.note_type()["did"] = deck_id
+            mw.col.add_note(note, deck_id)
+            count += 1
 
-    def _format_anki_note(self, data: dict) -> tuple:
-        return (self.display_name, str(data))
+        return count

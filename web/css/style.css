@@ -93,6 +93,35 @@ body {
     color: var(--text-secondary);
 }
 
+#busy-label {
+    color: var(--warning);
+    font-weight: 600;
+    font-size: 12px;
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+#close-hub {
+    background: transparent;
+    border: 1px solid var(--error);
+    border-radius: 6px;
+    padding: 4px 14px;
+    cursor: pointer;
+    color: var(--error);
+    font-size: 12px;
+    font-weight: 600;
+    transition: all var(--transition);
+}
+
+#close-hub:hover {
+    background: var(--error);
+    color: white;
+}
+
 .timer-bar .timer-value {
     font-weight: 600;
     font-variant-numeric: tabular-nums;
@@ -828,3 +857,21 @@ body {
 }
 
 @media(max-width:600px){.selector-grid{grid-template-columns:1fr;}.match-columns{flex-direction:column;}}
+
+@media (max-width: 399px) {
+    .container { padding: 8px; }
+    .game-header { flex-direction: column; gap: 6px; text-align: center; }
+    .game-header h2 { font-size: 16px; }
+    .selector-grid { grid-template-columns: 1fr; gap: 8px; }
+    .match-columns { flex-direction: column; gap: 12px; }
+    .question-card { padding: 14px; }
+    .question-card .q-text { font-size: 15px; }
+    .taboo-card .secret-word { font-size: 26px; }
+    .taboo-card .forbidden span { font-size: 11px; padding: 2px 8px; }
+    .deck-list { min-height: 120px; }
+    .timer-bar { padding: 4px 10px; font-size: 11px; flex-wrap: wrap; gap: 4px; }
+    #close-hub { font-size: 11px; padding: 3px 10px; }
+    .btn { padding: 8px 16px; font-size: 13px; }
+    .option-btn { padding: 8px 12px; font-size: 13px; }
+    .drag-word { font-size: 12px; padding: 4px 10px; }
+}
