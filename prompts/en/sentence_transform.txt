@@ -1,0 +1,13 @@
+Generate {count} sentence transformation exercises in {language}.
+Focus: {focus} (voice, conditional, reported speech, or comparative structures)
+Level: {level_instruction}
+
+For each exercise provide:
+- original_sentence: a grammatically correct sentence
+- instruction: clear transformation instruction (e.g., "Rewrite in passive voice")
+- hint_word: a word that must be used in the answer
+- expected_answer: the correct transformed sentence
+- grammar_rule: brief explanation of the rule being tested
+
+Output valid JSON matching this schema:
+{{ "questions": [{{ "original_sentence": "...", "instruction": "...", "hint_word": "...", "expected_answer": "...", "grammar_rule": "...", "focus": "voice|conditional|reported|comparative" }}] }}

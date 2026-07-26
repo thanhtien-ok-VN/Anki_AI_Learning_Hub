@@ -1,0 +1,25 @@
+Generate {count} fill-in-the-blank sentences in {language}.
+Level: {level_instruction}
+Topic: {topic}
+
+Each sentence must:
+- Have exactly ONE blank marked as _____
+- Be a complete, natural sentence appropriate for the learner's level
+- Test a meaningful vocabulary word or grammar point
+
+For each blank:
+- Provide exactly 4 options: 1 correct + 3 distractors
+- Distractors must be plausible (same part of speech, common learner errors at this level)
+- Include a short hint about the grammar/vocabulary being tested
+- Include a brief explanation of why the answer is correct
+- Include semantic explanation (meaning in context)
+- Include grammar rule explanation
+- Include vocabulary relationship notes (collocations, synonyms, antonyms)
+
+Output valid JSON:
+{{ "questions": [
+  {{ "sentence_with_blank": "...", "full_sentence": "...", "blank_word": "...",
+     "options": ["A","B","C","D"], "correct_index": 0,
+     "hint": "...", "explanation_short": "...",
+     "semantic": "...", "grammar": "...", "vocab_relation": "..." }}
+] }}

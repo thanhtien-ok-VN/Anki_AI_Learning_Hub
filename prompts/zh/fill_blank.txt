@@ -1,0 +1,25 @@
+请生成 {count} 个填空句子，语言：{language}。
+级别：{level_instruction}
+主题：{topic}
+
+每个句子必须：
+- 恰好有一个空格，用 _____ 标记
+- 是完整的、自然的、适合学习者水平的句子
+- 测试有意义的词汇或语法点
+
+每个空格：
+- 提供恰好 4 个选项：1 个正确 + 3 个干扰项
+- 干扰项必须合理（相同词性，常见学习错误）
+- 包含关于所测试语法/词汇的简短提示
+- 包含正确答案的简要解释
+- 包含语义解释（在语境中的含义）
+- 包含语法规则解释
+- 包含词汇关系说明（搭配、同义词、反义词）
+
+输出符合此 schema 的合法 JSON：
+{{ "questions": [
+  {{ "sentence_with_blank": "...", "full_sentence": "...", "blank_word": "...",
+     "options": ["A","B","C","D"], "correct_index": 0,
+     "hint": "...", "explanation_short": "...",
+     "semantic": "...", "grammar": "...", "vocab_relation": "..." }}
+] }}

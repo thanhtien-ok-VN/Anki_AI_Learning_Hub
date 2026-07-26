@@ -1,0 +1,17 @@
+Generate {count} translation exercises.
+Source language: {source_lang} (Vietnamese)
+Target language: {target_lang}
+Level: {level_instruction}
+Topic: {topic}
+
+For each exercise:
+- source_text: a natural sentence in VIETNAMESE (source_lang) appropriate for the level
+- target_text: the accurate translation in {target_lang}
+- vocabulary_highlight: key words from the sentence with translations and usage notes
+- grammar_notes: explanation of important grammar differences between Vietnamese and {target_lang}
+
+Important: source_lang is VIETNAMESE, not English. Write natural Vietnamese sentences.
+Output valid JSON:
+{{ "sentences": [
+  {{ "source_text": "Câu tiếng Việt...", "target_text": "translation...", "vocabulary_highlight": [{{"word":"...","translation":"...","notes":"..."}}], "grammar_notes": "..." }}
+] }}

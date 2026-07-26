@@ -1,0 +1,21 @@
+Write ONE coherent paragraph in {language} ({paragraph_min_words}-{paragraph_max_words} words).
+Level: {level_instruction}
+Topic: {topic}
+
+The paragraph should be a complete, natural text. Then remove {num_blanks} key words.
+
+Format the paragraph with [BLANK_0], [BLANK_1], etc. in place of removed words.
+For each blank provide:
+- correct_word: the removed word
+- options: 4 choices (1 correct + 3 plausible distractors — same POS, common errors)
+- correct_index: index of the correct word in options (0-3)
+- explanation_short: brief why this word fits
+- explanation: detailed explanation of the word's meaning and usage in this context
+
+Output valid JSON:
+{{ "paragraph_with_blanks": "... [BLANK_0] ... [BLANK_1] ...",
+   "paragraph_full": "the complete paragraph without blanks",
+   "blanks": [
+     {{ "blank_id": 0, "correct_word": "...", "options": ["A","B","C","D"], "correct_index": 0, "explanation_short": "...", "explanation": "..." }}
+   ]
+}}

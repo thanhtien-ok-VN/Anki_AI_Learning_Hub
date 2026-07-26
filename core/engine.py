@@ -1,0 +1,532 @@
+import json
+import os
+import time
+from typing import Any, Optional
+
+from aqt import mw, gui_hooks
+from aqt.qt import *
+from aqt.utils import tooltip
+
+from core.logger import log
+
+ADDON_PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+SETTINGS_PATH = os.path.join(ADDON_PATH, "user_files", "settings.json")
+
+DEFAULT_SETTINGS = {
+    "api_key": "",
+    "api_key2": "",
+    "api_key3": "",
+    "model": "auto",
+    "temperature": 0.7,
+    "ui_lang": "vi",
+    "learn_lang": "en",
+    "window_width": 960,
+    "window_height": 700,
+}
+
+GAME_LIMITS = {
+    "fill_blank": (1, 5), "translation": (1, 5), "unscramble": (1, 5),
+    "sentence_transform": (1, 5), "taboo": (1, 5), "cloze": (1, 5),
+    "matching": (3, 12), "story": (3, 5),
+}
+
+
+class SettingsManager:
+    def __init__(self, path: str = SETTINGS_PATH):
+        self.path = path
+        self.data: dict[str, Any] = dict(DEFAULT_SETTINGS)
+        self._load()
+
+    def _load(self):
+        if os.path.isfile(self.path):
+            try:
+                with open(self.path, "r", encoding="utf-8") as f:
+                    loaded = json.load(f)
+                    self.data.update(loaded)
+                log.debug(f"Settings loaded from {self.path}", {"key_count": len(self.data)})
+            except Exception as e:
+                log.warn(f"Failed to load settings: {e}")
+
+    def save(self):
+        os.makedirs(os.path.dirname(self.path), exist_ok=True)
+        with open(self.path, "w", encoding="utf-8") as f:
+            json.dump(self.data, f, indent=2, ensure_ascii=False)
+        log.debug("Settings saved")
+
+    def get(self, key: str, default=None):
+        return self.data.get(key, default)
+
+    def set(self, key: str, value):
+        old = self.data.get(key)
+        self.data[key] = value
+        self.save()
+        if old != value:
+            log.info(f"Setting changed: {key}", {"old": old, "new": value})
+
+    def get_api_keys(self) -> list[str]:
+        return [
+            self.get("api_key", "").strip(),
+            self.get("api_key2", "").strip(),
+            self.get("api_key3", "").strip(),
+        ]
+
+    def get_active_keys(self) -> list[str]:
+        return [k for k in self.get_api_keys() if k]
+
+    def has_any_key(self) -> bool:
+        return bool(self.get_active_keys())
+
+
+class SessionTimer(QObject):
+    tick = pyqtSignal(int)
+
+    def __init__(self):
+        super().__init__()
+        self.start_time: Optional[float] = None
+        self._qtimer = QTimer()
+        self._qtimer.timeout.connect(self._on_tick)
+        self._enabled = True
+
+    def start(self):
+        self.start_time = time.time()
+        if self._enabled:
+            self._qtimer.start(1000)
+
+    def stop(self):
+        self._qtimer.stop()
+        if self.start_time:
+            elapsed = int(time.time() - self.start_time)
+            self.start_time = None
+            return elapsed
+        return 0
+
+    def toggle(self, enabled: bool):
+        self._enabled = enabled
+        if enabled and self.start_time:
+            self._qtimer.start(1000)
+        else:
+            self._qtimer.stop()
+
+    def elapsed_seconds(self) -> int:
+        if self.start_time:
+            return int(time.time() - self.start_time)
+        return 0
+
+    def _on_tick(self):
+        if self.start_time:
+            self.tick.emit(self.elapsed_seconds())
+
+
+class AIEngine:
+    def __init__(self):
+        self.settings = SettingsManager()
+        self.timer = SessionTimer()
+        self._api_client = None
+        self._prompt_mgr = None
+        self._gamemode_cache = {}
+        self._context_mgr = None
+
+        self.timer.tick.connect(self._on_timer_tick)
+        gui_hooks.profile_will_close.append(self._on_profile_close)
+
+    def _get_context_mgr(self):
+        if self._context_mgr is None:
+            from core.context_manager import ContextManager
+            self._context_mgr = ContextManager()
+        return self._context_mgr
+
+    def _get_api_client(self):
+        if self._api_client is None:
+            from core.api_client import GeminiClient
+            keys = self.settings.get_active_keys()
+            if keys:
+                self._api_client = GeminiClient(keys, self.settings.get("model", "auto"))
+        return self._api_client
+
+    def _reset_api_client(self):
+        self._api_client = None
+
+    def get_prompt_manager(self):
+        if self._prompt_mgr is None:
+            from core.prompt_manager import PromptManager
+            prompts_dir = os.path.join(ADDON_PATH, "prompts")
+            self._prompt_mgr = PromptManager(prompts_dir)
+        return self._prompt_mgr
+
+    def get_gamemode(self, name: str):
+        if name not in self._gamemode_cache:
+            from gamemodes import get_gamemode as _get_cls
+            cls = _get_cls(name)
+            if cls:
+                self._gamemode_cache[name] = cls(self._get_api_client(), self.get_prompt_manager())
+        return self._gamemode_cache.get(name)
+
+    def start(self):
+        self.timer.start()
+        if self.settings.has_any_key():
+            from core.api_client import GeminiClient
+            self._api_client = GeminiClient(
+                self.settings.get_active_keys(),
+                self.settings.get("model", "auto"),
+            )
+        log.info("AIEngine started", {
+            "has_keys": self.settings.has_any_key(),
+            "num_keys": len(self.settings.get_active_keys()),
+        })
+
+    def stop(self):
+        elapsed = self.timer.stop()
+        self.settings.set("last_session_duration", elapsed)
+        log.info("AIEngine stopped", {"session_seconds": elapsed})
+
+    def _on_timer_tick(self, seconds: int):
+        pass
+
+    def _on_profile_close(self):
+        self.stop()
+
+    def handle_js_message(self, message: str) -> dict:
+        try:
+            msg = json.loads(message)
+            action = msg.get("action", "")
+            data = msg.get("data", {})
+            log.debug(f"JS message: {action}", {"data_keys": list(data.keys()) if data else None})
+
+            handlers = {
+                "generate": self._handle_generate,
+                "save_settings": self._handle_save_settings,
+                "get_settings": self._handle_get_settings,
+                "check_api_key": self._handle_check_api_key,
+                "save_to_anki": self._handle_save_to_anki,
+                "check_answer": self._handle_check_answer,
+                "save_context": self._handle_save_context,
+                "load_context": self._handle_load_context,
+                "clear_context": self._handle_clear_context,
+                "test_key": self._handle_test_key,
+                "test_all_keys": self._handle_test_all_keys,
+                "list_decks": self._handle_list_decks,
+                "get_source_models": self._handle_get_source_models,
+                "get_source_fields": self._handle_get_source_fields,
+                "sample_vocab_pairs": self._handle_sample_vocab_pairs,
+                "get_deck_fields": self._handle_get_deck_fields,
+                "get_vocab_pairs": self._handle_get_vocab_pairs,
+                "set_ui_lang": self._handle_set_ui_lang,
+                "get_ui_lang": self._handle_get_ui_lang,
+                "get_ui_strings": self._handle_get_ui_strings,
+                "ai_grade": self._handle_ai_grade,
+                "close_hub": self._handle_close_hub,
+            }
+            handler = handlers.get(action)
+            if handler:
+                result = handler(data)
+                # All public bridge results have one stable envelope.  Existing
+                # gamemode payloads remain inside data for the SPA.
+                if isinstance(result, dict) and "success" in result:
+                    return result
+                if isinstance(result, dict) and result.get("error"):
+                    return {
+                        "success": False, "data": {},
+                        "error_code": result.get("error_code", "E_OPERATION"),
+                        "message": result.get("message", "The operation failed."),
+                    }
+                return {"success": True, "data": result or {}}
+            log.warn(f"Unknown action: {action}")
+            return {"success": False, "data": {}, "error_code": "E_UNKNOWN", "message": f"Unknown action: {action}"}
+        except Exception as e:
+            log.error(f"handle_js_message error: {e}")
+            return {"success": False, "data": {}, "error_code": "E_INTERNAL", "message": str(e)}
+
+    def _handle_generate(self, data: dict) -> dict:
+        data = dict(data or {})
+        gamemode = data.get("gamemode", "fill_blank")
+        language = data.get("language", self.settings.get("learn_lang", "en"))
+        level = data.get("level", "intermediate")
+        topic = data.get("topic", "daily_life")
+        minimum, maximum = GAME_LIMITS.get(gamemode, (1, 5))
+        count = max(minimum, min(int(data.get("count", minimum)), maximum))
+        data["count"] = count
+        # SPA callers only need to provide the common controls.  These defaults
+        # satisfy each prompt template without making UI routes template-aware.
+        data.setdefault("paragraph_min_words", 80)
+        data.setdefault("paragraph_max_words", 140)
+        data.setdefault("num_blanks", min(5, int(count)))
+        data.setdefault("source_lang", "vi")
+        data.setdefault("target_lang", language)
+        data.setdefault("word_count", 180)
+        data.setdefault("question_count", 3)
+        data.setdefault("target_words", "")
+        data.setdefault("focus", "grammar")
+        data.setdefault("voice", "active/passive")
+        data.setdefault("conditional", "conditional")
+        data.setdefault("reported", "reported speech")
+        data.setdefault("comparative", "comparative")
+
+        log.info(f"Generate: {gamemode}", {"language": language, "level": level, "topic": topic, "count": count})
+
+        gm = self.get_gamemode(gamemode)
+        if gm and getattr(gm, 'is_offline', False):
+            log.info(f"{gamemode} is offline mode, generating locally")
+            return gm.generate(**data)
+
+        from core.schema_registry import get_schema
+        schema = get_schema(gamemode)
+        if not schema:
+            log.warn(f"No schema for gamemode: {gamemode}")
+            return {"error": True, "error_code": "E_NO_SCHEMA", "message": f"Unknown gamemode: {gamemode}"}
+
+        prompt_mgr = self.get_prompt_manager()
+        source_pairs = data.get("vocab_pairs") or []
+        if source_pairs and gamemode == "story" and not data.get("target_words"):
+            data = dict(data)
+            data["target_words"] = ", ".join(pair["term"] for pair in source_pairs[:count])
+        # Do not pass the common arguments twice: they are already explicit
+        # parameters of get_prompt(), while the SPA also stores them in data.
+        prompt_data = dict(data)
+        for key in ("gamemode", "language", "level", "topic", "count", "vocab_pairs"):
+            prompt_data.pop(key, None)
+        prompt = prompt_mgr.get_prompt(
+            gamemode=gamemode,
+            language=language,
+            level=level,
+            topic=topic,
+            count=count,
+            vocab_pairs=source_pairs,
+            **prompt_data,
+        )
+
+        client = self._get_api_client()
+        if not client:
+            log.warn("No API client available")
+            return {"error": True, "error_code": "E_NO_KEYS", "message": "No API key configured. Set at least one in Settings."}
+
+        result = client.generate_structured(
+            prompt=prompt,
+            response_schema=schema,
+            temperature=self.settings.get("temperature", 0.7),
+        )
+
+        if result.get("error"):
+            log.warn(f"Generate failed: {result.get('error_code', '?')} - {result.get('message', '')[:100]}")
+        else:
+            key_used = result.get("_key_used", "?")
+            model_used = result.get("_model_used", "?")
+            log.info(f"Generate OK: {key_used} / {model_used}")
+
+        if not result.get("error"):
+            from core.content_validation import validate_game_result
+            validation = validate_game_result(gamemode, result, count)
+            if validation.get("error"):
+                return {"error": True, "error_code": "E_AI_CONTENT", "message": validation["error"]}
+
+        if gm and not result.get("error"):
+            rendered = gm.render_ui_data(result)
+            if rendered:
+                result = rendered
+
+        ctx_mgr = self._get_context_mgr()
+        ctx_mgr.save(gamemode, {
+            "config": data,
+            "result": result,
+            "prompt": prompt,
+        }, ttl_minutes=60)
+        log.debug("Context saved", {"gamemode": gamemode})
+
+        return result
+
+    def _handle_save_settings(self, data: dict) -> dict:
+        changed_keys = []
+        for key, value in data.items():
+            self.settings.set(key, value)
+            changed_keys.append(key)
+        if any(k.startswith("api_key") for k in data):
+            self._reset_api_client()
+            self._gamemode_cache.clear()
+            log.info("API keys changed, client+cache reset")
+        log.info("Settings saved via JS", {"keys": changed_keys})
+        return {"saved": changed_keys}
+
+    def _handle_get_settings(self, data: dict = None) -> dict:
+        # API keys never cross the Python/JS bridge.
+        return {key: value for key, value in self.settings.data.items() if not key.startswith("api_key")}
+
+    def _handle_check_api_key(self, data: dict = None) -> dict:
+        keys = self.settings.get_active_keys()
+        from core.api_client import GeminiClient
+        return {
+            "has_key": bool(keys),
+            "key_count": len(keys),
+            "keys": [GeminiClient.detect_key_type(k) for k in keys],
+        }
+
+    def _handle_test_key(self, data: dict) -> dict:
+        key = data.get("key", "").strip()
+        if not key:
+            log.warn("test_key called with empty key")
+            return {"ok": False, "error": "Empty key"}
+        from core.api_client import GeminiClient
+        client = GeminiClient([key], "auto")
+        result = client.test_key(key)
+        log.info(f"test_key result: ok={result.get('ok')} model={result.get('model')}")
+        if hasattr(client, 'close'):
+            client.close()
+        return result
+
+    def _handle_test_all_keys(self, data: dict = None) -> dict:
+        keys = self.settings.get_api_keys()
+        from core.api_client import GeminiClient
+        results = []
+        for idx, key in enumerate(keys):
+            if not key.strip():
+                results.append({"key": idx + 1, "ok": False, "error": "Empty"})
+                continue
+            client = GeminiClient([key], "auto")
+            res = client.test_key(key)
+            results.append({
+                "key": idx + 1,
+                "ok": res.get("ok", False),
+                "model": res.get("model", ""),
+                "error": res.get("error", ""),
+                "response": res.get("response", ""),
+            })
+            if hasattr(client, 'close'):
+                client.close()
+        log.info(f"test_all_keys: {sum(1 for r in results if r['ok'])}/{len(results)} ok")
+        return {"results": results}
+
+    def _handle_list_decks(self, data: dict = None) -> dict:
+        from core.deck_source import list_decks
+        return list_decks()
+
+    def _handle_get_source_models(self, data: dict) -> dict:
+        from core.deck_source import list_source_models
+        return list_source_models(data.get("deck_id"))
+
+    def _handle_get_source_fields(self, data: dict) -> dict:
+        from core.deck_source import list_source_fields
+        return list_source_fields(data.get("model_id"))
+
+    def _handle_sample_vocab_pairs(self, data: dict) -> dict:
+        from core.deck_source import sample_vocab_pairs
+        return sample_vocab_pairs(
+            deck_id=data.get("deck_id"), model_id=data.get("model_id"),
+            term_field=data.get("term_field", ""), definition_field=data.get("definition_field", ""),
+            limit=data.get("limit", 50),
+            excluded_pair_keys=data.get("excluded_pair_keys", []),
+        )
+
+    def _handle_get_deck_fields(self, data: dict) -> dict:
+        deck_name = data.get("deck_name", "")
+        if not deck_name:
+            return {"fields": []}
+        return {"fields": []}
+
+    def _handle_get_vocab_pairs(self, data: dict) -> dict:
+        deck_name = data.get("deck_name", "")
+        field_term = data.get("field_term", "")
+        field_def = data.get("field_def", "")
+        count = data.get("count", 50)
+        if not deck_name or not field_term or not field_def:
+            return {"pairs": []}
+        return {"pairs": [], "total": 0}
+
+    def _handle_set_ui_lang(self, data: dict) -> dict:
+        lang = data.get("lang", "vi")
+        self.settings.set("ui_lang", lang)
+        log.info(f"UI language set to: {lang}")
+        return {"lang": lang}
+
+    def _handle_get_ui_lang(self, data: dict = None) -> dict:
+        lang = self.settings.get("ui_lang", "vi")
+        return {"lang": lang}
+
+    def _handle_get_ui_strings(self, data: dict = None) -> dict:
+        lang = self.settings.get("ui_lang", "vi")
+        from core.i18n import load_strings
+        strings = load_strings(lang)
+        return {"strings": strings, "lang": lang}
+
+    def _handle_ai_grade(self, data: dict) -> dict:
+        gamemode = data.get("gamemode", "fill_blank")
+        learn_lang = self.settings.get("learn_lang", "en")
+        level = data.get("level", "intermediate")
+
+        from core.ai_grader import get_grader_prompt
+        common = {"learn_lang": learn_lang, "level": level}
+        if gamemode == "translation":
+            prompt_data = {**common, "source_lang": "Vietnamese", "target_lang": learn_lang,
+                "source_text": data.get("source_text", ""), "expected_target": data.get("expected", ""),
+                "user_target": data.get("user_answer", "")}
+        elif gamemode == "sentence_transform":
+            prompt_data = {**common, "instruction": data.get("instruction", ""), "original": data.get("original", ""),
+                "expected": data.get("expected", ""), "user_answer": data.get("user_answer", "")}
+        elif gamemode == "taboo":
+            prompt_data = {**common, "secret_word": data.get("secret_word", ""), "user_guess": data.get("user_answer", "")}
+        else:
+            prompt_data = {**common, "question": data.get("question", ""), "expected": data.get("expected", ""),
+                "user_answer": data.get("user_answer", "")}
+        prompt = get_grader_prompt(gamemode, **prompt_data)
+
+        client = self._get_api_client()
+        if not client:
+            return {"error": True, "error_code": "E_NO_KEYS", "message": "No API key"}
+
+        result = client.generate_text(prompt, temperature=0.3)
+        if result:
+            try:
+                return json.loads(result)
+            except Exception:
+                pass
+        return {"correct": False, "score": 0, "explanation": "AI grading failed"}
+
+    def _handle_close_hub(self, data: dict = None) -> dict:
+        from aqt import mw
+        if hasattr(mw, "ai_hub_view") and mw.ai_hub_view is not None:
+            mw.ai_hub_view.close()
+        return {}
+
+    def _handle_save_to_anki(self, data: dict) -> dict:
+        gamemode = data.get("gamemode", "fill_blank")
+        content = data.get("content", {})
+        deck_name = data.get("deck", "AI Learning")
+        gm = self.get_gamemode(gamemode)
+        if gm and hasattr(gm, 'save_to_anki'):
+            count = gm.save_to_anki(content, deck_name)
+            log.info(f"Saved {count} cards to deck '{deck_name}' from {gamemode}")
+            return {"success": True, "count": count}
+        log.warn(f"No save handler for {gamemode}")
+        return {"error": True, "error_code": "E_NO_SAVE_HANDLER", "message": f"No save handler for {gamemode}"}
+
+    def _handle_check_answer(self, data: dict) -> dict:
+        gamemode = data.get("gamemode", "fill_blank")
+        user_input = data.get("user_input")
+        correct = data.get("correct")
+        gm = self.get_gamemode(gamemode)
+        if gm and hasattr(gm, 'check_answer'):
+            result = gm.check_answer(user_input, correct)
+            log.debug(f"check_answer: {gamemode} -> {result}")
+            return result
+        log.warn(f"No check handler for {gamemode}")
+        return {"error": True, "error_code": "E_NO_CHECK_HANDLER", "message": f"No check handler for {gamemode}"}
+
+    def _handle_save_context(self, data: dict) -> dict:
+        ctx_mgr = self._get_context_mgr()
+        gamemode = data.get("gamemode", "")
+        payload = data.get("data", {})
+        ctx_mgr.save(gamemode, payload, ttl_minutes=60)
+        log.debug(f"Context saved manually for {gamemode}")
+        return {}
+
+    def _handle_load_context(self, data: dict = None) -> dict:
+        ctx_mgr = self._get_context_mgr()
+        ctx = ctx_mgr.load()
+        if ctx:
+            log.debug("Context loaded", {"keys": list(ctx.keys()) if isinstance(ctx, dict) else "?"})
+            return {"has_context": True, **ctx}
+        log.debug("No context found")
+        return {"has_context": False}
+
+    def _handle_clear_context(self, data: dict = None) -> dict:
+        ctx_mgr = self._get_context_mgr()
+        ctx_mgr.clear()
+        log.info("Context cleared")
+        return {"success": True}

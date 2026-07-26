@@ -1,0 +1,17 @@
+生成 {count} 个翻译练习。
+源语言：{source_lang}（越南语）
+目标语言：{target_lang}
+级别：{level_instruction}
+主题：{topic}
+
+每个练习：
+- source_text：用越南语（源语言）编写的自然句子，适合该级别
+- target_text：用 {target_lang} 的准确翻译
+- vocabulary_highlight：句子中的关键词汇，附有翻译和用法注释
+- grammar_notes：越南语和 {target_lang} 之间的重要语法差异说明
+
+重要提示：源语言是越南语，不是英语。编写自然的越南语句子。
+输出合法 JSON：
+{{ "sentences": [
+  {{ "source_text": "Câu tiếng Việt...", "target_text": "翻译...", "vocabulary_highlight": [{{"word":"...","translation":"...","notes":"..."}}], "grammar_notes": "..." }}
+] }}

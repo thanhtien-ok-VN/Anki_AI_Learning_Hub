@@ -1,0 +1,21 @@
+请用 {language} 写一段连贯的文字（{paragraph_min_words}-{paragraph_max_words} 字）。
+级别：{level_instruction}
+主题：{topic}
+
+文字应该完整、自然。然后移除 {num_blanks} 个关键词。
+
+在段落中用 [BLANK_0]、[BLANK_1] 等标记替换被移除的词语。
+为每个空格提供：
+- correct_word：被移除的词
+- options：4 个选项（1 个正确 + 3 个合理的干扰项，相同词性）
+- correct_index：正确选项的索引（0-3）
+- explanation_short：为什么这个词合适
+- explanation：该词在语境中的含义和用法的详细解释
+
+输出合法 JSON：
+{{ "paragraph_with_blanks": "... [BLANK_0] ... [BLANK_1] ...",
+   "paragraph_full": "包含全部文字的完整段落",
+   "blanks": [
+     {{ "blank_id": 0, "correct_word": "...", "options": ["A","B","C","D"], "correct_index": 0, "explanation_short": "...", "explanation": "..." }}
+   ]
+}}

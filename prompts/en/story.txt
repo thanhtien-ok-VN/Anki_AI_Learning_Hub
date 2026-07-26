@@ -1,0 +1,17 @@
+Write a short story in {language} ({word_count} words) that naturally incorporates ALL of these target words:
+{target_words}
+
+Level: {level_instruction}
+
+Requirements:
+- Every target word must appear at least once
+- Words must be used in their correct context
+- The story must be coherent and engaging
+- Track which sentence each target word appears in
+
+Then generate {question_count} reading comprehension questions about the story.
+Each question must have 4 options (1 correct, 3 distractors).
+Include an explanation for each correct answer.
+
+Output valid JSON matching this schema:
+{{ "story": "...", "target_word_usage": [{{ "word": "...", "sentence_used_in": "..." }}], "comprehension_questions": [{{ "question": "...", "options": ["A","B","C","D"], "correct_index": 0, "explanation": "..." }}] }}

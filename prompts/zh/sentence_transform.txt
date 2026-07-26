@@ -1,0 +1,13 @@
+请用 {language} 生成 {count} 个句型转换练习。
+重点：{focus}（语态、条件句、间接引语或比较结构）
+级别：{level_instruction}
+
+为每个练习提供：
+- original_sentence：语法正确的原句
+- instruction：清晰的转换说明
+- hint_word：答案中必须使用的提示词
+- expected_answer：正确的转换后句子
+- grammar_rule：所测试语法规则的简要说明
+
+输出符合此 schema 的合法 JSON：
+{{ "questions": [{{ "original_sentence": "...", "instruction": "...", "hint_word": "...", "expected_answer": "...", "grammar_rule": "...", "focus": "voice|conditional|reported|comparative" }}] }}

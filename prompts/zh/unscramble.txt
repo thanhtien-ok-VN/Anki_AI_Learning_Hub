@@ -1,0 +1,14 @@
+请用 {language} 生成 {count} 个语法正确的句子。
+级别：{level_instruction}
+主题：{topic}
+
+每个句子应为 6-12 个词，语法结构清晰。
+句子应有趣且有教育意义。
+
+为每个句子提供：
+- correct_sentence：原始句子
+- hint：语法提示（例如"现在完成进行时"、"第二条件句"）
+- translation：如果语言是中文则译为英文，如果语言是英文则译为中文
+
+输出符合此 schema 的合法 JSON：
+{{ "sentences": [{{ "correct_sentence": "...", "hint": "...", "translation": "..." }}] }}

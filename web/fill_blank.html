@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title data-i18n="fill_blank.title">Fill in the Blank</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+.topic-input { width:100%; max-width:400px; padding:8px 12px; border:2px solid var(--border); border-radius:8px; font-size:13px; background:var(--bg); color:var(--text); resize:none; }
+.topic-counter { font-size:11px; color:var(--text-secondary); text-align:right; margin-top:2px; }
+.char-ok { color:var(--text-secondary); }
+.char-warn { color:var(--error); font-weight:600; }
+
+.deck-section { margin:12px 0; padding:12px; background:var(--bg); border-radius:8px; border:1px solid var(--border); }
+.deck-section select, .deck-section button { margin:4px 0; }
+.vocab-info { font-size:12px; color:var(--text-secondary); margin-top:4px; }
+
+.feedback-box { margin-top:12px; padding:12px; border-radius:8px; font-size:13px; line-height:1.5; }
+.feedback-correct { background:#e8f5e9; border-left:4px solid var(--success); }
+.feedback-wrong { background:#fbe9e7; border-left:4px solid var(--error); }
+.feedback-detail { margin-top:8px; font-size:12px; color:var(--text-secondary); }
+.feedback-detail strong { color:var(--text); }
+
+.result-table { width:100%; border-collapse:collapse; margin-top:12px; }
+.result-table td { padding:8px 12px; border-bottom:1px solid var(--border); font-size:13px; vertical-align:top; }
+.result-table .label { width:100px; font-weight:600; color:var(--text-secondary); }
+</style>
+</head>
+<body>
+
+<div class="timer-bar">
+    <span class="timer-label" data-i18n="fill_blank.title">Fill in the Blank</span>
+    <span class="timer-value" id="timer-value">00:00</span>
+    <div class="timer-controls">
+        <button onclick="Utils.goTo('index.html')" data-i18n="app.back">Back</button>
+    </div>
+</div>
+
+<div id="app" class="game-page" style="padding-top:50px;">
+    <div class="game-header">
+        <h2 data-i18n="fill_blank.title">Fill in the Blank</h2>
+    </div>
+
+    <div class="config-panel" id="config-panel">
+        <div class="config-row">
+            <label data-i18n="app.language">Language:</label>
+            <select id="sel-lang">
+                <option value="en" data-i18n="app.language_en">English</option>
+                <option value="zh" data-i18n="app.language_zh">Chinese</option>
+            </select>
+
+            <label data-i18n="app.level">Level:</label>
+            <select id="sel-level">
+                <option value="beginner">1 - Beginner</option>
+                <option value="elementary">2 - Elementary</option>
+                <option value="intermediate" selected>3 - Intermediate</option>
+                <option value="upper_intermediate">4 - Upper-Intermediate</option>
+                <option value="advanced">5 - Advanced</option>
+            </select>
+
+            <label data-i18n="app.count">Count:</label>
+            <select id="sel-count">
+                <option value="3">3</option>
+                <option value="5" selected>5</option>
+                <option value="10">10</option>
+            </select>
+        </div>
+
+        <div class="config-row" style="flex-wrap:wrap;">
+            <label data-i18n="app.topic">Topic:</label>
+            <textarea id="input-topic" class="topic-input" rows="1" placeholder="daily life, work, travel, technology..." maxlength="200" oninput="updateTopicCounter()"></textarea>
+        </div>
+        <div class="topic-counter"><span id="topic-char-count">0</span><span>/200</span></div>
+
+        <div class="deck-section" id="deck-section">
+            <label><input type="checkbox" id="chk-use-deck" onchange="toggleDeckSource()"> <span data-i18n="app.use_deck">Use words from my deck</span></label>
+            <div id="deck-controls" style="display:none;margin-top:8px;">
+                <select id="sel-deck" onchange="onDeckChange()" style="width:100%;padding:6px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text);">
+                    <option value="">-- <span data-i18n="app.select_deck">Select deck</span> --</option>
+                </select>
+                <div style="display:flex;gap:8px;margin-top:6px;">
+                    <select id="sel-field-term" style="flex:1;padding:6px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text);">
+                        <option value="" data-i18n="app.select_field_term">Keyword field</option>
+                    </select>
+                    <select id="sel-field-def" style="flex:1;padding:6px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text);">
+                        <option value="" data-i18n="app.select_field_def">Definition field</option>
+                    </select>
+                </div>
+                <div class="vocab-info" id="vocab-info"></div>
+            </div>
+        </div>
+
+        <div class="config-row">
+            <button class="btn" id="btn-generate" onclick="generate()" data-i18n="app.generate">Generate</button>
+        </div>
+    </div>
+
+    <div id="loading" class="loading" style="display:none;">
+        <div class="spinner"></div>
+        <p data-i18n="app.loading">Generating questions...</p>
+    </div>
+
+    <div id="game-content" style="display:none;">
+        <div id="questions-container"></div>
+        <div class="btn-group">
+            <button class="btn" id="btn-check" onclick="checkAll()" data-i18n="app.check">Check Answers</button>
+            <button class="btn btn-success" id="btn-retry" style="display:none;" onclick="generate()" data-i18n="app.retry">Try Again</button>
+        </div>
+    </div>
+
+    <div id="result" class="result-card" style="display:none;"></div>
+</div>
+
+<script src="js/utils.js"></script>
+<script src="js/bridge.js"></script>
+<script>
+let currentQuestions = [];
+let userAnswers = [];
+let vocabPairs = [];
+
+function updateTopicCounter() {
+    const el = document.getElementById('input-topic');
+    const counter = document.getElementById('topic-char-count');
+    counter.textContent = el.value.length;
+    counter.className = el.value.length > 180 ? 'char-warn' : 'char-ok';
+}
+
+function toggleDeckSource() {
+    const checked = document.getElementById('chk-use-deck').checked;
+    document.getElementById('deck-controls').style.display = checked ? 'block' : 'none';
+    if (checked) loadDecks();
+}
+
+async function loadDecks() {
+    const res = await Bridge.sendAsync('list_decks');
+    const sel = document.getElementById('sel-deck');
+    sel.innerHTML = '<option value="">-- Select deck --</option>';
+    if (res && res.decks) {
+        res.decks.forEach(d => {
+            const opt = document.createElement('option');
+            opt.value = d.name;
+            opt.textContent = d.name;
+            sel.appendChild(opt);
+        });
+    }
+}
+
+async function onDeckChange() {
+    const deckName = document.getElementById('sel-deck').value;
+    if (!deckName) return;
+    const res = await Bridge.sendAsync('get_deck_fields', { deck_name: deckName });
+    const ft = document.getElementById('sel-field-term');
+    const fd = document.getElementById('sel-field-def');
+    ft.innerHTML = '<option value="">-- Keyword field --</option>';
+    fd.innerHTML = '<option value="">-- Definition field --</option>';
+    if (res && res.fields) {
+        res.fields.forEach(f => {
+            ft.innerHTML += `<option value="${f}">${f}</option>`;
+            fd.innerHTML += `<option value="${f}">${f}</option>`;
+        });
+    }
+    document.getElementById('vocab-info').textContent = '';
+}
+
+async function loadVocab() {
+    const deckName = document.getElementById('sel-deck').value;
+    const fieldTerm = document.getElementById('sel-field-term').value;
+    const fieldDef = document.getElementById('sel-field-def').value;
+    if (!deckName || !fieldTerm || !fieldDef) return;
+    const res = await Bridge.sendAsync('get_vocab_pairs', {
+        deck_name: deckName, field_term: fieldTerm, field_def: fieldDef, count: 30
+    });
+    if (res && res.pairs) {
+        vocabPairs = res.pairs;
+        document.getElementById('vocab-info').textContent = `${res.total} ${Utils.t('app.vocab_loaded', 'words loaded')}`;
+    }
+}
+
+async function generate() {
+    const lang = document.getElementById('sel-lang').value;
+    const level = document.getElementById('sel-level').value;
+    const topic = document.getElementById('input-topic').value.trim() || 'daily life';
+    const count = parseInt(document.getElementById('sel-count').value);
+
+    if (document.getElementById('chk-use-deck').checked) await loadVocab();
+
+    Utils.showLoading(true);
+    Utils.showGameContent(false);
+    document.getElementById('result').style.display = 'none';
+    document.getElementById('btn-check').style.display = 'inline-block';
+    document.getElementById('btn-retry').style.display = 'none';
+
+    const data = await Bridge.sendAsync('generate', {
+        gamemode: 'fill_blank', language: lang, level, topic, count,
+        vocab_pairs: vocabPairs.slice(0, count * 2).map(p => `${p.term}: ${p.definition}`)
+    });
+
+    if (data && data.questions) {
+        currentQuestions = data.questions;
+        userAnswers = new Array(currentQuestions.length).fill(-1);
+        renderQuestions();
+    } else {
+        Utils.toast('Generation failed: ' + (data?.message || 'Unknown error'));
+    }
+    Utils.showLoading(false);
+}
+
+function renderQuestions() {
+    const container = document.getElementById('questions-container');
+    container.innerHTML = '';
+
+    currentQuestions.forEach((q, idx) => {
+        const card = document.createElement('div');
+        card.className = 'question-card fade-in';
+
+        card.innerHTML = `
+            <div class="q-number">Question ${idx + 1} of ${currentQuestions.length}</div>
+            <div class="q-text">${q.sentence_with_blank.replace('_____', '<span class="blank">______</span>')}</div>
+            <div class="options-grid" id="opts-${idx}">
+                ${['A','B','C','D'].map((l, oi) => `
+                    <button class="option-btn" data-q="${idx}" data-opt="${oi}" onclick="selectOption(${idx}, ${oi})">${l}. ${q.options[oi]}</button>
+                `).join('')}
+            </div>
+            ${q.hint ? `<div class="hint-text" id="hint-${idx}">💡 ${q.hint}</div>` : ''}
+            <div class="feedback-box" id="feedback-${idx}" style="display:none;"></div>
+        `;
+
+        container.appendChild(card);
+    });
+
+    Utils.showGameContent(true);
+    container.querySelector('.question-card')?.scrollIntoView({ behavior: 'smooth' });
+}
+
+function selectOption(qIdx, optIdx) {
+    userAnswers[qIdx] = optIdx;
+    const grid = document.getElementById(`opts-${qIdx}`);
+    grid.querySelectorAll('.option-btn').forEach((btn, i) => {
+        btn.classList.toggle('selected', i === optIdx);
+    });
+}
+
+async function checkAll() {
+    let correct = 0;
+    const total = currentQuestions.length;
+
+    for (let idx = 0; idx < total; idx++) {
+        const q = currentQuestions[idx];
+        const selected = userAnswers[idx];
+        const fb = document.getElementById(`feedback-${idx}`);
+
+        const grid = document.getElementById(`opts-${idx}`);
+        grid.querySelectorAll('.option-btn').forEach((btn, oi) => {
+            btn.disabled = true;
+            btn.classList.remove('selected');
+            if (oi === q.correct_index) btn.classList.add('correct');
+            if (oi === selected && oi !== q.correct_index) btn.classList.add('wrong');
+        });
+
+        const isCorrect = selected === q.correct_index;
+        if (isCorrect) correct++;
+
+        let html = '';
+        if (isCorrect) {
+            html = `<div class="feedback-box feedback-correct">✅ <strong>${Utils.t('app.correct')}!</strong> ${q.explanation_short || ''}</div>`;
+        } else {
+            const chosen = selected >= 0 ? q.options[selected] : '(none)';
+            html = `<div class="feedback-box feedback-wrong">❌ <strong>${Utils.t('app.wrong')}.</strong> Answer: <strong>${q.options[q.correct_index]}</strong> (${q.blank_word})<br><span style="font-size:12px;color:var(--text-secondary);">Your choice: ${chosen}</span></div>`;
+        }
+
+        if (q.semantic || q.grammar || q.vocab_relation) {
+            html += `<div class="feedback-detail">`;
+            if (q.semantic) html += `<div><strong>Semantic:</strong> ${q.semantic}</div>`;
+            if (q.grammar) html += `<div><strong>Grammar:</strong> ${q.grammar}</div>`;
+            if (q.vocab_relation) html += `<div><strong>Vocab:</strong> ${q.vocab_relation}</div>`;
+            html += `</div>`;
+        }
+
+        fb.innerHTML = html;
+        fb.style.display = 'block';
+    }
+
+    document.getElementById('btn-check').style.display = 'none';
+    document.getElementById('btn-retry').style.display = 'inline-block';
+
+    const resultEl = document.getElementById('result');
+    const pct = Math.round((correct / total) * 100);
+    resultEl.style.display = 'block';
+    resultEl.innerHTML = `
+        <div class="score">${correct}/${total}</div>
+        <div class="score-label">${pct}% correct</div>
+    `;
+    resultEl.scrollIntoView({ behavior: 'smooth' });
+}
+</script>
+</body>
+</html>

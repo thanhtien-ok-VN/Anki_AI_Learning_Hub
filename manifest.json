@@ -1,0 +1,10 @@
+{
+    "name": "AI Learning Hub",
+    "package": "AI_Learning_Hub",
+    "author": "Your Name",
+    "version": "0.1.0",
+    "min_point_version": 240000,
+    "max_point_version": 241000,
+    "description": "8 AI-powered language learning games using Gemini API. Fill-in-blank, Cloze, Translation, Word Unscramble, Matching, Story Generator, Sentence Transformation, Taboo.",
+    "mod": 0
+}
