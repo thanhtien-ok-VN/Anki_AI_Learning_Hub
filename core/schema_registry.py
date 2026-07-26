@@ -21,6 +21,9 @@ FILL_BLANK = {
                     "semantic": {"type": "string"},
                     "grammar": {"type": "string"},
                     "vocab_relation": {"type": "string"},
+                    "sentence_translation": {"type": "string"},
+                    "word_meaning": {"type": "string"},
+                    "usage_example": {"type": "string"},
                 },
                 "required": ["sentence_with_blank", "options", "correct_index"],
             },
@@ -34,6 +37,7 @@ CLOZE = {
     "properties": {
         "paragraph_with_blanks": {"type": "string"},
         "paragraph_full": {"type": "string"},
+        "sentence_meaning": {"type": "string"},
         "blanks": {
             "type": "array",
             "items": {
@@ -50,10 +54,11 @@ CLOZE = {
                     "correct_index": {"type": "integer"},
                     "explanation_short": {"type": "string"},
                     "explanation": {"type": "string"},
+                    "meaning_in_vietnamese": {"type": "string"},
                 },
             },
             "minItems": 1,
-            "maxItems": 7,
+            "maxItems": 10,
         },
     },
     "required": ["paragraph_with_blanks", "blanks"],
@@ -81,6 +86,31 @@ TRANSLATION = {
                         },
                     },
                     "grammar_notes": {"type": "string"},
+                    "detailed_feedback": {
+                        "type": "object",
+                        "properties": {
+                            "word_by_word": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "word": {"type": "string"},
+                                        "translation": {"type": "string"},
+                                        "notes": {"type": "string"},
+                                    },
+                                },
+                            },
+                            "common_mistakes": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                            },
+                            "alternative_translations": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                            },
+                            "improvement_tips": {"type": "string"},
+                        },
+                    },
                 },
                 "required": ["source_text", "target_text"],
             },
@@ -100,6 +130,17 @@ SENTENCE_UNSCRAMBLE = {
                     "correct_sentence": {"type": "string"},
                     "hint": {"type": "string"},
                     "translation": {"type": "string"},
+                    "sentence_meaning": {"type": "string"},
+                    "key_vocab": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "word": {"type": "string"},
+                                "meaning": {"type": "string"},
+                            },
+                        },
+                    },
                 },
                 "required": ["correct_sentence"],
             },
@@ -161,6 +202,21 @@ SENTENCE_TRANSFORM = {
                     "focus": {
                         "type": "string",
                         "enum": ["voice", "conditional", "reported", "comparative"],
+                    },
+                    "detailed_explanation": {
+                        "type": "object",
+                        "properties": {
+                            "rule_description": {"type": "string"},
+                            "step_by_step": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                            },
+                            "common_errors": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                            },
+                            "comparison": {"type": "string"},
+                        },
                     },
                 },
                 "required": ["original_sentence", "instruction", "expected_answer"],

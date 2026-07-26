@@ -1,17 +1,17 @@
-请用 {language} 写一个短篇故事（{word_count} 字），自然地融入以下所有目标词汇：
+用 {language} 写一个短篇故事（{word_count} 词），自然地融入以下所有目标词汇：
 {target_words}
 
 级别：{level_instruction}
 
 要求：
 - 每个目标词必须至少出现一次
-- 词语必须在正确语境中使用
+- 词汇必须在正确的语境中使用
 - 故事必须连贯且引人入胜
 - 记录每个目标词出现在哪个句子中
 
-然后生成 {question_count} 个关于该故事的阅读理解问题。
-每个问题必须有 4 个选项（1 个正确，3 个干扰项）。
+然后生成 {question_count} 个关于故事的理解问题。
+每个问题必须有恰好 4 个选项（1 个正确，3 个干扰项）。每个问题必须提供恰好 4 个选项。
 为每个正确答案提供解释。
 
-输出符合此 schema 的合法 JSON：
+输出符合此架构的有效 JSON：
 {{ "story": "...", "target_word_usage": [{{ "word": "...", "sentence_used_in": "..." }}], "comprehension_questions": [{{ "question": "...", "options": ["A","B","C","D"], "correct_index": 0, "explanation": "..." }}] }}

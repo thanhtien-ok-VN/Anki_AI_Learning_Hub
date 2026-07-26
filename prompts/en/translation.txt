@@ -1,17 +1,31 @@
-Generate {count} translation exercises.
+Generate 1 translation exercise.
 Source language: {source_lang} (Vietnamese)
 Target language: {target_lang}
 Level: {level_instruction}
 Topic: {topic}
 
-For each exercise:
+For the exercise:
 - source_text: a natural sentence in VIETNAMESE (source_lang) appropriate for the level
 - target_text: the accurate translation in {target_lang}
 - vocabulary_highlight: key words from the sentence with translations and usage notes
 - grammar_notes: explanation of important grammar differences between Vietnamese and {target_lang}
+- detailed_feedback: an object with:
+  - "word_by_word": [{word: "...", translation: "...", notes: "..."}] — analyze each important word
+  - "common_mistakes": ["...", "..."] — common learner errors for this sentence
+  - "alternative_translations": ["...", "..."] — other valid ways to translate
+  - "improvement_tips": "..." — general advice for the learner
 
 Important: source_lang is VIETNAMESE, not English. Write natural Vietnamese sentences.
 Output valid JSON:
 {{ "sentences": [
-  {{ "source_text": "Câu tiếng Việt...", "target_text": "translation...", "vocabulary_highlight": [{{"word":"...","translation":"...","notes":"..."}}], "grammar_notes": "..." }}
+  {{ "source_text": "Câu tiếng Việt...", "target_text": "translation...",
+     "vocabulary_highlight": [{{"word":"...","translation":"...","notes":"..."}}],
+     "grammar_notes": "...",
+     "detailed_feedback": {{
+       "word_by_word": [{{"word":"...","translation":"...","notes":"..."}}],
+       "common_mistakes": ["...","..."],
+       "alternative_translations": ["...","..."],
+       "improvement_tips": "..."
+     }}
+  }}
 ] }}

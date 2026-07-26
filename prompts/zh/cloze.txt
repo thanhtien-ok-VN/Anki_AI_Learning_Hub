@@ -1,21 +1,26 @@
-请用 {language} 写一段连贯的文字（{paragraph_min_words}-{paragraph_max_words} 字）。
+用 {language} 写一段连贯的短文（{paragraph_min_words}-{paragraph_max_words} 词）。
 级别：{level_instruction}
 主题：{topic}
 
-文字应该完整、自然。然后移除 {num_blanks} 个关键词。
+短文应该是一个完整、自然的文本。然后删除 {num_blanks} 个关键词。
 
-在段落中用 [BLANK_0]、[BLANK_1] 等标记替换被移除的词语。
-为每个空格提供：
-- correct_word：被移除的词
-- options：4 个选项（1 个正确 + 3 个合理的干扰项，相同词性）
-- correct_index：正确选项的索引（0-3）
-- explanation_short：为什么这个词合适
-- explanation：该词在语境中的含义和用法的详细解释
+用 [BLANK_0]、[BLANK_1] 等替换删除的词。
+为每个空白提供：
+- correct_word：被删除的词
+- options：4 个选项（1 个正确 + 3 个合理的干扰项 — 相同词性，常见错误）
+- correct_index：选项中正确词的索引（0-3）
+- explanation_short：为什么这个词合适的简短说明
+- explanation：对该词含义和在此语境中使用的详细解释
+- meaning_in_vietnamese：空白词的越南语释义
 
-输出合法 JSON：
+同时包括：
+- sentence_meaning：整段文字内容的越南语翻译和说明
+
+输出有效 JSON：
 {{ "paragraph_with_blanks": "... [BLANK_0] ... [BLANK_1] ...",
-   "paragraph_full": "包含全部文字的完整段落",
+   "paragraph_full": "没有空白的完整段落",
+   "sentence_meaning": "整段文字的越南语含义",
    "blanks": [
-     {{ "blank_id": 0, "correct_word": "...", "options": ["A","B","C","D"], "correct_index": 0, "explanation_short": "...", "explanation": "..." }}
+     {{ "blank_id": 0, "correct_word": "...", "options": ["A","B","C","D"], "correct_index": 0, "explanation_short": "...", "explanation": "...", "meaning_in_vietnamese": "..." }}
    ]
 }}

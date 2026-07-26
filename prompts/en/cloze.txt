@@ -11,11 +11,16 @@ For each blank provide:
 - correct_index: index of the correct word in options (0-3)
 - explanation_short: brief why this word fits
 - explanation: detailed explanation of the word's meaning and usage in this context
+- meaning_in_vietnamese: the meaning of the blank word in Vietnamese
+
+Also include:
+- sentence_meaning: the FULL meaning of the paragraph in Vietnamese, explaining what it means
 
 Output valid JSON:
 {{ "paragraph_with_blanks": "... [BLANK_0] ... [BLANK_1] ...",
    "paragraph_full": "the complete paragraph without blanks",
+   "sentence_meaning": "Vietnamese meaning of the whole paragraph",
    "blanks": [
-     {{ "blank_id": 0, "correct_word": "...", "options": ["A","B","C","D"], "correct_index": 0, "explanation_short": "...", "explanation": "..." }}
+     {{ "blank_id": 0, "correct_word": "...", "options": ["A","B","C","D"], "correct_index": 0, "explanation_short": "...", "explanation": "...", "meaning_in_vietnamese": "..." }}
    ]
 }}

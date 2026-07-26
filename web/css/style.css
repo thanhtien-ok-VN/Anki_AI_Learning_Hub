@@ -875,3 +875,36 @@ body {
     .option-btn { padding: 8px 12px; font-size: 13px; }
     .drag-word { font-size: 12px; padding: 4px 10px; }
 }
+
+/* Vietnamese translation / meaning text */
+.q-translation { font-size: 14px; color: var(--text-secondary); margin-bottom: 12px; font-style: italic; padding: 8px 12px; background: var(--bg); border-radius: var(--radius-sm); }
+
+/* Cloze word bank - clickable chips */
+.word-preview-item { cursor: pointer; }
+.word-preview-item:hover { border-color: var(--primary); box-shadow: 0 0 0 2px var(--primary-light); }
+
+/* Cloze blanks inline */
+.cloze-blanks { display: flex; flex-wrap: wrap; gap: 12px; margin: 16px 0; }
+.cloze-blank-label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-weight: 500; color: var(--text-secondary); }
+.cloze-blank-label select { min-width: 120px; }
+select.auto-filled { border-color: var(--primary); background: var(--primary-light); }
+
+/* Unscramble card */
+.unscramble-card .hint-text { font-size: 14px; color: var(--text-secondary); margin-bottom: 8px; }
+.unscramble-area { margin: 12px 0; }
+
+/* Story comprehension */
+.comprehension-q { margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+.comprehension-q:last-child { border-bottom: none; }
+.comprehension-q p { font-weight: 500; margin-bottom: 8px; }
+
+/* History enhanced */
+.history-item { display: flex; justify-content: space-between; align-items: center; }
+.history-time { color: var(--text-secondary); }
+.history-score { color: var(--primary); font-weight: 600; font-size: 12px; }
+
+/* Matching column */
+.match-col { display: flex; flex-direction: column; gap: 6px; }
+
+/* Taboo card */
+.taboo-card .description { font-size: 16px; line-height: 1.7; padding: 16px; background: var(--primary-light); border-radius: var(--radius); margin: 16px 0; }

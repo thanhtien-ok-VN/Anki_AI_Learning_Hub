@@ -10,7 +10,7 @@ Requirements:
 - Track which sentence each target word appears in
 
 Then generate {question_count} reading comprehension questions about the story.
-Each question must have 4 options (1 correct, 3 distractors).
+Each question must have exactly 4 options (1 correct, 3 distractors). YOU MUST PROVIDE EXACTLY 4 OPTIONS FOR EVERY QUESTION.
 Include an explanation for each correct answer.
 
 Output valid JSON matching this schema:

@@ -1,13 +1,27 @@
-请用 {language} 生成 {count} 个句型转换练习。
+用 {language} 生成 1 个句型转换练习。
 重点：{focus}（语态、条件句、间接引语或比较结构）
 级别：{level_instruction}
 
-为每个练习提供：
-- original_sentence：语法正确的原句
-- instruction：清晰的转换说明
-- hint_word：答案中必须使用的提示词
+练习提供：
+- original_sentence：语法正确的句子
+- instruction：清晰的转换指示（例如："改写为被动语态"）
+- hint_word：答案中必须使用的词
 - expected_answer：正确的转换后句子
-- grammar_rule：所测试语法规则的简要说明
+- grammar_rule：所测试规则的简要说明
+- detailed_explanation：一个包含以下内容的对象：
+  - "rule_description"："语法规则的详细越南语说明"
+  - "step_by_step"：["步骤1", "步骤2", ...] — 如何转换
+  - "common_errors"：["错误1", "错误2", ...]
+  - "comparison"："与原结构的比较"
 
-输出符合此 schema 的合法 JSON：
-{{ "questions": [{{ "original_sentence": "...", "instruction": "...", "hint_word": "...", "expected_answer": "...", "grammar_rule": "...", "focus": "voice|conditional|reported|comparative" }}] }}
+输出符合此架构的有效 JSON：
+{{ "questions": [{{
+  "original_sentence": "...", "instruction": "...", "hint_word": "...",
+  "expected_answer": "...", "grammar_rule": "...", "focus": "voice|conditional|reported|comparative",
+  "detailed_explanation": {{
+    "rule_description": "...",
+    "step_by_step": ["...","..."],
+    "common_errors": ["...","..."],
+    "comparison": "..."
+  }}
+}}] }}

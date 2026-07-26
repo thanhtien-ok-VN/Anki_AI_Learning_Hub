@@ -1,15 +1,16 @@
-请用 {language} 生成 {count} 轮 Taboo 游戏。
+用 {language} 生成 1 个猜词回合。
 级别：{level_instruction}
 主题：{topic}
 
-每轮提供：
-- secret_word：适合该级别的秘密词语
-- forbidden_words：4-5 个相关词语，描述秘密词语时不能使用这些词
-- ai_description：不使用任何禁忌词来描述秘密词语
-- category：词语的类别
+对于该回合提供：
+- secret_word：适合该水平的词
+- forbidden_words：4-5 个描述该词时不能使用的相关词
+- ai_description：用 {language} 对 secret_word 的描述，不能使用任何禁词。描述清楚地解释概念。
+- category：词的类别
 - difficulty：easy、medium 或 hard
 
-描述应足够清晰让学习者能猜出，但不应过于简单。
+描述应清晰地解释概念，让学习者能猜出 secret_word。
+学习者阅读描述后用 {language} 回答 secret_word。
 
-输出符合此 schema 的合法 JSON：
+输出符合此架构的有效 JSON：
 {{ "rounds": [{{ "secret_word": "...", "forbidden_words": ["A","B","C","D"], "ai_description": "...", "category": "...", "difficulty": "medium" }}] }}

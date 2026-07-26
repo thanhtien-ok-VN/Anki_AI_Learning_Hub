@@ -15,11 +15,15 @@ For each blank:
 - Include semantic explanation (meaning in context)
 - Include grammar rule explanation
 - Include vocabulary relationship notes (collocations, synonyms, antonyms)
+- Include a full VIETNAMESE translation of the entire sentence (field: sentence_translation)
+- Include the meaning of the correct word explained in Vietnamese (field: word_meaning)
+- Include a usage example sentence in {language} (field: usage_example)
 
 Output valid JSON:
 {{ "questions": [
   {{ "sentence_with_blank": "...", "full_sentence": "...", "blank_word": "...",
      "options": ["A","B","C","D"], "correct_index": 0,
      "hint": "...", "explanation_short": "...",
-     "semantic": "...", "grammar": "...", "vocab_relation": "..." }}
+     "semantic": "...", "grammar": "...", "vocab_relation": "...",
+     "sentence_translation": "...", "word_meaning": "...", "usage_example": "..." }}
 ] }}

@@ -1,14 +1,15 @@
-Generate {count} grammatically correct sentences in {language}.
+Generate {count} unscramble exercises in {language}.
 Level: {level_instruction}
 Topic: {topic}
 
-Each sentence should be 6-12 words long with clear grammatical structure.
-Sentences should be interesting and educational.
+For each exercise:
+- correct_sentence: a grammatically correct sentence at the given level
+- hint: a short hint about the sentence meaning (in Vietnamese)
+- translation: the Vietnamese translation of the sentence
+- sentence_meaning: detailed explanation of the sentence meaning in Vietnamese
+- key_vocab: [{word: "...", meaning: "..."}] — key vocabulary from the sentence with Vietnamese meaning
 
-For each sentence provide:
-- correct_sentence: the original sentence
-- hint: a grammar hint (e.g., "present perfect continuous", "conditional type 2")
-- translation: translation in English if language is zh, or in Chinese if language is en
-
-Output valid JSON matching this schema:
-{{ "sentences": [{{ "correct_sentence": "...", "hint": "...", "translation": "..." }}] }}
+Output valid JSON:
+{{ "sentences": [
+  {{ "correct_sentence": "...", "hint": "...", "translation": "...", "sentence_meaning": "...", "key_vocab": [{{"word":"...","meaning":"..."}}] }}
+] }}

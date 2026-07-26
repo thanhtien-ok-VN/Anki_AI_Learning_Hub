@@ -1,14 +1,15 @@
-请用 {language} 生成 {count} 个语法正确的句子。
+用 {language} 生成 {count} 个组词成句练习。
 级别：{level_instruction}
 主题：{topic}
 
-每个句子应为 6-12 个词，语法结构清晰。
-句子应有趣且有教育意义。
+对于每个练习：
+- correct_sentence：符合该水平的语法正确的句子
+- hint：关于句子含义的简短提示（用越南语）
+- translation：句子的越南语翻译
+- sentence_meaning：句子含义的详细越南语说明
+- key_vocab：[{word: "...", meaning: "..."}] — 句子中的关键词汇及其越南语含义
 
-为每个句子提供：
-- correct_sentence：原始句子
-- hint：语法提示（例如"现在完成进行时"、"第二条件句"）
-- translation：如果语言是中文则译为英文，如果语言是英文则译为中文
-
-输出符合此 schema 的合法 JSON：
-{{ "sentences": [{{ "correct_sentence": "...", "hint": "...", "translation": "..." }}] }}
+输出有效 JSON：
+{{ "sentences": [
+  {{ "correct_sentence": "...", "hint": "...", "translation": "...", "sentence_meaning": "...", "key_vocab": [{{"word":"...","meaning":"..."}}] }}
+] }}
