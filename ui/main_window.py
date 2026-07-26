@@ -3,10 +3,12 @@
 Anki does not expose a public main-window tab API, so this controller owns the
 small QTabWidget wrapper and restores the original web view exactly once.
 """
+
 from __future__ import annotations
 
 import json
 import os
+import threading
 from functools import partial
 
 from aqt import mw
@@ -24,6 +26,7 @@ class AIHubView:
         self._hub_web: AnkiWebView | None = None
         self._main_web = None
         self._closed = True
+        self._bg_lock = threading.Lock()
 
     def _hub_url(self) -> QUrl:
         package = mw.addonManager.addonFromModule("AI_Learning_Hub")
@@ -31,11 +34,19 @@ class AIHubView:
         return QUrl(f"http://127.0.0.1:{port}/_addons/{package}/web/index.html")
 
     @staticmethod
-    def _result(success: bool, data: dict | None = None, code: str = "", message: str = "") -> dict:
-        return {"success": success, "data": data or {}, "error_code": code, "message": message}
+    def _result(
+        success: bool, data: dict | None = None, code: str = "", message: str = ""
+    ) -> dict:
+        return {
+            "success": success,
+            "data": data or {},
+            "error_code": code,
+            "message": message,
+        }
 
     def _on_bridge_cmd(self, cmd: str) -> str:
         from core.logger import log
+
         try:
             msg = json.loads(cmd)
             action = msg.get("action", "")
@@ -45,32 +56,45 @@ class AIHubView:
                 return json.dumps(self._result(True))
             if action in BACKGROUND_ACTIONS:
                 if not request_id:
-                    return json.dumps(self._result(False, code="E_REQUEST_ID", message="Missing request id."))
+                    return json.dumps(
+                        self._result(
+                            False, code="E_REQUEST_ID", message="Missing request id."
+                        )
+                    )
                 payload = json.dumps({"action": action, "data": msg.get("data", {})})
                 mw.taskman.run_in_background(
                     lambda: self.engine.handle_js_message(payload),
                     partial(self._background_complete, request_id),
                 )
-                return json.dumps(self._result(True, {"pending": True, "request_id": request_id}))
-            return json.dumps(self.engine.handle_js_message(json.dumps({"action": action, "data": msg.get("data", {})})))
+                return json.dumps(
+                    self._result(True, {"pending": True, "request_id": request_id})
+                )
+            return json.dumps(
+                self.engine.handle_js_message(
+                    json.dumps({"action": action, "data": msg.get("data", {})})
+                )
+            )
         except Exception as exc:
             log.error(f"Bridge error: {exc}")
             return json.dumps(self._result(False, code="E_BRIDGE", message=str(exc)))
 
     def _background_complete(self, request_id: str, result) -> None:
-        if self._closed or not self._hub_web:
-            return
-        # Anki 25's taskman passes a concurrent.futures.Future to on_done.
-        # Older Anki variants may pass the task result directly, so support both.
-        try:
-            from core.task_results import resolve_background_result
-            response = resolve_background_result(result)
-        except Exception as exc:
-            response = self._result(False, code="E_BACKGROUND", message=str(exc))
-        js = "window.Bridge && window.Bridge.complete(%s, %s);" % (
-            json.dumps(request_id), json.dumps(response, ensure_ascii=False),
-        )
-        self._hub_web.eval(js)
+        with self._bg_lock:
+            if self._closed or not self._hub_web:
+                return
+            # Anki 2025's taskman passes a concurrent.futures.Future to on_done.
+            # Older Anki variants may pass the task result directly, so support both.
+            try:
+                from core.task_results import resolve_background_result
+
+                response = resolve_background_result(result)
+            except Exception as exc:
+                response = self._result(False, code="E_BACKGROUND", message=str(exc))
+            js = "window.Bridge && window.Bridge.complete(%s, %s);" % (
+                json.dumps(request_id),
+                json.dumps(response, ensure_ascii=False),
+            )
+            self._hub_web.eval(js)
 
     def _on_load_finished(self, ok: bool) -> None:
         if ok and self._hub_web:
@@ -91,7 +115,9 @@ class AIHubView:
         self._hub_web.loadFinished.connect(self._on_load_finished)
         self._tabs.addTab(self._hub_web, "AI Hub")
         self._tabs.setCurrentWidget(self._hub_web)
-        self._tabs.setStyleSheet("QTabBar::tab { min-width: 100px; padding: 6px 16px; }")
+        self._tabs.setStyleSheet(
+            "QTabBar::tab { min-width: 100px; padding: 6px 16px; }"
+        )
         mw.mainLayout.insertWidget(1, self._tabs)
         self._closed = False
         self._hub_web.load_url(self._hub_url())

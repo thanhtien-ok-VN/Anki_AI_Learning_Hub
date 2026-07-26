@@ -1,6 +1,4 @@
 from typing import Any
-from aqt import mw
-from anki.notes import Note
 
 from .base import GameModeBase
 
@@ -43,19 +41,5 @@ class StoryGeneratorMode(GameModeBase):
             "details": details,
         }
 
-    def save_to_anki(self, story: str, deck_name: str = "AI Learning") -> int:
-        model = mw.col.models.by_name("Basic")
-        if not model:
-            model = mw.col.models.current()
-        deck = mw.col.decks.by_name(deck_name)
-        if not deck:
-            deck_id = mw.col.decks.add_normal_deck_with_name(deck_name)
-        else:
-            deck_id = deck["id"]
-
-        note = Note(mw.col, model)
-        note["Front"] = "AI Story: Read & Comprehend"
-        note["Back"] = story
-        note.note_type()["did"] = deck_id
-        mw.col.add_note(note, deck_id)
-        return 1
+    def _format_anki_note(self, data: dict) -> tuple:
+        return ("AI Story: Read & Comprehend", data.get("story", ""))

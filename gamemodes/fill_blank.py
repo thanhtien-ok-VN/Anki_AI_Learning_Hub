@@ -1,6 +1,4 @@
 from typing import Any
-from aqt import mw
-from anki.notes import Note
 
 from .base import GameModeBase
 
@@ -41,22 +39,5 @@ class FillBlankMode(GameModeBase):
             "points": 1 if is_correct else 0,
         }
 
-    def save_to_anki(self, questions: list, deck_name: str = "AI Learning") -> int:
-        model = mw.col.models.by_name("Basic")
-        if not model:
-            model = mw.col.models.current()
-        deck = mw.col.decks.by_name(deck_name)
-        if not deck:
-            deck_id = mw.col.decks.add_normal_deck_with_name(deck_name)
-        else:
-            deck_id = deck["id"]
-
-        count = 0
-        for q in questions:
-            note = Note(mw.col, model)
-            note["Front"] = q.get("sentence_with_blank", "")
-            note["Back"] = q.get("full_sentence", "")
-            note.note_type()["did"] = deck_id
-            mw.col.add_note(note, deck_id)
-            count += 1
-        return count
+    def _format_anki_note(self, data: dict) -> tuple:
+        return (data.get("sentence_with_blank", ""), data.get("full_sentence", ""))

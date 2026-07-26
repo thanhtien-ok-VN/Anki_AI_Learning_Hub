@@ -1,6 +1,4 @@
 from typing import Any
-from aqt import mw
-from anki.notes import Note
 
 from .base import GameModeBase
 
@@ -49,23 +47,7 @@ class TabooMode(GameModeBase):
         result = self.api.generate_text(prompt)
         return result or ""
 
-    def save_to_anki(self, rounds: list, deck_name: str = "AI Learning") -> int:
-        model = mw.col.models.by_name("Basic")
-        if not model:
-            model = mw.col.models.current()
-        deck = mw.col.decks.by_name(deck_name)
-        if not deck:
-            deck_id = mw.col.decks.add_normal_deck_with_name(deck_name)
-        else:
-            deck_id = deck["id"]
-
-        count = 0
-        for r in rounds:
-            note = Note(mw.col, model)
-            forbidden = ", ".join(r.get("forbidden_words", []))
-            note["Front"] = f"Taboo: {r.get('secret_word', '')}\nCannot say: {forbidden}"
-            note["Back"] = r.get("ai_description", "")
-            note.note_type()["did"] = deck_id
-            mw.col.add_note(note, deck_id)
-            count += 1
-        return count
+    def _format_anki_note(self, data: dict) -> tuple:
+        forbidden = ", ".join(data.get("forbidden_words", []))
+        front = f"Taboo: {data.get('secret_word', '')}\nCannot say: {forbidden}"
+        return (front, data.get("ai_description", ""))

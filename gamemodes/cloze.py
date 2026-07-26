@@ -29,29 +29,17 @@ class ClozeMode(GameModeBase):
         }
 
     def check_answer(self, user_input: Any, correct: Any) -> dict:
-        user_word = str(user_input).strip().lower() if user_input else ""
-        correct_word = str(correct).strip().lower() if correct else ""
+        user_idx = int(user_input) if user_input is not None else -1
+        correct_idx = int(correct) if correct is not None else -1
         return {
-            "correct": user_word == correct_word,
-            "user_word": user_word,
-            "correct_word": correct_word,
-            "points": 1 if user_word == correct_word else 0,
+            "correct": user_idx == correct_idx,
+            "user_index": user_idx,
+            "correct_index": correct_idx,
+            "points": 1 if user_idx == correct_idx else 0,
         }
 
-    def save_to_anki(self, data: dict, deck_name: str = "AI Learning") -> int:
-        model = mw.col.models.by_name("Basic")
-        if not model:
-            model = mw.col.models.current()
-        deck = mw.col.decks.by_name(deck_name)
-        if not deck:
-            deck_id = mw.col.decks.add_normal_deck_with_name(deck_name)
-        else:
-            deck_id = deck["id"]
-
-        note = Note(mw.col, model)
-        paragraph = data.get("paragraph_full", "") or data.get("paragraph_with_blanks", "")
-        note["Front"] = "Cloze: Fill the blanks"
-        note["Back"] = paragraph
-        note.note_type()["did"] = deck_id
-        mw.col.add_note(note, deck_id)
-        return 1
+    def _format_anki_note(self, data: dict) -> tuple:
+        paragraph = data.get("paragraph_full", "") or data.get(
+            "paragraph_with_blanks", ""
+        )
+        return ("Cloze: Fill the blanks", paragraph)

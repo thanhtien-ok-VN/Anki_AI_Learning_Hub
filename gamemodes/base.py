@@ -45,7 +45,31 @@ class GameModeBase(ABC):
         return {"gamemode": self.name, "data": data}
 
     def load_context(self, ctx: dict) -> Optional[dict]:
-        raw = ctx.get("data", {}).get("result") if ctx else None
-        if raw:
+        raw = ctx.get("data") if isinstance(ctx, dict) else None
+        if raw and isinstance(raw, dict):
             return self.render_ui_data(raw)
         return None
+
+    def save_to_anki(self, data: dict, deck_name: str = "AI Learning") -> int:
+        from aqt import mw
+        from anki.notes import Note
+
+        model = mw.col.models.by_name("Basic")
+        if not model:
+            model = mw.col.models.current()
+        deck = mw.col.decks.by_name(deck_name)
+        if not deck:
+            deck_id = mw.col.decks.add_normal_deck_with_name(deck_name)
+        else:
+            deck_id = deck["id"]
+
+        note = Note(mw.col, model)
+        front, back = self._format_anki_note(data)
+        note["Front"] = front
+        note["Back"] = back
+        note.note_type()["did"] = deck_id
+        mw.col.add_note(note, deck_id)
+        return 1
+
+    def _format_anki_note(self, data: dict) -> tuple:
+        return (self.display_name, str(data))

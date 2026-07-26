@@ -1,7 +1,5 @@
 import random
 from typing import Any, Optional
-from aqt import mw
-from anki.notes import Note
 
 from .base import GameModeBase
 
@@ -44,7 +42,10 @@ class WordMatchingMode(GameModeBase):
         selected_pairs = kwargs.get("vocab_pairs") or []
 
         if selected_pairs:
-            pairs = [(pair.get("term", ""), pair.get("definition", "")) for pair in selected_pairs]
+            pairs = [
+                (pair.get("term", ""), pair.get("definition", ""))
+                for pair in selected_pairs
+            ]
         elif source == "deck":
             pairs = self._extract_from_deck(kwargs.get("deck_name", ""), count)
         else:
@@ -58,18 +59,18 @@ class WordMatchingMode(GameModeBase):
 
         return {
             "error": False,
-            "pairs": [
-                {"term": p[0], "definition": p[1]} for p in selected
-            ],
+            "pairs": [{"term": p[0], "definition": p[1]} for p in selected],
             "left_column": left,
             "right_column": right,
         }
 
     def _extract_from_deck(self, deck_name: str, count: int) -> list:
+        from aqt import mw
+
         pairs = []
         try:
             note_ids = mw.col.find_notes(f'deck:"{deck_name}"')
-            for nid in note_ids[:count * 3]:
+            for nid in note_ids[: count * 3]:
                 note = mw.col.get_note(nid)
                 fields = list(note.keys())
                 if len(fields) >= 2:
@@ -91,22 +92,5 @@ class WordMatchingMode(GameModeBase):
             "points": 1 if str(user_input) == str(correct) else 0,
         }
 
-    def save_to_anki(self, pairs: list, deck_name: str = "AI Learning") -> int:
-        model = mw.col.models.by_name("Basic")
-        if not model:
-            model = mw.col.models.current()
-        deck = mw.col.decks.by_name(deck_name)
-        if not deck:
-            deck_id = mw.col.decks.add_normal_deck_with_name(deck_name)
-        else:
-            deck_id = deck["id"]
-
-        count = 0
-        for p in pairs:
-            note = Note(mw.col, model)
-            note["Front"] = p.get("term", "")
-            note["Back"] = p.get("definition", "")
-            note.note_type()["did"] = deck_id
-            mw.col.add_note(note, deck_id)
-            count += 1
-        return count
+    def _format_anki_note(self, data: dict) -> tuple:
+        return (data.get("term", ""), data.get("definition", ""))
