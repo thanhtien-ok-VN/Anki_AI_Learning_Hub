@@ -1,0 +1,9 @@
+# AI Agent configuration & skills
+AI_Skills/
+.agents/
+AGENTS.md
+CLAUDE.md
+
+# Python cache files
+__pycache__/
+*.pyc
