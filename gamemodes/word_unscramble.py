@@ -60,7 +60,11 @@ class WordUnscrambleMode(GameModeBase):
         }
 
     def _format_anki_note(self, data: dict) -> tuple:
-        shuffled = " ".join(
-            self.fisher_yates_shuffle(data.get("correct_sentence", "").split())
-        )
+        shuffled = data.get("shuffled_words")
+        if isinstance(shuffled, list):
+            shuffled = " ".join(shuffled)
+        else:
+            shuffled = " ".join(
+                self.fisher_yates_shuffle(data.get("correct_sentence", "").split())
+            )
         return (f"Unscramble: {shuffled}", data.get("correct_sentence", ""))

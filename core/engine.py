@@ -230,8 +230,6 @@ class AIEngine:
                 "get_source_models": self._handle_get_source_models,
                 "get_source_fields": self._handle_get_source_fields,
                 "sample_vocab_pairs": self._handle_sample_vocab_pairs,
-                "get_deck_fields": self._handle_get_deck_fields,
-                "get_vocab_pairs": self._handle_get_vocab_pairs,
                 "set_ui_lang": self._handle_set_ui_lang,
                 "get_ui_lang": self._handle_get_ui_lang,
                 "get_ui_strings": self._handle_get_ui_strings,
@@ -489,20 +487,7 @@ class AIEngine:
             excluded_pair_keys=data.get("excluded_pair_keys", []),
         )
 
-    def _handle_get_deck_fields(self, data: dict) -> dict:
-        deck_name = data.get("deck_name", "")
-        if not deck_name:
-            return {"fields": []}
-        return {"fields": []}
 
-    def _handle_get_vocab_pairs(self, data: dict) -> dict:
-        deck_name = data.get("deck_name", "")
-        field_term = data.get("field_term", "")
-        field_def = data.get("field_def", "")
-        count = data.get("count", 50)
-        if not deck_name or not field_term or not field_def:
-            return {"pairs": []}
-        return {"pairs": [], "total": 0}
 
     def _handle_set_ui_lang(self, data: dict) -> dict:
         lang = data.get("lang", "vi")

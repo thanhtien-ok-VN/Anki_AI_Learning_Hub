@@ -17,7 +17,6 @@ class PromptManager:
         filename = f"{gamemode}.txt"
         lang_dir = os.path.join(self.prompts_dir, language)
         filepath = os.path.join(lang_dir, filename)
-        alt_filepath = os.path.join(lang_dir, filename)
 
         prompt = self._load(filepath)
         if not prompt:

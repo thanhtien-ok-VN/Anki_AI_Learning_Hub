@@ -40,11 +40,17 @@ class SentenceTransformMode(GameModeBase):
         if exact_match:
             keyword_score = 1.0
         elif user_norm and expected_norm:
-            user_words = set(user_norm.split())
-            expected_words = set(expected_norm.split())
-            if expected_words:
-                overlap = len(user_words & expected_words)
-                keyword_score = overlap / len(expected_words)
+            user_words = user_norm.split()
+            expected_words = expected_norm.split()
+            n, m = len(user_words), len(expected_words)
+            dp = [[0] * (m + 1) for _ in range(n + 1)]
+            for i in range(1, n + 1):
+                for j in range(1, m + 1):
+                    if user_words[i - 1] == expected_words[j - 1]:
+                        dp[i][j] = dp[i - 1][j - 1] + 1
+                    else:
+                        dp[i][j] = max(dp[i - 1][j], dp[i][j - 1])
+            keyword_score = dp[n][m] / m if m else 0
 
         is_correct = exact_match or (
             keyword_score > 0.8 and len(user_norm) > len(expected_norm) * 0.7

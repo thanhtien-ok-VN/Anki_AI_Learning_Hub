@@ -1,6 +1,4 @@
 from typing import Any
-from aqt import mw
-from anki.notes import Note
 
 from .base import GameModeBase
 
@@ -42,4 +40,5 @@ class ClozeMode(GameModeBase):
         paragraph = data.get("paragraph_full", "") or data.get(
             "paragraph_with_blanks", ""
         )
-        return ("Cloze: Fill the blanks", paragraph)
+        front = (data.get("paragraph_with_blanks", "") or "Cloze")[:80] + "..."
+        return (front, paragraph)

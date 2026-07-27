@@ -45,6 +45,12 @@ class TabooMode(GameModeBase):
             f"Reply with ONLY the word, nothing else."
         )
         result = self.api.generate_text(prompt)
+        if result:
+            result = result.strip().strip('"\'.,!?').strip()
+            for prefix in ["I think the word is ", "The word is ", "My guess is ", "It's ", "Is it "]:
+                if result.lower().startswith(prefix.lower()):
+                    result = result[len(prefix):].strip().strip('"\'.,!?').strip()
+                    break
         return result or ""
 
     def _format_anki_note(self, data: dict) -> tuple:

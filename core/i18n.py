@@ -12,13 +12,13 @@ def load_strings(lang: str) -> dict:
     if lang in _cache:
         return _cache[lang]
     path = os.path.join(LANG_DIR, f"{lang}.json")
-    if os.path.isfile(path):
-        with open(path, "r", encoding="utf-8") as f:
-            strings = json.load(f)
-    else:
+    if not os.path.isfile(path):
         path = os.path.join(LANG_DIR, f"{DEFAULT_LANG}.json")
+    try:
         with open(path, "r", encoding="utf-8") as f:
             strings = json.load(f)
+    except (json.JSONDecodeError, IOError, OSError):
+        strings = {}
     _cache[lang] = strings
     return strings
 

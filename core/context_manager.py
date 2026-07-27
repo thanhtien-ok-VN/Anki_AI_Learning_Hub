@@ -40,11 +40,18 @@ class ContextManager:
             return None
 
     def get_expired_seconds(self) -> Optional[int]:
-        ctx = self.load()
-        if not ctx:
+        if not os.path.isfile(self.path):
             return None
-        elapsed = time.time() - ctx.get("saved_at", 0)
-        return int(elapsed)
+        try:
+            with open(self.path, "r", encoding="utf-8") as f:
+                ctx = json.load(f)
+            elapsed = time.time() - ctx.get("saved_at", 0)
+            ttl = ctx.get("ttl", 3600)
+            if elapsed > ttl:
+                return int(elapsed - ttl)
+            return None
+        except (json.JSONDecodeError, KeyError, OSError):
+            return None
 
     def clear(self):
         try:

@@ -39,31 +39,27 @@ class TranslationMode(GameModeBase):
         user_text: str,
         level: str,
         learn_lang: str,
+        source_lang: str = "Vietnamese",
     ) -> dict:
         from core.ai_grader import TRANSLATION_GRADER
 
         prompt = TRANSLATION_GRADER.format(
-            source_lang="Vietnamese",
+            source_lang=source_lang,
             target_lang=learn_lang,
             source_text=source_text,
             expected_target=expected,
             user_target=user_text,
             level=level,
         )
-        from aqt import mw
+        if self.api:
+            result = self.api.generate_text(prompt, temperature=0.3)
+            if result:
+                import json
 
-        engine = getattr(mw, "ai_engine", None)
-        if engine:
-            client = engine._get_api_client()
-            if client:
-                result = client.generate_text(prompt, temperature=0.3)
-                if result:
-                    import json
-
-                    try:
-                        return json.loads(result)
-                    except Exception:
-                        pass
+                try:
+                    return json.loads(result)
+                except Exception:
+                    pass
         return {"correct": False, "score": 0, "explanation": "AI grading unavailable"}
 
     def _format_anki_note(self, data: dict) -> tuple:

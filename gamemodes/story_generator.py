@@ -42,4 +42,5 @@ class StoryGeneratorMode(GameModeBase):
         }
 
     def _format_anki_note(self, data: dict) -> tuple:
-        return ("AI Story: Read & Comprehend", data.get("story", ""))
+        front = (data.get("story", "") or "Story")[:80] + "..."
+        return (front, data.get("story", ""))
