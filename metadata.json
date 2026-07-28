@@ -1,0 +1,6 @@
+{
+  "name": "AI Learning Hub",
+  "description": "8 AI-powered language learning games using Gemini API (Fill-in-blank, Cloze, Translation, Word Unscramble, Matching, Story Generator, Sentence Transformation, Taboo)",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

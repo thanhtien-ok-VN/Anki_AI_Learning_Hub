@@ -1,3 +1,24 @@
+/* Polyfill pycmd for web browser environments outside Anki Qt */
+if (typeof window.pycmd !== 'function') {
+    window.pycmd = function(rawMessage, callback) {
+        let msg;
+        try {
+            msg = typeof rawMessage === 'string' ? JSON.parse(rawMessage) : rawMessage;
+        } catch (e) {
+            callback({ success: false, data: {}, error_code: 'E_BRIDGE_PARSE', message: e.message });
+            return;
+        }
+        fetch('/api/bridge', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(msg)
+        })
+        .then(res => res.json())
+        .then(data => callback(data))
+        .catch(err => callback({ success: false, data: {}, error_code: 'E_BRIDGE_NETWORK', message: err.message }));
+    };
+}
+
 /* A dependable pycmd client for an AnkiWebView served by the media server. */
 const Bridge = {
     _ready: false,

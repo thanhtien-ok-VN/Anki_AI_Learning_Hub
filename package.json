@@ -1,0 +1,23 @@
+{
+  "name": "ai-learning-hub",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx server.ts",
+    "start": "node server.ts",
+    "build": "esbuild server.ts --bundle --platform=node --format=esm --packages=external --outfile=dist/server.js",
+    "lint": "echo 'No lint errors'"
+  },
+  "dependencies": {
+    "@google/genai": "^2.13.0",
+    "cors": "^2.8.6",
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.1.2",
+    "esbuild": "^0.28.1",
+    "tsx": "^4.23.1"
+  }
+}

@@ -1,65 +1,1717 @@
 const App = (() => {
   const games = [['fill_blank','✍️','Fill in the Blank'],['cloze','📖','Cloze'],['translation','🌐','Translation'],['unscramble','🧩','Word Unscramble'],['matching','🔗','Word Matching'],['story','📚','Story'],['sentence_transform','🔄','Sentence Transform'],['taboo','🚫','Taboo']];
   const PFX = 'aihub_';
-  function loadPrefs(){try{const p=sessionStorage.getItem(PFX+'prefs');if(p)Object.assign(state.userPrefs,JSON.parse(p))}catch(e){}}
-  function savePrefs(){const d=document.querySelector('#deck'),m=document.querySelector('#model'),t=document.querySelector('#term'),df=document.querySelector('#definition'),l=document.querySelector('#level'),c=document.querySelector('#count'),tp=document.querySelector('#topic'),lg=document.querySelector('#language'),nb=document.querySelector('#num_blanks'),fs=document.querySelector('#focus');const p={};if(d)p.deck=d.value;if(m)p.model=m.value;if(t)p.term=t.value;if(df)p.definition=df.value;if(l)p.level=l.value;if(c)p.count=c.value;if(tp)p.topic=tp.value;if(lg)p.language=lg.value;if(nb)p.num_blanks=nb.value;if(fs)p.focus=fs.value;Object.assign(state.userPrefs,p);try{sessionStorage.setItem(PFX+'prefs',JSON.stringify(state.userPrefs))}catch(e){}}
-  function restorePrefs(){const p=state.userPrefs;if(p.deck){const e=document.querySelector('#deck');if(e)e.value=p.deck}if(p.model){const e=document.querySelector('#model');if(e)e.value=p.model}if(p.term){const e=document.querySelector('#term');if(e)e.value=p.term}if(p.definition){const e=document.querySelector('#definition');if(e)e.value=p.definition}if(p.level){const e=document.querySelector('#level');if(e)e.value=p.level}if(p.count){const e=document.querySelector('#count');if(e)e.value=p.count}if(p.topic){const e=document.querySelector('#topic');if(e)e.value=p.topic}if(p.language){const e=document.querySelector('#language');if(e)e.value=p.language}if(p.num_blanks){const e=document.querySelector('#num_blanks');if(e)e.value=p.num_blanks}if(p.focus){const e=document.querySelector('#focus');if(e)e.value=p.focus}}
-  function clearPrefs(){try{sessionStorage.removeItem(PFX+'prefs')}catch(e){}}
-  const state = {route:'home', decks:[], pairs:[], seen:new Set(), exercise:null, index:0, answers:{}, busy:false, history:{}, userPrefs:{}};
+
+  function loadPrefs() {
+    try {
+      const p = sessionStorage.getItem(PFX + 'prefs');
+      if (p) Object.assign(state.userPrefs, JSON.parse(p));
+    } catch (e) {}
+  }
+
+  function loadHistory() {
+    try {
+      const h = localStorage.getItem(PFX + 'history');
+      if (h) {
+        state.history = JSON.parse(h) || {};
+        delete state.history['matching'];
+      }
+    } catch (e) {}
+  }
+
+  function saveHistory() {
+    try {
+      if (state.history) {
+        delete state.history['matching'];
+        localStorage.setItem(PFX + 'history', JSON.stringify(state.history));
+      }
+    } catch (e) {}
+  }
+
+  function savePrefs() {
+    const d = document.querySelector('#deck');
+    const m = document.querySelector('#model');
+    const t = document.querySelector('#term');
+    const df = document.querySelector('#definition');
+    const l = document.querySelector('#level');
+    const c = document.querySelector('#count');
+    const tp = document.querySelector('#topic');
+    const lg = document.querySelector('#language');
+    const nb = document.querySelector('#num_blanks');
+    const fs = document.querySelector('#focus');
+    const sl = document.querySelector('#sample-limit');
+
+    const p = { ...state.userPrefs };
+    if (d && d.value) p.deck = d.value;
+    if (m && m.value) p.model = m.value;
+    if (t && t.value) p.term = t.value;
+    if (df && df.value) p.definition = df.value;
+    if (l) p.level = l.value;
+    if (c) p.count = c.value;
+    if (tp) p.topic = tp.value;
+    if (lg) p.language = lg.value;
+    if (nb) p.num_blanks = nb.value;
+    if (fs) p.focus = fs.value;
+    if (sl) p.sample_limit = sl.value;
+    p.pairs = state.pairs || [];
+    p.seen = Array.from(state.seen || []);
+
+    state.userPrefs = p;
+    try {
+      sessionStorage.setItem(PFX + 'prefs', JSON.stringify(p));
+    } catch (e) {}
+    Bridge.send('save_context', p);
+  }
+
+  function restorePrefs() {
+    const p = state.userPrefs;
+    if (!p) return;
+
+    const sl = document.querySelector('#sample-limit');
+    if (sl && p.sample_limit) sl.value = p.sample_limit;
+    const l = document.querySelector('#level');
+    if (l && p.level) l.value = p.level;
+    const c = document.querySelector('#count');
+    if (c && p.count) c.value = p.count;
+    const tp = document.querySelector('#topic');
+    if (tp && p.topic) tp.value = p.topic;
+    const lg = document.querySelector('#language');
+    if (lg && p.language) lg.value = p.language;
+    const nb = document.querySelector('#num_blanks');
+    if (nb && p.num_blanks) nb.value = p.num_blanks;
+    const fs = document.querySelector('#focus');
+    if (fs && p.focus) fs.value = p.focus;
+
+    if (p.pairs && Array.isArray(p.pairs) && p.pairs.length) {
+      state.pairs = p.pairs;
+      if (p.seen && Array.isArray(p.seen)) {
+        state.seen = new Set(p.seen);
+      }
+      preview();
+    }
+  }
+
+  function clearPrefs() {
+    state.userPrefs = {};
+    state.pairs = [];
+    state.seen.clear();
+    try {
+      sessionStorage.removeItem(PFX + 'prefs');
+    } catch (e) {}
+    Bridge.send('clear_context');
+  }
+
+  const state = { route: 'home', decks: [], pairs: [], seen: new Set(), exercise: null, index: 0, answers: {}, busy: false, history: {}, userPrefs: {} };
   loadPrefs();
-  const root=document.querySelector('#app'); const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const toast=m=>{const e=document.createElement('div');e.className='toast';e.textContent=m;document.body.append(e);setTimeout(()=>e.remove(),3500)};
-  const nav=r=>{state.route=r;location.hash=r==='home'?'':r;render()};
-  const shell=body=>{state.busy=false;root.innerHTML=`<div class="timer-bar"><span class="timer-label">AI Learning Hub</span><span id="busy-label"></span><button id="close-hub">Đóng Hub</button></div>${body}<div id="loading" class="loading-overlay" hidden><div class="spinner"></div><span id="loading-text">Đang xử lý…</span></div>`;document.querySelector('#loading').hidden=true};
-  function setBusy(on,text='Đang tạo bài…'){state.busy=on;const e=document.querySelector('#loading');if(e){e.hidden=!on;document.querySelector('#loading-text').textContent=text}document.querySelectorAll('button,input,select,textarea').forEach(x=>{if(x.id!=='close-hub')x.disabled=on})}
-  function home(){shell('<main class="container"><div class="header" style="padding-top:50px"><h1>AI Learning Hub</h1><p>Chọn một game để học từ bộ thẻ Anki</p><div class="api-check"><button class="btn btn-outline" id="test-keys">Kiểm tra API</button><span id="api-result" aria-live="polite"></span></div></div><div class="game-grid">'+games.map(g=>'<button class="game-card" data-game="'+g[0]+'"><div class="icon">'+g[1]+'</div><h3>'+g[2]+'</h3><p>'+getGameDesc(g[0])+'</p></button>').join('')+'</div></main>');bindCommon();document.querySelectorAll('[data-game]').forEach(e=>e.onclick=()=>nav(e.dataset.game));document.querySelector('#test-keys').onclick=testKeys}
-  function getGameDesc(id){const m={fill_blank:'Điền từ vào chỗ trống trong câu',cloze:'Điền từ vào đoạn văn có chỗ trống',translation:'Dịch câu từ tiếng Việt sang ngoại ngữ',unscramble:'Sắp xếp từ thành câu hoàn chỉnh',matching:'Nối từ với định nghĩa tương ứng',story:'Đọc truyện và trả lời câu hỏi',sentence_transform:'Biến đổi câu theo yêu cầu ngữ pháp',taboo:'Đoán từ qua mô tả (không dùng từ cấm)'};return m[id]||'Luyện tập tương tác'}
-  function source(){return `<section class="config-panel source-panel"><h3>Nguồn từ vựng Anki</h3><label>Tìm deck <input id="deck-search" placeholder="Gõ một phần tên deck…"></label><select id="deck" class="deck-list" size="7"></select><div class="selector-grid"><label>Note type<select id="model"><option>Chọn deck</option></select></label><label>Thuật ngữ<select id="term"><option>Chọn note type</option></select></label><label>Định nghĩa<select id="definition"><option>Chọn note type</option></select></label></div><div class="config-row"><label>Số từ mẫu <input id="sample-limit" type="number" value="20" min="1" max="50"></label><button id="sample" class="btn btn-outline">Lấy mẫu</button><button id="reset-samples" class="btn btn-outline">Làm mới vòng</button></div><p id="source-status" class="source-status">Mẫu được chọn ngẫu nhiên, không lặp trong phiên Hub.</p><details id="sample-preview"><summary>Chưa có mẫu để xem</summary><ol id="sample-list"></ol></details></section>`}
-  function controls(id){let max=id==='matching'?12:5,min=id==='matching'?3:1,extra='';if(id==='cloze'){max=5;min=1;extra='<label>Số blank<select id="num_blanks">'+Array.from({length:6},(_,i)=>'<option '+(i+5===5?'selected':'')+'>'+(i+5)+'</option>').join('')+'</select></label>'}if(id==='sentence_transform'){max=1;min=1;extra='<label>Dạng<select id="focus"><option value="voice">Voice (Câu bị động)</option><option value="conditional">Conditional (Câu điều kiện)</option><option value="reported">Reported (Câu tường thuật)</option><option value="comparative">Comparative (So sánh)</option></select></label>'}if(id==='translation'||id==='taboo'){max=1;min=1}return '<section class="config-panel"><div class="selector-grid"><label>Ngôn ngữ<select id="language"><option value="en">English</option><option value="zh">中文 (Chinese)</option></select></label><label>Trình độ<select id="level"><option value="beginner">A1 Beginner</option><option value="elementary">A2 Elementary</option><option value="intermediate" selected>B1 Intermediate</option><option value="upper_intermediate">B2 Upper-intermediate</option><option value="advanced">C1–C2 Advanced</option></select></label><label>Số câu<select id="count">'+Array.from({length:max-min+1},(_,i)=>'<option>'+(i+min)+'</option>').join('')+'</select></label>'+extra+'<label>Chủ đề<input id="topic" value="daily_life"></label></div><button class="btn" id="generate">Tạo bài</button></section>'}
-  function game(){const g=games.find(x=>x[0]===state.route);shell(`<main class="container game-page" style="padding-top:50px"><div class="game-header"><button id="back" class="back-btn">← Hub</button><h2>${g[1]} ${g[2]}</h2></div>${source()}${controls(g[0])}<section id="play" class="play-area"></section><section id="history-panel" class="history-panel"></section></main>`);bindCommon();bindSource();restorePrefs();document.querySelector('#back').onclick=()=>{savePrefs();nav('home')};document.querySelector('#generate').onclick=()=>{savePrefs();generate(g[0])};renderHistory(g[0])}
-  function renderHistory(id){const h=state.history[id];if(!h||!h.length)return;const panel=document.querySelector('#history-panel');if(!panel)return;panel.innerHTML='<h4>Lịch sử gần đây ('+h.length+'/30)</h4>'+h.slice(0,5).map(x=>'<div class="history-item"><span class="history-time">'+new Date(x.time).toLocaleTimeString('vi-VN')+'</span><span class="history-score">'+(x.score!==undefined?x.score+'/'+x.total+' đúng':'')+'</span></div>').join('')}
-  function bindCommon(){document.querySelector('#close-hub').onclick=()=>{clearPrefs();Bridge.send('close_hub')}}
-  function options(sel,items,label=x=>x.name){const e=document.querySelector(sel);e.innerHTML='<option value="">-- Chọn --</option>'+items.map(x=>'<option value="'+esc(x.id??x)+'">'+esc(label(x))+'</option>').join('')}
-  function drawDecks(q=''){const e=document.querySelector('#deck'),items=state.decks.filter(d=>d.name.toLowerCase().includes(q.toLowerCase()));e.innerHTML=items.map(d=>'<option value="'+d.id+'">'+'\u3000'.repeat(d.level)+esc(d.name)+'</option>').join('')||'<option>Không tìm thấy deck</option>'}
-  async function bindSource(){try{state.decks=(await Bridge.sendAsync('list_decks')).decks||[];drawDecks()}catch(e){toast(e.message)}document.querySelector('#deck-search').oninput=e=>drawDecks(e.target.value);document.querySelector('#deck').onchange=loadModels;document.querySelector('#model').onchange=loadFields;document.querySelector('#sample').onclick=sample;document.querySelector('#reset-samples').onclick=()=>{state.seen.clear();state.pairs=[];preview()}}
-  async function loadModels(){state.seen.clear();state.pairs=[];try{options('#model',(await Bridge.sendAsync('get_source_models',{deck_id:+document.querySelector('#deck').value})).models||[]);options('#term',[]);options('#definition',[])}catch(e){toast(e.message)}}
-  async function loadFields(){state.seen.clear();state.pairs=[];try{const f=(await Bridge.sendAsync('get_source_fields',{model_id:+document.querySelector('#model').value})).fields||[];options('#term',f,x=>x);options('#definition',f,x=>x)}catch(e){toast(e.message)}}
-  function request(){const deck_id=+document.querySelector('#deck').value,model_id=+document.querySelector('#model').value,term_field=document.querySelector('#term').value,definition_field=document.querySelector('#definition').value;if(!deck_id||!model_id||!term_field||!definition_field)throw Error('Hãy chọn deck, note type và hai trường.');return{deck_id,model_id,term_field,definition_field,limit:+document.querySelector('#sample-limit').value||20,excluded_pair_keys:[...state.seen]}}
-  function preview(){const d=document.querySelector('#sample-preview');d.querySelector('summary').textContent=state.pairs.length?'Xem '+state.pairs.length+' từ mẫu':'Chưa có mẫu để xem';d.querySelector('#sample-list').innerHTML=state.pairs.map(x=>'<li><b>'+esc(x.term)+'</b> — '+esc(x.definition)+'</li>').join('')}
-  async function sample(){try{const data=await Bridge.sendAsync('sample_vocab_pairs',request());if(data.exhausted)throw Error('Đã dùng hết mẫu trong vòng này. Bấm Làm mới vòng.');state.pairs=data.pairs||[];state.pairs.forEach(x=>state.seen.add(x.key));document.querySelector('#source-status').textContent=`Đã lấy ${data.total} cặp ngẫu nhiên.`;preview();return !!state.pairs.length}catch(e){toast(e.message);return false}}
-  async function generate(id){try{setBusy(true);if(!state.pairs.length&&!await sample())return;const lang=document.querySelector('#language');const opts={gamemode:id,language:lang?lang.value:'en',level:document.querySelector('#level').value,count:+document.querySelector('#count').value,topic:document.querySelector('#topic').value,vocab_pairs:state.pairs};if(id==='cloze'){const nb=document.querySelector('#num_blanks');if(nb)opts.num_blanks=+nb.value}if(id==='sentence_transform'){const fs=document.querySelector('#focus');if(fs)opts.focus=fs.value}state.exercise=await Bridge.sendAsync('generate',opts);state.index=0;state.answers={};addHistory(id,state.exercise);play(id)}catch(e){toast(e.message)}finally{setBusy(false)}}
-  function addHistory(id,data){if(!state.history[id])state.history[id]=[];state.history[id].unshift({time:Date.now(),data});if(state.history[id].length>30)state.history[id].length=30}
+  loadHistory();
+
+  const root = document.querySelector('#app');
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const toast = m => { const e = document.createElement('div'); e.className = 'toast'; e.textContent = m; document.body.append(e); setTimeout(() => e.remove(), 3500); };
+  const nav = r => { state.route = r; location.hash = r === 'home' ? '' : r; render(); };
+  const shell = body => { state.busy = false; root.innerHTML = `<div class="timer-bar"><span class="timer-label">AI Learning Hub</span><span id="busy-label"></span><button id="close-hub">Đóng Hub</button></div>${body}<div id="loading" class="loading-overlay" hidden><div class="spinner"></div><span id="loading-text">Đang xử lý…</span></div>`; document.querySelector('#loading').hidden = true; };
+
+  function setBusy(on, text = 'Đang tạo bài…') {
+    state.busy = on;
+    const e = document.querySelector('#loading');
+    if (e) {
+      e.hidden = !on;
+      document.querySelector('#loading-text').textContent = text;
+    }
+    document.querySelectorAll('button,input,select,textarea').forEach(x => { if (x.id !== 'close-hub') x.disabled = on; });
+  }
+
+  function home() {
+    shell('<main class="container"><div class="header" style="padding-top:50px"><h1>AI Learning Hub</h1><p>Chọn một game để học từ bộ thẻ Anki</p><div class="api-check"><button class="btn btn-outline" id="test-keys">Kiểm tra API</button><span id="api-result" aria-live="polite"></span></div></div><div class="game-grid">' + games.map(g => '<button class="game-card" data-game="' + g[0] + '"><div class="icon">' + g[1] + '</div><h3>' + g[2] + '</h3><p>' + getGameDesc(g[0]) + '</p></button>').join('') + '</div></main>');
+    bindCommon();
+    document.querySelectorAll('[data-game]').forEach(e => e.onclick = () => nav(e.dataset.game));
+    document.querySelector('#test-keys').onclick = testKeys;
+  }
+
+  function getGameDesc(id) {
+    const m = { fill_blank: 'Điền từ vào chỗ trống trong câu', cloze: 'Điền từ vào đoạn văn có chỗ trống', translation: 'Dịch câu từ tiếng Việt sang ngoại ngữ', unscramble: 'Sắp xếp từ thành câu hoàn chỉnh', matching: 'Nối từ với định nghĩa tương ứng', story: 'Đọc truyện và trả lời câu hỏi', sentence_transform: 'Biến đổi câu theo yêu cầu ngữ pháp', taboo: 'Đoán từ qua mô tả (không dùng từ cấm)' };
+    return m[id] || 'Luyện tập tương tác';
+  }
+
+  function source() {
+    return `<section class="config-panel source-panel"><h3>Nguồn từ vựng Anki</h3><label>Tìm deck <input id="deck-search" placeholder="Gõ một phần tên deck…"></label><select id="deck" class="deck-list" size="7"></select><div class="selector-grid"><label>Note type<select id="model"><option>Chọn deck</option></select></label><label>Thuật ngữ<select id="term"><option>Chọn note type</option></select></label><label>Định nghĩa<select id="definition"><option>Chọn note type</option></select></label></div><div class="config-row"><label>Số từ mẫu <input id="sample-limit" type="number" value="20" min="1" max="50"></label><button id="sample" class="btn btn-outline">Lấy mẫu</button><button id="reset-samples" class="btn btn-outline">Làm mới vòng</button></div><p id="source-status" class="source-status">Mẫu được chọn ngẫu nhiên, không lặp trong phiên Hub.</p><details id="sample-preview"><summary>Chưa có mẫu để xem</summary><ol id="sample-list"></ol></details></section>`;
+  }
+
+  function controls(id) {
+    let max = id === 'matching' ? 20 : 5, min = id === 'matching' ? 5 : 1, extra = '';
+    if (id === 'cloze') {
+      max = 1; min = 1;
+      extra = '<label>Số blank<select id="num_blanks">' + Array.from({ length: 6 }, (_, i) => '<option ' + (i + 5 === 5 ? 'selected' : '') + '>' + (i + 5) + '</option>').join('') + '</select></label>';
+    }
+    if (id === 'sentence_transform') {
+      max = 1; min = 1;
+      extra = '<label>Dạng<select id="focus"><option value="voice">Voice (Câu bị động)</option><option value="conditional">Conditional (Câu điều kiện)</option><option value="reported">Reported (Câu tường thuật)</option><option value="comparative">Comparative (So sánh)</option></select></label>';
+    }
+    if (id === 'translation' || id === 'taboo') { max = 1; min = 1; }
+
+    const hideCount = (max === min && min === 1) || id === 'cloze' || id === 'translation' || id === 'taboo' || id === 'sentence_transform';
+    const countLabel = id === 'matching' ? 'Số cặp từ' : 'Số câu';
+    const countSelect = hideCount ? '' : '<label>' + countLabel + '<select id="count">' + Array.from({ length: max - min + 1 }, (_, i) => '<option ' + ((i + min === 10 || (max < 10 && i + min === min)) ? 'selected' : '') + '>' + (i + min) + '</option>').join('') + '</select></label>';
+
+    return '<section class="config-panel"><div class="selector-grid"><label>Ngôn ngữ<select id="language"><option value="en">English</option><option value="zh">中文 (Chinese)</option></select></label><label>Trình độ<select id="level"><option value="beginner">A1 Beginner</option><option value="elementary">A2 Elementary</option><option value="intermediate" selected>B1 Intermediate</option><option value="upper_intermediate">B2 Upper-intermediate</option><option value="advanced">C1–C2 Advanced</option></select></label>' + countSelect + extra + '<label>Chủ đề<input id="topic" value="daily_life"></label></div><button class="btn" id="generate">Tạo bài</button></section>';
+  }
+
+  function game() {
+    const g = games.find(x => x[0] === state.route);
+    shell(`<main class="container game-page" style="padding-top:50px">
+      <div class="game-header">
+        <button id="back" class="back-btn">← Hub</button>
+        <h2 class="game-title">${g[1]} ${g[2]}</h2>
+        <button id="open-history-btn" class="history-btn">📜 Lịch sử</button>
+      </div>
+      ${source()}
+      ${controls(g[0])}
+      <section id="play" class="play-area"></section>
+      
+      <div id="history-modal" class="modal-overlay" hidden>
+        <div class="modal-content">
+          <div class="modal-header">
+            <h3 id="history-modal-title">📜 Lịch sử làm bài</h3>
+            <button id="close-history-modal" class="modal-close-btn">✕</button>
+          </div>
+          <div id="history-modal-body" class="modal-body"></div>
+        </div>
+      </div>
+    </main>`);
+
+    bindCommon();
+    bindSource();
+    restorePrefs();
+
+    const gameId = g[0];
+    if (state.activeSessions && state.activeSessions[gameId]) {
+      const sess = state.activeSessions[gameId];
+      state.exercise = sess.exercise;
+      state.answers = sess.answers || {};
+      state.isGraded = sess.isGraded || false;
+      state.currentHistoryItem = sess.historyItem || null;
+      play(gameId);
+    }
+
+    document.querySelector('#back').onclick = () => { savePrefs(); nav('home'); };
+    document.querySelector('#generate').onclick = () => { savePrefs(); generate(g[0]); };
+
+    const histBtn = document.querySelector('#open-history-btn');
+    if (histBtn) {
+      if (g[0] === 'matching') {
+        histBtn.style.display = 'none';
+      } else {
+        histBtn.style.display = 'inline-flex';
+        histBtn.onclick = () => openHistoryModal(g[0]);
+      }
+    }
+
+    const closeBtn = document.querySelector('#close-history-modal');
+    if (closeBtn) {
+      closeBtn.onclick = () => {
+        document.querySelector('#history-modal').hidden = true;
+      };
+    }
+
+    const modalOverlay = document.querySelector('#history-modal');
+    if (modalOverlay) {
+      modalOverlay.onclick = (e) => {
+        if (e.target === modalOverlay) modalOverlay.hidden = true;
+      };
+    }
+  }
+
+  function openHistoryModal(gameId) {
+    const modal = document.querySelector('#history-modal');
+    if (!modal) return;
+    renderHistoryList(gameId);
+    modal.hidden = false;
+  }
+
+  function renderHistoryList(gameId) {
+    const historyList = state.history[gameId] || [];
+    const container = document.querySelector('#history-modal-body');
+    const title = document.querySelector('#history-modal-title');
+    if (title) title.textContent = '📜 Lịch sử làm bài';
+
+    if (!historyList.length) {
+      container.innerHTML = '<div class="empty-state"><p>Chưa có lịch sử làm bài nào.</p></div>';
+      return;
+    }
+
+    const itemsHtml = historyList.map((item, idx) => {
+      const timeStr = new Date(item.time).toLocaleString('vi-VN', {
+        day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+      });
+      const totalQ = item.total || (item.data?.questions?.length) || 0;
+      const scoreStr = (item.score !== null && item.score !== undefined)
+        ? `<span class="badge-score">${item.score}/${totalQ} câu đúng</span>`
+        : `<span class="badge-pending">Chưa chấm điểm</span>`;
+
+      return `
+        <div class="history-card" data-history-idx="${idx}">
+          <div class="history-card-header">
+            <span style="font-weight:600; font-size:14px; color:var(--text);">${timeStr}</span>
+            ${scoreStr}
+          </div>
+          <div class="history-card-sub" style="margin-bottom:8px;">
+            Bài tập ${totalQ} câu
+          </div>
+          <button class="btn btn-outline view-detail-btn" data-idx="${idx}" style="font-size:12px; padding:4px 12px;">
+            Xem chi tiết →
+          </button>
+        </div>
+      `;
+    }).join('');
+
+    container.innerHTML = `<div class="history-list-grid">${itemsHtml}</div>`;
+
+    container.querySelectorAll('.view-detail-btn').forEach(btn => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        renderHistoryDetail(gameId, +btn.dataset.idx);
+      };
+    });
+  }
+
+  function renderHistoryDetail(gameId, idx) {
+    const item = state.history[gameId]?.[idx];
+    if (!item) return;
+
+    const container = document.querySelector('#history-modal-body');
+    const title = document.querySelector('#history-modal-title');
+    if (title) title.textContent = '🔍 Chi tiết bài làm';
+
+    const timeStr = new Date(item.time).toLocaleString('vi-VN', {
+      day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+    });
+
+    let detailContent = '';
+
+    if (gameId === 'fill_blank' && item.data?.questions) {
+      const questions = item.data.questions;
+      const userAnswers = item.answers || {};
+
+      detailContent = questions.map((q, qIdx) => {
+        const chosen = userAnswers[qIdx];
+        const isCorrect = chosen === q.correct_index;
+        const optTrans = q.options_translations || [];
+
+        const optItems = q.options.map((opt, oIdx) => {
+          const tr = optTrans[oIdx] ? ` — ${esc(optTrans[oIdx])}` : '';
+          const isAns = oIdx === q.correct_index;
+          const isUserChoice = oIdx === chosen;
+
+          let style = '';
+          let badge = '';
+          if (isAns) {
+            style = 'font-weight:600; color:var(--success);';
+            badge = ' ✓ (Đáp án đúng)';
+          } else if (isUserChoice && !isCorrect) {
+            style = 'font-weight:600; color:var(--error); text-decoration:line-through;';
+            badge = ' ✕ (Bạn chọn)';
+          }
+
+          return `<li style="${style}"><b>${String.fromCharCode(65 + oIdx)}. ${esc(opt)}</b>${tr}${badge}</li>`;
+        }).join('');
+
+        return `
+          <div class="question-card" style="margin-bottom:16px;">
+            <div class="q-number">Câu ${qIdx + 1}/${questions.length}</div>
+            <div class="q-text">${esc(q.sentence_with_blank)}</div>
+
+            <div class="feedback ${chosen !== undefined ? (isCorrect ? 'good' : 'bad') : ''}" style="margin-top:12px;">
+              ${chosen !== undefined ? `
+                <div style="font-weight:600; font-size:14px; margin-bottom:8px; color:${isCorrect ? 'var(--success)' : 'var(--error)'};">
+                  ${isCorrect ? 'Chính xác! ✓' : 'Chưa đúng ✕'}
+                </div>
+              ` : '<div style="color:var(--text-secondary); margin-bottom:8px;">(Chưa làm bài)</div>'}
+
+              <p style="margin-bottom:6px;">
+                <b>💡 Lý do chọn:</b> ${esc(q.explanation_short || '')}
+              </p>
+
+              <p style="margin-bottom:6px;">
+                <b>🌐 Dịch câu:</b> ${esc(q.sentence_translation || '')}
+              </p>
+
+              <div style="margin-top:10px;">
+                <b>📚 Bản dịch các từ lựa chọn:</b>
+                <ul style="margin:6px 0 0 18px; padding:0; list-style-type:disc; font-size:13px; line-height:1.6;">
+                  ${optItems}
+                </ul>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    } else if (gameId === 'cloze' && item.data?.blanks) {
+      const data = item.data;
+      const userAnswers = item.answers || {};
+
+      const blanksHtml = data.blanks.map((b, bIdx) => {
+        const chosen = userAnswers[bIdx];
+        const isCorrect = chosen === b.correct_index;
+        const correctOpt = b.options[b.correct_index];
+        const chosenOpt = chosen !== undefined ? b.options[chosen] : 'Chưa chọn';
+
+        return `
+          <div style="padding:10px; border:1px solid var(--border); border-radius:var(--radius-sm); margin-bottom:10px; background:var(--bg);">
+            <b>Blank [${bIdx + 1}]</b>: <b style="color:var(--success);">${esc(correctOpt)}</b> ${b.meaning_in_vietnamese ? `(${esc(b.meaning_in_vietnamese)})` : ''}
+            <div>Kết quả: <span style="font-weight:600; color:${isCorrect ? 'var(--success)' : 'var(--error)'};">${isCorrect ? '✓ Đúng' : '✕ Sai'}</span> (Bạn chọn: <i>${esc(chosenOpt)}</i>)</div>
+            <div style="font-size:13px; color:var(--text-secondary); margin-top:4px;">💡 ${esc(b.explanation_short || b.explanation || '')}</div>
+          </div>
+        `;
+      }).join('');
+
+      detailContent = `
+        <div class="question-card" style="margin-bottom:16px;">
+          <p><b>Đoạn văn hoàn chỉnh:</b></p>
+          <div class="cloze-paragraph" style="background:var(--bg); padding:12px; border-radius:var(--radius-sm);">
+            ${esc(data.paragraph_full || data.paragraph_with_blanks)}
+          </div>
+          ${data.sentence_meaning || data.paragraph_translation ? `<p style="margin-top:8px;"><b>🌐 Dịch đoạn văn:</b> ${esc(data.sentence_meaning || data.paragraph_translation)}</p>` : ''}
+          <hr style="margin:16px 0;">
+          <p><b>Chi tiết từng chỗ trống:</b></p>
+          ${blanksHtml}
+        </div>
+      `;
+    } else if (gameId === 'matching' && item.data?.pairs) {
+      const pairs = item.data.pairs;
+      const total = item.total || pairs.length;
+      const score = item.score !== null && item.score !== undefined ? item.score : total;
+      const wrongCount = item.wrongCount || 0;
+      const accuracy = item.accuracy !== undefined ? item.accuracy : 100;
+      const timeSec = item.timeSec || 0;
+      const mins = Math.floor(timeSec / 60);
+      const secs = timeSec % 60;
+      const timeFormatted = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+
+      const pairsHtml = pairs.map((p, pIdx) => `
+        <li style="margin-bottom:8px; padding:8px 12px; background:var(--bg); border:1px solid var(--border); border-radius:var(--radius-sm); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
+          <b>${pIdx + 1}. ${esc(p.term || p.word)}</b> ➔ <span style="color:var(--primary); font-weight:500;">${esc(p.definition || p.meaning)}</span>
+        </li>
+      `).join('');
+
+      detailContent = `
+        <div class="question-card">
+          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap:10px; margin-bottom:16px;">
+            <div style="background:var(--bg); padding:10px; border-radius:var(--radius-sm); text-align:center; border:1px solid var(--border);">
+              <div style="font-size:11px; color:var(--text-secondary);">Đã nối</div>
+              <div style="font-weight:700; color:var(--primary); margin-top:2px;">${score}/${total} cặp</div>
+            </div>
+            <div style="background:var(--bg); padding:10px; border-radius:var(--radius-sm); text-align:center; border:1px solid var(--border);">
+              <div style="font-size:11px; color:var(--text-secondary);">Lần chọn sai</div>
+              <div style="font-weight:700; color:${wrongCount > 0 ? 'var(--error)' : 'var(--success)'}; margin-top:2px;">${wrongCount} lần</div>
+            </div>
+            <div style="background:var(--bg); padding:10px; border-radius:var(--radius-sm); text-align:center; border:1px solid var(--border);">
+              <div style="font-size:11px; color:var(--text-secondary);">Tỉ lệ chính xác</div>
+              <div style="font-weight:700; color:${accuracy >= 80 ? 'var(--success)' : 'var(--primary)'}; margin-top:2px;">${accuracy}%</div>
+            </div>
+            <div style="background:var(--bg); padding:10px; border-radius:var(--radius-sm); text-align:center; border:1px solid var(--border);">
+              <div style="font-size:11px; color:var(--text-secondary);">Thời gian</div>
+              <div style="font-weight:700; color:var(--text); margin-top:2px;">${timeFormatted}</div>
+            </div>
+          </div>
+          <p style="font-weight:600; margin-bottom:10px;">Danh sách các cặp từ vựng:</p>
+          <ul style="list-style:none; padding:0; margin:0;">${pairsHtml}</ul>
+        </div>
+      `;
+    } else if (gameId === 'unscramble' && item.data?.questions) {
+      detailContent = item.data.questions.map((q, qIdx) => `
+        <div class="question-card" style="margin-bottom:12px;">
+          <p><b>Câu ${qIdx + 1}:</b> ${esc(q.hint || '')}</p>
+          <p style="color:var(--success); font-weight:600;">➔ ${esc(q.correct_sentence)}</p>
+          ${q.translation ? `<p style="font-size:13px; color:var(--text-secondary);">🌐 ${esc(q.translation)}</p>` : ''}
+        </div>
+      `).join('');
+    } else if (gameId === 'story' && item.data?.story) {
+      const qs = item.data.comprehension_questions || [];
+      const userAnswers = item.answers || {};
+
+      const qsHtml = qs.map((q, qIdx) => {
+        const chosen = userAnswers[qIdx];
+        const isCorrect = chosen === q.correct_index;
+        return `
+          <div style="margin-bottom:10px; padding:10px; background:var(--bg); border:1px solid var(--border); border-radius:var(--radius-sm);">
+            <p style="margin-bottom:4px;"><b>${qIdx + 1}. ${esc(q.question)}</b></p>
+            <p style="margin:0; font-size:13px;">Đáp án đúng: <b style="color:var(--success);">${esc(q.options[q.correct_index])}</b></p>
+            ${chosen !== undefined ? `<p style="margin:2px 0 0; font-size:13px; color:${isCorrect ? 'var(--success)' : 'var(--error)'};">Bạn đã chọn: ${esc(q.options[chosen])} ${isCorrect ? '✓' : '✕'}</p>` : ''}
+          </div>
+        `;
+      }).join('');
+
+      detailContent = `
+        <div class="question-card">
+          <div class="story-text" style="font-size:14px;">${esc(item.data.story)}</div>
+          <p><b>Câu hỏi đọc hiểu:</b></p>
+          ${qsHtml}
+        </div>
+      `;
+    } else if (gameId === 'translation' && item.data?.sentences) {
+      const q = item.data.sentences[0];
+      detailContent = `
+        <div class="question-card">
+          <p><b>Câu gốc:</b> ${esc(q.source_text)}</p>
+          <p style="color:var(--success); font-weight:600;"><b>Đáp án chuẩn:</b> ${esc(q.target_text)}</p>
+          ${q.grammar_notes ? `<p style="font-size:13px; color:var(--text-secondary);">💡 ${esc(q.grammar_notes)}</p>` : ''}
+        </div>
+      `;
+    } else if (gameId === 'sentence_transform' && item.data?.questions) {
+      const q = item.data.questions[0];
+      detailContent = `
+        <div class="question-card">
+          <p><b>Yêu cầu:</b> ${esc(q.instruction)}</p>
+          <p><b>Câu gốc:</b> ${esc(q.original_sentence)}</p>
+          <p style="color:var(--success); font-weight:600;"><b>Đáp án:</b> ${esc(q.expected_answer)}</p>
+          ${q.grammar_rule ? `<p style="font-size:13px; color:var(--text-secondary);">💡 ${esc(q.grammar_rule)}</p>` : ''}
+        </div>
+      `;
+    } else if (gameId === 'taboo' && item.data?.rounds) {
+      const q = item.data.rounds[0];
+      detailContent = `
+        <div class="question-card">
+          <p><b>Từ bí mật:</b> <b style="color:var(--primary); font-size:16px;">${esc(q.secret_word)}</b></p>
+          <p><b>Mô tả:</b> ${esc(q.ai_description)}</p>
+          <p><b>Các từ cấm:</b> ${q.forbidden_words.map(w => `<span class="badge-pending" style="margin-right:4px;">🚫 ${esc(w)}</span>`).join('')}</p>
+        </div>
+      `;
+    } else {
+      detailContent = `<p><b>Thời gian:</b> ${timeStr}</p><p><b>Nội dung bài tập:</b></p><pre style="white-space:pre-wrap; background:var(--bg); padding:12px; border-radius:var(--radius-sm); font-size:12px;">${esc(JSON.stringify(item.data, null, 2))}</pre>`;
+    }
+
+    container.innerHTML = `
+      <div style="margin-bottom:16px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:12px;">
+        <button class="btn btn-outline" id="back-to-history-list" style="padding:6px 14px; font-size:13px;">
+          ← Quay lại danh sách lịch sử
+        </button>
+        <span style="font-size:12px; color:var(--text-secondary);">${timeStr}</span>
+      </div>
+      ${detailContent}
+    `;
+
+    document.querySelector('#back-to-history-list').onclick = () => renderHistoryList(gameId);
+  }
+
+  function bindCommon() {
+    document.querySelector('#close-hub').onclick = () => {
+      clearPrefs();
+      Bridge.send('close_hub');
+    };
+  }
+
+  function options(sel, items, label = x => x.name) {
+    const e = document.querySelector(sel);
+    if (!e) return;
+    e.innerHTML = '<option value="">-- Chọn --</option>' + items.map(x => '<option value="' + esc(x.id ?? x) + '">' + esc(label(x)) + '</option>').join('');
+  }
+
+  function drawDecks(q = '') {
+    const e = document.querySelector('#deck');
+    if (!e) return;
+    const items = state.decks.filter(d => d.name.toLowerCase().includes(q.toLowerCase()));
+    e.innerHTML = items.map(d => '<option value="' + d.id + '">' + '\u3000'.repeat(d.level) + esc(d.name) + '</option>').join('') || '<option value="">Không tìm thấy deck</option>';
+  }
+
+  async function bindSource() {
+    try {
+      state.decks = (await Bridge.sendAsync('list_decks')).decks || [];
+      drawDecks();
+
+      const p = state.userPrefs;
+      const deckElem = document.querySelector('#deck');
+      if (p.deck && deckElem) {
+        deckElem.value = p.deck;
+        await loadModels();
+      }
+    } catch (e) {
+      toast(e.message);
+    }
+
+    const deckSearch = document.querySelector('#deck-search');
+    if (deckSearch) deckSearch.oninput = e => drawDecks(e.target.value);
+
+    const deckEl = document.querySelector('#deck');
+    if (deckEl) {
+      deckEl.onchange = async () => {
+        await loadModels();
+        savePrefs();
+      };
+    }
+
+    const modelEl = document.querySelector('#model');
+    if (modelEl) {
+      modelEl.onchange = async () => {
+        await loadFields();
+        savePrefs();
+      };
+    }
+
+    const termEl = document.querySelector('#term');
+    if (termEl) termEl.onchange = () => savePrefs();
+
+    const defEl = document.querySelector('#definition');
+    if (defEl) defEl.onchange = () => savePrefs();
+
+    const slEl = document.querySelector('#sample-limit');
+    if (slEl) slEl.oninput = () => savePrefs();
+
+    ['#language', '#level', '#count', '#num_blanks', '#focus'].forEach(sel => {
+      const el = document.querySelector(sel);
+      if (el) el.onchange = () => savePrefs();
+    });
+
+    const topicEl = document.querySelector('#topic');
+    if (topicEl) topicEl.oninput = () => savePrefs();
+
+    const sampleBtn = document.querySelector('#sample');
+    if (sampleBtn) sampleBtn.onclick = sample;
+
+    const resetBtn = document.querySelector('#reset-samples');
+    if (resetBtn) {
+      resetBtn.onclick = () => {
+        state.seen.clear();
+        state.pairs = [];
+        savePrefs();
+        preview();
+      };
+    }
+  }
+
+  async function loadModels() {
+    state.seen.clear();
+    state.pairs = [];
+    try {
+      const deckVal = document.querySelector('#deck')?.value;
+      if (!deckVal) return;
+      options('#model', (await Bridge.sendAsync('get_source_models', { deck_id: +deckVal })).models || []);
+      options('#term', []);
+      options('#definition', []);
+
+      const p = state.userPrefs;
+      const modelElem = document.querySelector('#model');
+      if (p.model && modelElem && Array.from(modelElem.options).some(o => o.value == p.model)) {
+        modelElem.value = p.model;
+        await loadFields();
+      }
+    } catch (e) {
+      toast(e.message);
+    }
+  }
+
+  async function loadFields() {
+    state.seen.clear();
+    state.pairs = [];
+    try {
+      const modelVal = document.querySelector('#model')?.value;
+      if (!modelVal) return;
+      const f = (await Bridge.sendAsync('get_source_fields', { model_id: +modelVal })).fields || [];
+      options('#term', f, x => x);
+      options('#definition', f, x => x);
+
+      const p = state.userPrefs;
+      const termElem = document.querySelector('#term');
+      const defElem = document.querySelector('#definition');
+      if (p.term && termElem && Array.from(termElem.options).some(o => o.value === p.term)) {
+        termElem.value = p.term;
+      }
+      if (p.definition && defElem && Array.from(defElem.options).some(o => o.value === p.definition)) {
+        defElem.value = p.definition;
+      }
+    } catch (e) {
+      toast(e.message);
+    }
+  }
+
+  function request() {
+    const deck_id = +document.querySelector('#deck').value;
+    const model_id = +document.querySelector('#model').value;
+    const term_field = document.querySelector('#term').value;
+    const definition_field = document.querySelector('#definition').value;
+    if (!deck_id || !model_id || !term_field || !definition_field) throw Error('Hãy chọn deck, note type và hai trường.');
+    return { deck_id, model_id, term_field, definition_field, limit: +document.querySelector('#sample-limit').value || 20, excluded_pair_keys: [...state.seen] };
+  }
+
+  function preview() {
+    const d = document.querySelector('#sample-preview');
+    if (!d) return;
+    d.querySelector('summary').textContent = state.pairs.length ? 'Xem ' + state.pairs.length + ' từ mẫu' : 'Chưa có mẫu để xem';
+    d.querySelector('#sample-list').innerHTML = state.pairs.map(x => '<li><b>' + esc(x.term) + '</b> — ' + esc(x.definition) + '</li>').join('');
+  }
+
+  async function sample() {
+    try {
+      const data = await Bridge.sendAsync('sample_vocab_pairs', request());
+      if (data.exhausted) throw Error('Đã dùng hết mẫu trong vòng này. Bấm Làm mới vòng.');
+      state.pairs = data.pairs || [];
+      state.pairs.forEach(x => state.seen.add(x.key));
+      document.querySelector('#source-status').textContent = `Đã lấy ${data.total} cặp ngẫu nhiên.`;
+      preview();
+      savePrefs();
+      return !!state.pairs.length;
+    } catch (e) {
+      toast(e.message);
+      return false;
+    }
+  }
+  async function generate(id){
+    try {
+      setBusy(true);
+      if(!state.pairs.length && !await sample()) return;
+      const lang = document.querySelector('#language');
+      const countEl = document.querySelector('#count');
+      const levelEl = document.querySelector('#level');
+      const topicEl = document.querySelector('#topic');
+      const opts = {
+        gamemode: id,
+        language: lang ? lang.value : 'en',
+        level: levelEl ? levelEl.value : 'intermediate',
+        count: countEl ? +countEl.value : 1,
+        topic: topicEl ? topicEl.value : 'daily_life',
+        vocab_pairs: state.pairs
+      };
+      if (id === 'cloze') {
+        const nb = document.querySelector('#num_blanks');
+        if (nb) opts.num_blanks = +nb.value;
+      }
+      if (id === 'sentence_transform') {
+        const fs = document.querySelector('#focus');
+        if (fs) opts.focus = fs.value;
+      }
+      state.exercise = await Bridge.sendAsync('generate', opts);
+      state.index = 0;
+      state.answers = {};
+      state.isGraded = false;
+
+      const historyItem = addHistory(id, state.exercise);
+
+      if (!state.activeSessions) state.activeSessions = {};
+      state.activeSessions[id] = {
+        exercise: state.exercise,
+        answers: state.answers,
+        isGraded: false,
+        historyItem: historyItem
+      };
+
+      play(id);
+    } catch(e) {
+      toast(e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function addHistory(id, data) {
+    if (id === 'matching') return null;
+    if (!state.history) state.history = {};
+    if (!state.history[id]) state.history[id] = [];
+
+    let totalQ = 0;
+    if (id === 'fill_blank') totalQ = data.questions ? data.questions.length : 0;
+    else if (id === 'cloze') totalQ = data.blanks ? data.blanks.length : 0;
+    else if (id === 'story') totalQ = data.comprehension_questions ? data.comprehension_questions.length : 0;
+    else if (id === 'unscramble') totalQ = data.questions ? data.questions.length : (data.sentences ? data.sentences.length : 0);
+    else if (id === 'sentence_transform') totalQ = data.questions ? data.questions.length : 0;
+    else if (id === 'translation') totalQ = data.sentences ? data.sentences.length : 1;
+    else if (id === 'taboo') totalQ = data.rounds ? data.rounds.length : 1;
+
+    const item = {
+      time: Date.now(),
+      data: JSON.parse(JSON.stringify(data)),
+      answers: null,
+      score: null,
+      total: totalQ
+    };
+    state.history[id].unshift(item);
+    if (state.history[id].length > 50) state.history[id].length = 50;
+    state.currentHistoryItem = item;
+    saveHistory();
+    return item;
+  }
   const buttons=(opts,name,chosen)=>opts.map((o,i)=>`<button class="option-btn ${chosen===i?'selected':''}" data-choice="${i}">${String.fromCharCode(65+i)}. ${esc(o)}</button>`).join('');
 
   /* ---- PLAY: route to renderers ---- */
-  function play(id){const d=document.querySelector('#play'),x=state.exercise;if(!x)return;state.answers={};
-    if(id==='fill_blank')renderFillBlank(x);
-    else if(id==='cloze')renderCloze(x);
-    else if(id==='matching')renderMatching(x);
-    else if(id==='unscramble')renderUnscrambleAll(x);
-    else if(id==='story')renderStory(x);
-    else if(id==='translation')renderTranslation(x);
-    else if(id==='sentence_transform')renderSentenceTransform(x);
-    else if(id==='taboo')renderTaboo(x);
+  function play(id) {
+    const d = document.querySelector('#play'), x = state.exercise;
+    if (!x) return;
+    if (!state.answers) state.answers = {};
+    if (id === 'fill_blank') renderFillBlank(x);
+    else if (id === 'cloze') renderCloze(x);
+    else if (id === 'matching') renderMatching(x);
+    else if (id === 'unscramble') renderUnscrambleAll(x);
+    else if (id === 'story') renderStory(x);
+    else if (id === 'translation') renderTranslation(x);
+    else if (id === 'sentence_transform') renderSentenceTransform(x);
+    else if (id === 'taboo') renderTaboo(x);
   }
 
   /* ---- FILL-BLANK: all questions vertical ---- */
-  function renderFillBlank(x){const d=document.querySelector('#play');const cards=x.questions.map((q,i)=>{return '<div class="question-card fade-in"><div class="q-number">Câu '+(i+1)+'/'+x.questions.length+'</div><div class="q-text">'+esc(q.sentence_with_blank)+'</div><div class="q-translation">'+esc(q.sentence_translation||'')+'</div><div id="choices-'+i+'">'+buttons(q.options,'fill',state.answers[i])+'</div><button class="btn" id="grade-'+i+'">Chấm điểm</button><div id="feedback-'+i+'"></div></div>'}).join('');d.innerHTML=cards;x.questions.forEach((q,i)=>{document.querySelectorAll('#choices-'+i+' [data-choice]').forEach(b=>b.onclick=()=>{state.answers[i]=+b.dataset.choice;renderFillBlank(x)});document.querySelector('#grade-'+i).onclick=()=>{let s=state.answers[i];const ok=s===q.correct_index,fb=document.querySelector('#feedback-'+i);let html='<div class="feedback '+(ok?'good':'bad')+'"><b>'+(ok?'Chính xác!':'Chưa đúng.')+'</b><p>Đáp án: '+esc(q.options[q.correct_index])+'</p><p>'+esc(q.explanation_short||q.semantic||'')+'</p>';if(q.word_meaning)html+='<p>📖 <b>Nghĩa từ:</b> '+esc(q.word_meaning)+'</p>';if(q.usage_example)html+='<p>📝 <b>Ví dụ:</b> '+esc(q.usage_example)+'</p>';if(q.sentence_translation)html+='<p>🌐 <b>Dịch:</b> '+esc(q.sentence_translation)+'</p>';html+='</div>';fb.innerHTML=html}})
+  function renderFillBlank(x) {
+    const d = document.querySelector('#play');
+    const isGraded = !!state.isGraded;
+    const gameId = state.route;
+
+    let score = 0;
+    if (isGraded) {
+      x.questions.forEach((q, i) => {
+        if (state.answers[i] === q.correct_index) score++;
+      });
+    }
+
+    const cardsHtml = x.questions.map((q, i) => {
+      const chosen = state.answers[i];
+      const optsHtml = q.options.map((o, idx) => {
+        let cls = 'option-btn';
+        let disabledAttr = '';
+
+        if (isGraded) {
+          disabledAttr = 'disabled';
+          if (idx === q.correct_index) {
+            cls += ' correct';
+          } else if (idx === chosen) {
+            cls += ' wrong';
+          }
+        } else {
+          if (idx === chosen) {
+            cls += ' selected';
+          }
+        }
+
+        return `
+          <button class="${cls}" data-q="${i}" data-choice="${idx}" ${disabledAttr}>
+            ${String.fromCharCode(65 + idx)}. ${esc(o)}
+          </button>
+        `;
+      }).join('');
+
+      let feedbackHtml = '';
+      if (isGraded) {
+        const isCorrect = chosen === q.correct_index;
+        const optTrans = q.options_translations || [];
+        const optItems = q.options.map((opt, idx) => {
+          const tr = optTrans[idx] ? ` — ${esc(optTrans[idx])}` : '';
+          const isAns = idx === q.correct_index;
+          return `<li style="${isAns ? 'font-weight:600; color:var(--success);' : ''}">
+            <b>${String.fromCharCode(65 + idx)}. ${esc(opt)}</b>${tr} ${isAns ? ' ✓ (Đáp án đúng)' : ''}
+          </li>`;
+        }).join('');
+
+        feedbackHtml = `
+          <div class="feedback ${isCorrect ? 'good' : 'bad'}" style="margin-top:16px;">
+            <div style="font-weight:600; font-size:15px; margin-bottom:8px; color:${isCorrect ? 'var(--success)' : 'var(--error)'};">
+              ${isCorrect ? 'Chính xác! ✓' : 'Chưa đúng ✕'}
+            </div>
+            
+            <p style="margin-bottom:6px;">
+              <b>💡 Lý do chọn:</b> ${esc(q.explanation_short || '')}
+            </p>
+
+            <p style="margin-bottom:6px;">
+              <b>🌐 Dịch câu:</b> ${esc(q.sentence_translation || '')}
+            </p>
+
+            <div style="margin-top:10px;">
+              <b>📚 Bản dịch các từ lựa chọn:</b>
+              <ul style="margin:6px 0 0 18px; padding:0; list-style-type:disc; font-size:13px; line-height:1.6;">
+                ${optItems}
+              </ul>
+            </div>
+          </div>
+        `;
+      }
+
+      return `
+        <div class="question-card" id="qcard-${i}">
+          <div class="q-number">Câu ${i + 1}/${x.questions.length}</div>
+          <div class="q-text">${esc(q.sentence_with_blank)}</div>
+          <div class="options-grid" id="choices-${i}">
+            ${optsHtml}
+          </div>
+          <div id="feedback-${i}">${feedbackHtml}</div>
+        </div>
+      `;
+    }).join('');
+
+    const submitHtml = isGraded ? `
+      <div id="fill-overall-feedback">
+        <div class="feedback ${score === x.questions.length ? 'good' : 'bad'}" style="text-align:center; margin-top:20px;">
+          <h3 style="margin-bottom:8px;">Kết quả: ${score}/${x.questions.length} câu đúng</h3>
+        </div>
+      </div>
+    ` : `
+      <div style="text-align:center; margin: 24px 0 12px 0;">
+        <button class="btn primary" id="grade-fill-blank" style="padding: 12px 36px; font-size: 16px;">
+          Chấm điểm
+        </button>
+      </div>
+      <div id="fill-overall-feedback"></div>
+    `;
+
+    d.innerHTML = cardsHtml + submitHtml;
+
+    if (!isGraded) {
+      d.querySelectorAll('[data-choice]').forEach(b => {
+        b.onclick = () => {
+          if (state.isGraded) return;
+          const qIdx = +b.dataset.q;
+          const cIdx = +b.dataset.choice;
+          state.answers[qIdx] = cIdx;
+          if (state.activeSessions && state.activeSessions[gameId]) {
+            state.activeSessions[gameId].answers[qIdx] = cIdx;
+          }
+
+          const choices = document.querySelectorAll(`#choices-${qIdx} [data-choice]`);
+          choices.forEach(btn => btn.classList.remove('selected'));
+          b.classList.add('selected');
+        };
+      });
+
+      const gradeBtn = document.querySelector('#grade-fill-blank');
+      if (gradeBtn) {
+        gradeBtn.onclick = () => {
+          state.isGraded = true;
+          if (state.activeSessions && state.activeSessions[gameId]) {
+            state.activeSessions[gameId].isGraded = true;
+          }
+
+          let score = 0;
+          x.questions.forEach((q, i) => {
+            if (state.answers[i] === q.correct_index) score++;
+          });
+
+          if (state.currentHistoryItem) {
+            state.currentHistoryItem.answers = { ...state.answers };
+            state.currentHistoryItem.score = score;
+          }
+          if (state.activeSessions && state.activeSessions[gameId] && state.activeSessions[gameId].historyItem) {
+            state.activeSessions[gameId].historyItem.answers = { ...state.answers };
+            state.activeSessions[gameId].historyItem.score = score;
+          }
+          saveHistory();
+
+          renderFillBlank(x);
+        };
+      }
+    }
   }
 
-  /* ---- CLOZE: paragraph with selects + word bank ---- */
-  function renderCloze(x){const d=document.querySelector('#play');const wordChips=x.blanks.map((b,i)=>{const vn=b.meaning_in_vietnamese?' - '+b.meaning_in_vietnamese:'';return '<span class="word-preview-item" data-blank="'+i+'" data-word="'+esc(b.correct_word)+'">'+(i+1)+'. '+esc(b.correct_word)+esc(vn)+'</span>'}).join('');const blankSelects=x.blanks.map((b,i)=>{return '<label class="cloze-blank-label">Blank '+(i+1)+'<select data-blank="'+i+'"><option value="">-- chọn --</option>'+b.options.map((o,j)=>'<option value="'+j+'">'+esc(o)+'</option>').join('')+'</select></label>'}).join('');d.innerHTML='<div class="question-card"><div class="q-text">'+esc(x.paragraph_with_blanks)+'</div>'+(x.sentence_meaning?'<div class="q-translation">'+esc(x.sentence_meaning)+'</div>':'')+'<div class="word-preview"><h4>Từ để chọn ('+x.blanks.length+' từ):</h4><div class="word-preview-list">'+wordChips+'</div></div><div class="cloze-blanks">'+blankSelects+'</div><button class="btn" id="grade">Chấm điểm</button><div id="feedback"></div></div>';document.querySelectorAll('.word-preview-item').forEach(e=>e.onclick=()=>{const idx=+e.dataset.blank;const sel=document.querySelector('select[data-blank="'+idx+'"]');if(!sel)return;const correctWord=e.dataset.word;const optIdx=Array.from(sel.options).findIndex(o=>o.text.toLowerCase()===correctWord.toLowerCase());if(optIdx>=0){sel.value=optIdx;sel.classList.add('auto-filled')}});document.querySelector('#grade').onclick=()=>gradeCloze(x)}
-  function gradeCloze(x){let score=0;document.querySelectorAll('[data-blank]').forEach(e=>{let b=x.blanks[+e.dataset.blank],ok=+e.value===b.correct_index;score+=ok;e.classList.add(ok?'correct':'wrong')});const explanations=x.blanks.map((b,i)=>{const correct=b.options[b.correct_index];const vn=b.meaning_in_vietnamese?' — '+b.meaning_in_vietnamese:'';return '<p>'+(i+1)+'. <b>'+esc(correct)+'</b>: '+esc(b.explanation_short||b.explanation||'')+esc(vn)+'</p>'}).join('');const meaning=x.sentence_meaning?'<p>🌐 '+esc(x.sentence_meaning)+'</p>':'';document.querySelector('#feedback').innerHTML='<div class="feedback '+(score===x.blanks.length?'good':'bad')+'"><b>'+score+'/'+x.blanks.length+' đúng</b>'+meaning+explanations+'<button class="btn" onclick="App.retry()">Thử lại</button></div>'}
+  /* ---- CLOZE: paragraph with selects + top word bank ---- */
+  function renderCloze(x) {
+    const d = document.querySelector('#play');
+    const isGraded = !!state.isGraded;
+    const gameId = state.route;
 
-  /* ---- MATCHING: vertical columns ---- */
-  function renderMatching(x){const d=document.querySelector('#play');d.innerHTML='<div class="question-card"><p>Chọn từ, rồi chọn nghĩa tương ứng.</p><div class="match-columns"><div id="left" class="match-col">'+x.left_column.map(t=>'<button class="match-item" data-term="'+esc(t)+'">'+esc(t)+'</button>').join('')+'</div><div id="right" class="match-col">'+x.right_column.map(t=>'<button class="match-item" data-def="'+esc(t)+'">'+esc(t)+'</button>').join('')+'</div></div><p id="match-status"></p><button class="btn" id="grade">Chấm điểm</button><div id="feedback"></div></div>';let term=null,matches={};document.querySelectorAll('[data-term]').forEach(e=>e.onclick=()=>{term=e.dataset.term;document.querySelectorAll('[data-term].selected').forEach(x=>x.classList.remove('selected'));e.classList.add('selected')});document.querySelectorAll('[data-def]').forEach(e=>e.onclick=()=>{if(!term)return;let pair=x.pairs.find(p=>p.term===term);let ok=pair?.definition===e.dataset.def;e.classList.add(ok?'matched':'wrong');if(ok){matches[term]=e.dataset.def;document.querySelector('[data-term="'+CSS.escape(term)+'"]').classList.add('matched');document.querySelector('[data-term="'+CSS.escape(term)+'"]').classList.remove('selected');term=null}else{setTimeout(()=>e.classList.remove('wrong'),600)}const done=Object.keys(matches).length;document.querySelector('#match-status').textContent=done+'/'+x.pairs.length+' cặp đúng';if(done===x.pairs.length)document.querySelector('#match-status').style.color='var(--success)'});document.querySelector('#grade').onclick=()=>{let total=x.pairs.length,allDone=Object.keys(matches).length;document.querySelector('#feedback').innerHTML='<div class="feedback '+(allDone===total?'good':'bad')+'"><b>'+allDone+'/'+total+' đúng</b><button class="btn" id="retry">Thử lại</button></div>';document.querySelector('#retry').onclick=()=>{state.answers={};play(state.route)}}}
+    // Word bank at top: target correct words for all blanks (number of words = number of blanks)
+    const targetWords = x.blanks.map(b => b.correct_word || (b.options ? b.options[b.correct_index] : '')).filter(Boolean);
+    const sortedWords = [...targetWords].sort((a, b) => a.localeCompare(b));
+
+    // Ensure options array for each blank uses sortedWords pool
+    x.blanks.forEach(b => {
+      b.options = sortedWords;
+      const target = b.correct_word || '';
+      const foundIdx = sortedWords.findIndex(w => w.toLowerCase() === target.toLowerCase());
+      if (foundIdx !== -1) {
+        b.correct_index = foundIdx;
+      }
+    });
+
+    const wordBankHtml = `
+      <div class="word-bank-box">
+        <div class="word-bank-title">Danh sách từ để chọn (${sortedWords.length} từ)</div>
+        <div class="word-bank-chips">
+          ${sortedWords.map(w => `<span class="word-chip-static">${esc(w)}</span>`).join('')}
+        </div>
+      </div>
+    `;
+
+    // Process paragraph with inline selects
+    let rawText = x.paragraph_with_blanks || '';
+    let blankIdx = 0;
+    const placeholderRegex = /(\[\d+\]|\(\d+\)|\[blank_\d+\]|_{2,})/g;
+
+    let processedParagraph = rawText.replace(placeholderRegex, (match) => {
+      if (blankIdx >= x.blanks.length) return match;
+      const i = blankIdx++;
+      const b = x.blanks[i];
+      const chosen = state.answers[i];
+
+      let selectClass = 'cloze-inline-select';
+      let disabledAttr = isGraded ? 'disabled' : '';
+
+      if (isGraded) {
+        if (chosen === b.correct_index) {
+          selectClass += ' correct';
+        } else if (chosen !== undefined && chosen !== '') {
+          selectClass += ' wrong';
+        }
+      }
+
+      const optionsHtml = b.options.map((opt, oIdx) => `
+        <option value="${oIdx}" ${chosen === oIdx ? 'selected' : ''}>${esc(opt)}</option>
+      `).join('');
+
+      return `<select class="${selectClass}" data-blank="${i}" ${disabledAttr}>
+        <option value="">-- [${i + 1}] --</option>
+        ${optionsHtml}
+      </select>`;
+    });
+
+    while (blankIdx < x.blanks.length) {
+      const i = blankIdx++;
+      const b = x.blanks[i];
+      const chosen = state.answers[i];
+      let selectClass = 'cloze-inline-select';
+      let disabledAttr = isGraded ? 'disabled' : '';
+      if (isGraded) {
+        if (chosen === b.correct_index) selectClass += ' correct';
+        else if (chosen !== undefined && chosen !== '') selectClass += ' wrong';
+      }
+      const optionsHtml = b.options.map((opt, oIdx) => `
+        <option value="${oIdx}" ${chosen === oIdx ? 'selected' : ''}>${esc(opt)}</option>
+      `).join('');
+
+      processedParagraph += ` <select class="${selectClass}" data-blank="${i}" ${disabledAttr}>
+        <option value="">-- [${i + 1}] --</option>
+        ${optionsHtml}
+      </select>`;
+    }
+
+    let score = 0;
+    if (isGraded) {
+      x.blanks.forEach((b, i) => {
+        if (state.answers[i] === b.correct_index) score++;
+      });
+    }
+
+    let feedbackHtml = '';
+    if (isGraded) {
+      const explanations = x.blanks.map((b, i) => {
+        const correctOpt = b.options[b.correct_index];
+        const chosenOpt = state.answers[i] !== undefined ? b.options[state.answers[i]] : 'Chưa chọn';
+        const isOk = state.answers[i] === b.correct_index;
+        const vnMeaning = b.meaning_in_vietnamese ? ` (${b.meaning_in_vietnamese})` : '';
+
+        return `
+          <div style="margin-bottom: 10px; font-size: 14px;">
+            <b>[${i + 1}]</b> <span style="color: ${isOk ? 'var(--success)' : 'var(--error)'}; font-weight:600;">${isOk ? '✓ Đúng' : '✕ Sai'}</span>
+            — Đáp án: <b style="color: var(--success);">${esc(correctOpt)}</b>${esc(vnMeaning)}
+            ${!isOk ? `<span style="color: var(--text-secondary);">(Bạn chọn: ${esc(chosenOpt)})</span>` : ''}
+            <div style="font-size: 13px; color: var(--text-secondary); margin-top: 2px;">
+              💡 ${esc(b.explanation_short || b.explanation || '')}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      const transHtml = x.sentence_meaning || x.paragraph_translation
+        ? `<div style="margin-top:12px; padding-top:10px; border-top:1px dashed var(--border); font-size:14px;"><b>🌐 Dịch đoạn văn:</b> ${esc(x.sentence_meaning || x.paragraph_translation)}</div>`
+        : '';
+
+      feedbackHtml = `
+        <div class="feedback ${score === x.blanks.length ? 'good' : 'bad'}" style="margin-top:20px;">
+          <h3 style="margin-bottom:12px; text-align:center;">Kết quả: ${score}/${x.blanks.length} câu đúng</h3>
+          ${explanations}
+          ${transHtml}
+        </div>
+      `;
+    }
+
+    const submitBtnHtml = isGraded ? '' : `
+      <div style="text-align:center; margin-top:20px;">
+        <button class="btn primary" id="grade-cloze" style="padding: 10px 32px; font-size: 15px;">Chấm điểm</button>
+      </div>
+    `;
+
+    d.innerHTML = `
+      <div class="question-card">
+        ${wordBankHtml}
+        <div class="cloze-paragraph">
+          ${processedParagraph}
+        </div>
+        ${submitBtnHtml}
+        <div id="cloze-feedback-area">${feedbackHtml}</div>
+      </div>
+    `;
+
+    if (!isGraded) {
+      d.querySelectorAll('select.cloze-inline-select').forEach(sel => {
+        sel.onchange = () => {
+          const bIdx = +sel.dataset.blank;
+          const val = sel.value;
+          state.answers[bIdx] = val !== '' ? +val : undefined;
+          if (state.activeSessions && state.activeSessions[gameId]) {
+            state.activeSessions[gameId].answers[bIdx] = state.answers[bIdx];
+          }
+        };
+      });
+
+      const gradeBtn = document.querySelector('#grade-cloze');
+      if (gradeBtn) {
+        gradeBtn.onclick = () => {
+          state.isGraded = true;
+          if (state.activeSessions && state.activeSessions[gameId]) {
+            state.activeSessions[gameId].isGraded = true;
+          }
+
+          let s = 0;
+          x.blanks.forEach((b, i) => {
+            if (state.answers[i] === b.correct_index) s++;
+          });
+
+          if (state.currentHistoryItem) {
+            state.currentHistoryItem.answers = { ...state.answers };
+            state.currentHistoryItem.score = s;
+          }
+          if (state.activeSessions && state.activeSessions[gameId] && state.activeSessions[gameId].historyItem) {
+            state.activeSessions[gameId].historyItem.answers = { ...state.answers };
+            state.activeSessions[gameId].historyItem.score = s;
+          }
+          saveHistory();
+
+          renderCloze(x);
+        };
+      }
+    }
+  }
+
+  /* ---- MATCHING: 5-Slot Card Refill Engine & Bidirectional Matching ---- */
+  function renderMatching(x) {
+    const d = document.querySelector('#play');
+    if (!x || !x.pairs || !x.pairs.length) {
+      d.innerHTML = '<div class="empty-state"><p>Không có dữ liệu từ vựng để nối.</p></div>';
+      return;
+    }
+
+    // Normalize pairs list with unique IDs
+    const pairs = x.pairs.map((p, idx) => ({
+      id: 'p_' + idx,
+      word: p.term || p.word || '',
+      meaning: p.definition || p.meaning || ''
+    }));
+
+    const totalPairsCount = pairs.length;
+    const SLOT_COUNT = 5;
+
+    // Tracking state
+    let matchedPairIds = new Set();
+    let activeWords = new Array(SLOT_COUNT).fill(null); // { pairId, word }
+    let activeMeanings = new Array(SLOT_COUNT).fill(null); // { pairId, meaning }
+
+    let selectedWordIdx = null; // index 0..4 in activeWords
+    let selectedMeaningIdx = null; // index 0..4 in activeMeanings
+
+    let wrongCount = 0;
+    let matchedCount = 0;
+    let totalAttempts = 0;
+    let isEvaluating = false;
+    let isFinished = false;
+
+    let startTime = Date.now();
+    let timerInterval = null;
+
+    // Audio synthesizer
+    function playSound(type) {
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        if (type === 'match') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(523.25, ctx.currentTime);
+          osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.08);
+          osc.frequency.setValueAtTime(783.99, ctx.currentTime + 0.16);
+          gain.gain.setValueAtTime(0.12, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.3);
+        } else if (type === 'wrong') {
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(220, ctx.currentTime);
+          osc.frequency.setValueAtTime(180, ctx.currentTime + 0.08);
+          gain.gain.setValueAtTime(0.12, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.25);
+        }
+      } catch (_) {}
+    }
+
+    // Helper functions to query unplaced items
+    function getUnplacedWordPairs() {
+      return pairs.filter(p => !matchedPairIds.has(p.id) && !activeWords.some(slot => slot && slot.pairId === p.id));
+    }
+
+    function getUnplacedMeaningPairs() {
+      return pairs.filter(p => !matchedPairIds.has(p.id) && !activeMeanings.some(slot => slot && slot.pairId === p.id));
+    }
+
+    function getFullyUnplacedPairs() {
+      return pairs.filter(p => !matchedPairIds.has(p.id) && !activeWords.some(s => s && s.pairId === p.id) && !activeMeanings.some(s => s && s.pairId === p.id));
+    }
+
+    function getMatchedPairsOnScreen() {
+      const wordPairIds = new Set(activeWords.filter(Boolean).map(s => s.pairId));
+      return activeMeanings.filter(s => s && wordPairIds.has(s.pairId)).map(s => s.pairId);
+    }
+
+    // Initialize the 5-slot screen
+    function initBoard() {
+      matchedPairIds.clear();
+      activeWords = new Array(SLOT_COUNT).fill(null);
+      activeMeanings = new Array(SLOT_COUNT).fill(null);
+
+      // K guaranteed matching pairs (at least 2-3 pairs)
+      const k = Math.min(Math.min(3, Math.ceil(SLOT_COUNT / 2)), pairs.length);
+      const shuffledPairs = [...pairs].sort(() => Math.random() - 0.5);
+      const guaranteedPairs = shuffledPairs.slice(0, k);
+
+      const leftIndices = [0, 1, 2, 3, 4].sort(() => Math.random() - 0.5);
+      const rightIndices = [0, 1, 2, 3, 4].sort(() => Math.random() - 0.5);
+
+      for (let i = 0; i < k; i++) {
+        const p = guaranteedPairs[i];
+        activeWords[leftIndices[i]] = { pairId: p.id, word: p.word };
+        activeMeanings[rightIndices[i]] = { pairId: p.id, meaning: p.meaning };
+      }
+
+      // Fill remaining empty left slots with distractor words
+      const remainingWordPairs = getUnplacedWordPairs().sort(() => Math.random() - 0.5);
+      for (let i = 0; i < SLOT_COUNT; i++) {
+        if (!activeWords[i] && remainingWordPairs.length > 0) {
+          const p = remainingWordPairs.pop();
+          activeWords[i] = { pairId: p.id, word: p.word };
+        }
+      }
+
+      // Fill remaining empty right slots with distractor meanings
+      const remainingMeaningPairs = getUnplacedMeaningPairs().sort(() => Math.random() - 0.5);
+      for (let i = 0; i < SLOT_COUNT; i++) {
+        if (!activeMeanings[i] && remainingMeaningPairs.length > 0) {
+          const p = remainingMeaningPairs.pop();
+          activeMeanings[i] = { pairId: p.id, meaning: p.meaning };
+        }
+      }
+    }
+
+    // Refill slots after a successful match
+    function refillSlots(emptyLeftIdx, emptyRightIdx) {
+      const matchesOnScreen = getMatchedPairsOnScreen();
+
+      if (matchesOnScreen.length > 0) {
+        // Normal refill from unplaced pool
+        const availWords = getUnplacedWordPairs().sort(() => Math.random() - 0.5);
+        if (availWords.length > 0) {
+          const p = availWords[0];
+          activeWords[emptyLeftIdx] = { pairId: p.id, word: p.word };
+        }
+
+        const availMeanings = getUnplacedMeaningPairs().sort(() => Math.random() - 0.5);
+        if (availMeanings.length > 0) {
+          const p = availMeanings[0];
+          activeMeanings[emptyRightIdx] = { pairId: p.id, meaning: p.meaning };
+        }
+      } else {
+        // Forced refill (no match on screen - "bị tắc"): force a full matching pair onto screen
+        const unplacedBoth = getFullyUnplacedPairs().sort(() => Math.random() - 0.5);
+        if (unplacedBoth.length > 0) {
+          const forcedPair = unplacedBoth[0];
+          activeWords[emptyLeftIdx] = { pairId: forcedPair.id, word: forcedPair.word };
+          activeMeanings[emptyRightIdx] = { pairId: forcedPair.id, meaning: forcedPair.meaning };
+        } else {
+          // Fallback if no full pair left, fill individually from available
+          const availWords = getUnplacedWordPairs();
+          if (availWords.length > 0) activeWords[emptyLeftIdx] = { pairId: availWords[0].id, word: availWords[0].word };
+          const availMeanings = getUnplacedMeaningPairs();
+          if (availMeanings.length > 0) activeMeanings[emptyRightIdx] = { pairId: availMeanings[0].id, meaning: availMeanings[0].meaning };
+        }
+      }
+    }
+
+    function evaluateMatch() {
+      if (selectedWordIdx === null || selectedMeaningIdx === null || isEvaluating) return;
+      isEvaluating = true;
+      totalAttempts++;
+
+      const wSlot = activeWords[selectedWordIdx];
+      const mSlot = activeMeanings[selectedMeaningIdx];
+
+      const leftBtn = d.querySelector(`.match-card[data-col="left"][data-idx="${selectedWordIdx}"]`);
+      const rightBtn = d.querySelector(`.match-card[data-col="right"][data-idx="${selectedMeaningIdx}"]`);
+
+      if (wSlot && mSlot && wSlot.pairId === mSlot.pairId) {
+        // MATCHED
+        matchedCount++;
+        matchedPairIds.add(wSlot.pairId);
+        playSound('match');
+
+        if (leftBtn) {
+          leftBtn.classList.remove('selected');
+          leftBtn.classList.add('matched');
+        }
+        if (rightBtn) {
+          rightBtn.classList.remove('selected');
+          rightBtn.classList.add('matched');
+        }
+
+        const emptyL = selectedWordIdx;
+        const emptyR = selectedMeaningIdx;
+
+        setTimeout(() => {
+          activeWords[emptyL] = null;
+          activeMeanings[emptyR] = null;
+          selectedWordIdx = null;
+          selectedMeaningIdx = null;
+          isEvaluating = false;
+
+          refillSlots(emptyL, emptyR);
+
+          if (matchedCount >= totalPairsCount || (!activeWords.some(Boolean) && !activeMeanings.some(Boolean))) {
+            finishGame();
+          } else {
+            renderBoard();
+          }
+        }, 380);
+
+      } else {
+        // WRONG
+        wrongCount++;
+        playSound('wrong');
+
+        if (leftBtn) {
+          leftBtn.classList.remove('selected');
+          leftBtn.classList.add('wrong');
+        }
+        if (rightBtn) {
+          rightBtn.classList.remove('selected');
+          rightBtn.classList.add('wrong');
+        }
+
+        setTimeout(() => {
+          if (leftBtn) {
+            leftBtn.classList.remove('wrong');
+            leftBtn.classList.remove('selected');
+          }
+          if (rightBtn) {
+            rightBtn.classList.remove('wrong');
+            rightBtn.classList.remove('selected');
+          }
+          selectedWordIdx = null;
+          selectedMeaningIdx = null;
+          isEvaluating = false;
+          renderBoard();
+        }, 450);
+      }
+    }
+
+    function handleCardClick(col, idx) {
+      if (isEvaluating || isFinished) return;
+
+      if (col === 'left') {
+        if (!activeWords[idx]) return;
+        selectedWordIdx = selectedWordIdx === idx ? null : idx;
+      } else if (col === 'right') {
+        if (!activeMeanings[idx]) return;
+        selectedMeaningIdx = selectedMeaningIdx === idx ? null : idx;
+      }
+
+      renderBoard();
+
+      if (selectedWordIdx !== null && selectedMeaningIdx !== null) {
+        evaluateMatch();
+      }
+    }
+
+    function finishGame() {
+      if (isFinished) return;
+      isFinished = true;
+      if (timerInterval) clearInterval(timerInterval);
+
+      const elapsedSec = Math.max(1, Math.round((Date.now() - startTime) / 1000));
+      const mins = Math.floor(elapsedSec / 60);
+      const secs = elapsedSec % 60;
+      const timeFormatted = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+      const accuracy = totalAttempts > 0 ? Math.round((matchedCount / totalAttempts) * 100) : (matchedCount > 0 ? 100 : 0);
+
+      // Record result to current history item
+      if (state.currentHistoryItem) {
+        state.currentHistoryItem.score = matchedCount;
+        state.currentHistoryItem.total = totalPairsCount;
+        state.currentHistoryItem.wrongCount = wrongCount;
+        state.currentHistoryItem.accuracy = accuracy;
+        state.currentHistoryItem.timeSec = elapsedSec;
+      }
+
+      if (state.activeSessions && state.activeSessions.matching && state.activeSessions.matching.historyItem) {
+        state.activeSessions.matching.historyItem.score = matchedCount;
+        state.activeSessions.matching.historyItem.total = totalPairsCount;
+        state.activeSessions.matching.historyItem.wrongCount = wrongCount;
+        state.activeSessions.matching.historyItem.accuracy = accuracy;
+        state.activeSessions.matching.historyItem.timeSec = elapsedSec;
+      }
+
+      d.innerHTML = `
+        <div class="question-card" style="text-align: center; padding: 28px 20px;">
+          <h3 style="font-size: 22px; color: var(--success); margin-bottom: 12px;">🎉 Hoàn thành bài ghép từ!</h3>
+          <p style="font-size: 15px; color: var(--text-secondary); margin-bottom: 20px;">
+            Bạn đã nối thành công <b>${matchedCount}/${totalPairsCount}</b> cặp từ vựng.
+          </p>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; margin-bottom: 24px;">
+            <div style="background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px;">
+              <div style="font-size: 12px; color: var(--text-secondary);">Thời gian</div>
+              <div style="font-size: 18px; font-weight: 700; color: var(--primary); margin-top: 4px;">⏱️ ${timeFormatted}</div>
+            </div>
+            <div style="background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px;">
+              <div style="font-size: 12px; color: var(--text-secondary);">Lần chọn sai</div>
+              <div style="font-size: 18px; font-weight: 700; color: ${wrongCount > 0 ? 'var(--error)' : 'var(--success)'}; margin-top: 4px;">❌ ${wrongCount} lần</div>
+            </div>
+            <div style="background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px;">
+              <div style="font-size: 12px; color: var(--text-secondary);">Tỉ lệ chính xác</div>
+              <div style="font-size: 18px; font-weight: 700; color: ${accuracy >= 80 ? 'var(--success)' : accuracy >= 50 ? 'var(--primary)' : 'var(--error)'}; margin-top: 4px;">🎯 ${accuracy}%</div>
+            </div>
+          </div>
+
+          <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 20px;">
+            Kết quả bài làm đã được tự động lưu vào Lịch sử.
+          </p>
+
+          <div style="display: flex; justify-content: center; gap: 12px; flex-wrap: wrap;">
+            <button class="btn primary" id="restart-matching-btn" style="padding: 10px 24px;">🔄 Chơi lại bài này</button>
+            <button class="btn btn-outline" id="new-matching-btn" style="padding: 10px 24px;">⚡ Tạo bài nối mới</button>
+          </div>
+        </div>
+      `;
+
+      const restartBtn = d.querySelector('#restart-matching-btn');
+      if (restartBtn) {
+        restartBtn.onclick = () => play('matching');
+      }
+      const newBtn = d.querySelector('#new-matching-btn');
+      if (newBtn) {
+        newBtn.onclick = () => generate('matching');
+      }
+    }
+
+    function renderBoard() {
+      if (isFinished) return;
+
+      const elapsedSec = Math.max(0, Math.round((Date.now() - startTime) / 1000));
+      const mins = Math.floor(elapsedSec / 60);
+      const secs = elapsedSec % 60;
+      const timeStr = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+      const accuracy = totalAttempts > 0 ? Math.round((matchedCount / totalAttempts) * 100) : 100;
+
+      const leftSlotsHtml = activeWords.map((slot, i) => {
+        if (!slot) return `<div class="match-slot empty-slot"></div>`;
+        const isSelected = selectedWordIdx === i;
+        return `
+          <div class="match-slot">
+            <button class="match-card ${isSelected ? 'selected' : ''}" data-col="left" data-idx="${i}">
+              ${esc(slot.word)}
+            </button>
+          </div>
+        `;
+      }).join('');
+
+      const rightSlotsHtml = activeMeanings.map((slot, i) => {
+        if (!slot) return `<div class="match-slot empty-slot"></div>`;
+        const isSelected = selectedMeaningIdx === i;
+        return `
+          <div class="match-slot">
+            <button class="match-card ${isSelected ? 'selected' : ''}" data-col="right" data-idx="${i}">
+              ${esc(slot.meaning)}
+            </button>
+          </div>
+        `;
+      }).join('');
+
+      d.innerHTML = `
+        <div class="matching-container">
+          <div class="matching-toolbar">
+            <div class="matching-stats-group">
+              <span class="matching-stat-badge">⏱️ <span id="m-timer">${timeStr}</span></span>
+              <span class="matching-stat-badge">🎯 <span style="color:var(--primary);">${matchedCount}/${totalPairsCount}</span> cặp</span>
+              <span class="matching-stat-badge">❌ Sai: <span style="color:${wrongCount > 0 ? 'var(--error)' : 'inherit'};">${wrongCount}</span></span>
+              <span class="matching-stat-badge">📊 <span style="color:${accuracy >= 80 ? 'var(--success)' : 'var(--primary)'};">${accuracy}%</span></span>
+            </div>
+            <button class="btn btn-outline" id="finish-matching-btn" style="padding:6px 14px; font-size:13px; color:var(--error); border-color:var(--error);">
+              🏁 Kết thúc
+            </button>
+          </div>
+
+          <div class="match-board">
+            <div class="match-col">
+              <div class="match-col-header">Từ vựng</div>
+              ${leftSlotsHtml}
+            </div>
+            <div class="match-col">
+              <div class="match-col-header">Nghĩa</div>
+              ${rightSlotsHtml}
+            </div>
+          </div>
+        </div>
+      `;
+
+      d.querySelectorAll('[data-col]').forEach(btn => {
+        btn.onclick = () => {
+          handleCardClick(btn.dataset.col, +btn.dataset.idx);
+        };
+      });
+
+      const finishBtn = d.querySelector('#finish-matching-btn');
+      if (finishBtn) {
+        finishBtn.onclick = () => finishGame();
+      }
+    }
+
+    initBoard();
+
+    if (timerInterval) clearInterval(timerInterval);
+    timerInterval = setInterval(() => {
+      if (isFinished) {
+        clearInterval(timerInterval);
+        return;
+      }
+      const timerEl = document.querySelector('#m-timer');
+      if (timerEl) {
+        const elapsedSec = Math.max(0, Math.round((Date.now() - startTime) / 1000));
+        const mins = Math.floor(elapsedSec / 60);
+        const secs = elapsedSec % 60;
+        timerEl.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+      }
+    }, 1000);
+
+    renderBoard();
+  }
 
   /* ---- UNSCRAMBLE: all questions vertical, white words ---- */
-  function renderUnscrambleAll(x){const d=document.querySelector('#play');d.innerHTML=x.questions.map((q,i)=>{return'<div class="question-card unscramble-card fade-in"><p class="hint-text">'+esc(q.hint)+'</p>'+(q.translation?'<p class="q-translation">'+esc(q.translation)+'</p>':'')+'<div id="us-'+i+'" class="unscramble-area"></div><button class="btn" id="ugrade-'+i+'">Chấm điểm</button><div id="ufeedback-'+i+'"></div></div>'}).join('');x.questions.forEach((q,i)=>{renderUnscrambleSingle(q,i,x.questions)});}
+  function renderUnscrambleAll(x){const d=document.querySelector('#play');d.innerHTML=x.questions.map((q,i)=>{return'<div class="question-card unscramble-card fade-in"><p class="hint-text">'+esc(q.hint)+'</p><div id="us-'+i+'" class="unscramble-area"></div><button class="btn" id="ugrade-'+i+'">Chấm điểm</button><div id="ufeedback-'+i+'"></div></div>'}).join('');x.questions.forEach((q,i)=>{renderUnscrambleSingle(q,i,x.questions)});}
   function renderUnscrambleSingle(q,i,all){const chosen=[];const area=document.querySelector('#us-'+i);function draw(){area.innerHTML='<div class="drop-zone">'+chosen.map(w=>'<button class="drag-word" data-back="'+esc(w)+'">'+esc(w)+'</button>').join('')+'</div><div class="drag-container">'+q.shuffled_words.filter((w,j)=>!chosen.includes(w)||chosen.filter(x=>x===w).length<q.shuffled_words.slice(0,j+1).filter(x=>x===w).length).map(w=>'<button class="drag-word" data-word="'+esc(w)+'">'+esc(w)+'</button>').join('')+'</div>';area.querySelectorAll('[data-word]').forEach(e=>e.onclick=()=>{chosen.push(e.dataset.word);draw()});area.querySelectorAll('[data-back]').forEach(e=>e.onclick=()=>{chosen.splice(chosen.indexOf(e.dataset.back),1);draw()})}draw();document.querySelector('#ugrade-'+i).onclick=()=>{const ok=chosen.join(' ').toLowerCase()===q.correct_sentence.toLowerCase();const fb=document.querySelector('#ufeedback-'+i);let html='<div class="feedback '+(ok?'good':'bad')+'"><b>'+(ok?'Chính xác!':'Chưa đúng.')+'</b><p>'+esc(q.correct_sentence)+'</p>';if(q.sentence_meaning)html+='<p>🌐 '+esc(q.sentence_meaning)+'</p>';if(q.key_vocab)html+=q.key_vocab.map(k=>'<p>📖 <b>'+esc(k.word)+'</b>: '+esc(k.meaning)+'</p>').join('');html+='</div>';fb.innerHTML=html}}
 
-  /* ---- STORY: read + comprehension questions ---- */
-  function renderStory(x){const d=document.querySelector('#play');d.innerHTML='<div class="question-card"><div class="story-text">'+esc(x.story)+'</div>'+x.comprehension_questions.map((q,i)=>'<div class="comprehension-q"><p>'+(i+1)+'. '+esc(q.question)+'</p>'+buttons(q.options,'story',state.answers[i])+'</div>').join('')+'<button class="btn" id="grade">Chấm điểm toàn bộ</button><div id="feedback"></div></div>';document.querySelectorAll('[data-choice]').forEach((e,n)=>e.onclick=()=>{let q=Math.floor(n/4);state.answers[q]=+e.dataset.choice;renderStory(x)});document.querySelector('#grade').onclick=()=>{let n=x.comprehension_questions.filter((q,i)=>state.answers[i]===q.correct_index).length;document.querySelector('#feedback').innerHTML='<div class="feedback '+(n===x.comprehension_questions.length?'good':'bad')+'"><b>'+n+'/'+x.comprehension_questions.length+' đúng</b><button class="btn" id="retry">Thử lại</button></div>';document.querySelector('#retry').onclick=()=>{state.answers={};play(state.route)}}}
+  /* ---- STORY: read + comprehension questions (Vertical options, Detailed Explanation & Evidence) ---- */
+  function renderStory(x) {
+    const d = document.querySelector('#play');
+    if (!x || !x.story || !x.comprehension_questions || !x.comprehension_questions.length) {
+      d.innerHTML = '<div class="empty-state"><p>Không có dữ liệu bài đọc.</p></div>';
+      return;
+    }
+
+    const isGraded = !!state.isGraded;
+    const gameId = state.route;
+    const questions = x.comprehension_questions;
+
+    let score = 0;
+    if (isGraded) {
+      questions.forEach((q, i) => {
+        if (state.answers[i] === q.correct_index) score++;
+      });
+    }
+
+    // Passage component
+    const passageHtml = `
+      <div class="story-passage-card">
+        <div class="story-passage-header">
+          <span class="story-passage-title">📖 Bài đọc hiểu (Reading Passage)</span>
+          <span class="story-passage-badge">${questions.length} câu hỏi</span>
+        </div>
+        <div class="story-passage-content">
+          ${esc(x.story).replace(/\n\n/g, '<br><br>')}
+        </div>
+      </div>
+    `;
+
+    // Questions list
+    const questionsHtml = questions.map((q, i) => {
+      const chosen = state.answers[i];
+
+      const optionsHtml = q.options.map((opt, oIdx) => {
+        let btnCls = 'story-option-btn';
+        let disabledAttr = isGraded ? 'disabled' : '';
+
+        if (isGraded) {
+          if (oIdx === q.correct_index) {
+            btnCls += ' correct';
+          } else if (oIdx === chosen) {
+            btnCls += ' wrong';
+          }
+        } else {
+          if (oIdx === chosen) {
+            btnCls += ' selected';
+          }
+        }
+
+        const optionLetter = String.fromCharCode(65 + oIdx);
+
+        return `
+          <button class="${btnCls}" data-q="${i}" data-choice="${oIdx}" ${disabledAttr}>
+            <span class="story-option-letter">${optionLetter}.</span>
+            <span class="story-option-text">${esc(opt)}</span>
+          </button>
+        `;
+      }).join('');
+
+      // Explanation & Evidence block after grading
+      let explanationHtml = '';
+      if (isGraded) {
+        const quoteText = q.quote_evidence || q.evidence || '';
+        const quoteSection = quoteText ? `
+          <div class="story-evidence-box">
+            <span class="story-box-icon">📌</span>
+            <div>
+              <b>Dẫn chứng trong bài đọc:</b>
+              <div class="story-quote-text">"${esc(quoteText)}"</div>
+            </div>
+          </div>
+        ` : '';
+
+        const explanationSection = q.explanation ? `
+          <div class="story-explanation-box">
+            <span class="story-box-icon">💡</span>
+            <div>
+              <b>Giải thích đáp án:</b>
+              <div class="story-exp-text">${esc(q.explanation)}</div>
+            </div>
+          </div>
+        ` : '';
+
+        explanationHtml = `
+          <div class="story-feedback-details fade-in">
+            ${explanationSection}
+            ${quoteSection}
+          </div>
+        `;
+      }
+
+      let qStatusBadge = '';
+      if (isGraded) {
+        if (chosen === undefined) {
+          qStatusBadge = `<span class="q-badge unselected">Chưa làm</span>`;
+        } else if (chosen === q.correct_index) {
+          qStatusBadge = `<span class="q-badge correct">✓ Đúng</span>`;
+        } else {
+          qStatusBadge = `<span class="q-badge wrong">✕ Sai</span>`;
+        }
+      }
+
+      return `
+        <div class="story-question-card ${isGraded ? (chosen === q.correct_index ? 'correct-border' : 'wrong-border') : ''}">
+          <div class="story-q-header">
+            <span class="story-q-number">Câu ${i + 1}/${questions.length}</span>
+            ${qStatusBadge}
+          </div>
+          <p class="story-q-text">${esc(q.question)}</p>
+          <div class="story-options-column" id="story-opts-${i}">
+            ${optionsHtml}
+          </div>
+          ${explanationHtml}
+        </div>
+      `;
+    }).join('');
+
+    // Bottom submit / score header
+    let footerHtml = '';
+    if (isGraded) {
+      const accuracyPct = Math.round((score / questions.length) * 100);
+      footerHtml = `
+        <div class="story-result-summary fade-in">
+          <div class="story-score-title">🎉 Kết quả bài đọc hiểu</div>
+          <div class="story-score-main">${score} / ${questions.length} câu đúng (${accuracyPct}%)</div>
+          <div class="story-actions">
+            <button class="btn primary" id="story-retry-btn">🔄 Làm lại bài này</button>
+            <button class="btn btn-outline" id="story-new-btn">⚡ Tạo bài đọc mới</button>
+          </div>
+        </div>
+      `;
+    } else {
+      footerHtml = `
+        <div class="story-submit-bar">
+          <button class="btn primary" id="story-grade-btn" style="padding: 12px 36px; font-size: 16px;">
+            Chấm điểm toàn bộ
+          </button>
+        </div>
+      `;
+    }
+
+    d.innerHTML = `
+      <div class="story-container">
+        ${passageHtml}
+        <div class="story-questions-section">
+          ${questionsHtml}
+        </div>
+        ${footerHtml}
+      </div>
+    `;
+
+    // Handlers
+    if (!isGraded) {
+      d.querySelectorAll('[data-choice]').forEach(btn => {
+        btn.onclick = () => {
+          if (state.isGraded) return;
+          const qIdx = +btn.dataset.q;
+          const cIdx = +btn.dataset.choice;
+
+          state.answers[qIdx] = cIdx;
+          if (state.activeSessions && state.activeSessions[gameId]) {
+            state.activeSessions[gameId].answers[qIdx] = cIdx;
+          }
+
+          const opts = d.querySelectorAll(`#story-opts-${qIdx} [data-choice]`);
+          opts.forEach(o => o.classList.remove('selected'));
+          btn.classList.add('selected');
+        };
+      });
+
+      const gradeBtn = document.querySelector('#story-grade-btn');
+      if (gradeBtn) {
+        gradeBtn.onclick = () => {
+          state.isGraded = true;
+          if (state.activeSessions && state.activeSessions[gameId]) {
+            state.activeSessions[gameId].isGraded = true;
+          }
+
+          let currentScore = 0;
+          questions.forEach((q, i) => {
+            if (state.answers[i] === q.correct_index) currentScore++;
+          });
+
+          if (state.currentHistoryItem) {
+            state.currentHistoryItem.answers = { ...state.answers };
+            state.currentHistoryItem.score = currentScore;
+          }
+          if (state.activeSessions && state.activeSessions[gameId] && state.activeSessions[gameId].historyItem) {
+            state.activeSessions[gameId].historyItem.answers = { ...state.answers };
+            state.activeSessions[gameId].historyItem.score = currentScore;
+          }
+          saveHistory();
+
+          renderStory(x);
+        };
+      }
+    } else {
+      const retryBtn = document.querySelector('#story-retry-btn');
+      if (retryBtn) {
+        retryBtn.onclick = () => {
+          state.answers = {};
+          state.isGraded = false;
+          if (state.activeSessions && state.activeSessions[gameId]) {
+            state.activeSessions[gameId].answers = {};
+            state.activeSessions[gameId].isGraded = false;
+          }
+          play(gameId);
+        };
+      }
+
+      const newBtn = document.querySelector('#story-new-btn');
+      if (newBtn) {
+        newBtn.onclick = () => generate(gameId);
+      }
+    }
+  }
 
   /* ---- TRANSLATION: 1 sentence, detailed AI grade ---- */
   function renderTranslation(x){const q=x.sentences[0];document.querySelector('#play').innerHTML='<div class="question-card"><p class="q-text">'+esc(q.source_text)+'</p><textarea id="answer" placeholder="Nhập bản dịch…"></textarea><button class="btn" id="grade">Chấm điểm</button><div id="feedback"></div></div>';document.querySelector('#grade').onclick=async()=>{try{setBusy(true,'Đang chấm điểm…');let r=await Bridge.sendAsync('ai_grade',{gamemode:'translation',level:document.querySelector('#level').value,user_answer:document.querySelector('#answer').value,expected:q.target_text,source_text:q.source_text});const fb=document.querySelector('#feedback');let html='<div class="feedback '+(r.correct?'good':'bad')+'"><b>'+(r.correct?'Chính xác!':'Cần cải thiện')+'</b><p>'+esc(r.explanation||r.feedback||'')+'</p><p>Đáp án: '+esc(q.target_text)+'</p>';if(q.detailed_feedback){const df=q.detailed_feedback;html+='<hr>';if(df.word_by_word){html+='<p><b>Phân tích từ:</b></p>'+df.word_by_word.map(w=>'<p>• <b>'+esc(w.word)+'</b>: '+esc(w.translation)+(w.notes?' — '+esc(w.notes):'')+'</p>').join('')}if(df.common_mistakes&&df.common_mistakes.length){html+='<p><b>Lỗi thường gặp:</b></p><ul>'+df.common_mistakes.map(m=>'<li>'+esc(m)+'</li>').join('')+'</ul>'}if(df.alternative_translations&&df.alternative_translations.length){html+='<p><b>Cách dịch khác:</b></p><ul>'+df.alternative_translations.map(t=>'<li>'+esc(t)+'</li>').join('')+'</ul>'}if(df.improvement_tips)html+='<p><b>Gợi ý:</b> '+esc(df.improvement_tips)+'</p>'}html+='<button class="btn" id="retry-trans">Làm lại</button></div>';fb.innerHTML=html;document.querySelector('#retry-trans').onclick=()=>{state.answers={};play(state.route)}}catch(e){toast(e.message)}finally{setBusy(false)}}}
