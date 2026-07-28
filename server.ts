@@ -99,6 +99,20 @@ const SCHEMAS: Record<string, any> = {
               items: { type: "string" },
               description: "BẮT BUỘC: 4 bản dịch TIẾNG VIỆT tương ứng 1-1 với 4 options."
             },
+            options_details: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  text: { type: "string", description: "Option word/phrase in target language." },
+                  translation: { type: "string", description: "Vietnamese translation of this option." },
+                  is_correct: { type: "boolean", description: "True if this option is correct." },
+                  reason: { type: "string", description: "Detailed explanation in Vietnamese explaining WHY this option is correct or incorrect." }
+                },
+                required: ["text", "translation", "is_correct", "reason"]
+              },
+              description: "BẮT BUỘC: Phân tích chi tiết từng lựa chọn (từ, nghĩa tiếng Việt, lý do đúng/sai)."
+            },
             sentence_vietnamese: {
               type: "string",
               description: "BẮT BUỘC: Bản dịch full_sentence sang TIẾNG VIỆT tự nhiên."
@@ -106,6 +120,10 @@ const SCHEMAS: Record<string, any> = {
             explanation_vietnamese: {
               type: "string",
               description: "BẮT BUỘC: Giải thích lý do chọn đáp án đúng bằng TIẾNG VIỆT chi tiết (ngữ pháp, từ vựng, ngữ cảnh)."
+            },
+            grammar_note_vietnamese: {
+              type: "string",
+              description: "Ghi chú ngữ pháp hoặc collocation ngắn gọn bằng TIẾNG VIỆT."
             }
           },
           required: [
@@ -323,15 +341,30 @@ function getFallbackExercise(gamemode: string, data: any) {
     return {
       questions: Array.from({ length: count }, (_, i) => {
         const item = vocab[i % vocab.length] || { term: "ubiquitous", definition: "present everywhere" };
+        const optWords = [item.term, "ephemeral", "pragmatic", "verbose"];
+        const optTrans = ["phổ biến khắp nơi", "ngắn hạn, tạm thời", "thực tế, thực tiễn", "dài dòng"];
+        const optReasons = [
+          `Chính xác! '${item.term}' có nghĩa là phổ biến khắp nơi, hoàn toàn phù hợp với ngữ cảnh mô tả sự xuất hiện rộng rãi của điện thoại thông minh.`,
+          "Không phù hợp: 'ephemeral' có nghĩa là chỉ kéo dài trong thời gian ngắn hoặc tạm thời, trái ngược với xu hướng dài lâu.",
+          "Không phù hợp: 'pragmatic' có nghĩa là thực tế, thiết thực trong việc giải quyết vấn đề, không mô tả tính phổ biến.",
+          "Không phù hợp: 'verbose' có nghĩa là dùng quá nhiều từ ngữ không cần thiết (dài dòng)."
+        ];
         return {
           sentence_with_blank: `Smartphones have become _____ in modern daily life.`,
           full_sentence: `Smartphones have become ${item.term} in modern daily life.`,
           blank_word: item.term,
-          options: [item.term, "ephemeral", "pragmatic", "verbose"],
-          options_translations: ["phổ biến khắp nơi", "ngắn hạn, tạm thời", "thực tế, thực tiễn", "dài dòng"],
+          options: optWords,
+          options_translations: optTrans,
+          options_details: optWords.map((w, idx) => ({
+            text: w,
+            translation: optTrans[idx],
+            is_correct: idx === 0,
+            reason: optReasons[idx]
+          })),
           correct_index: 0,
           explanation_short: `Chọn '${item.term}' vì ngữ cảnh mô tả điện thoại thông minh xuất hiện ở khắp mọi nơi trong đời sống hiện đại.`,
-          sentence_translation: `Điện thoại thông minh đã trở nên phổ biến khắp nơi trong cuộc sống hiện đại.`
+          sentence_translation: `Điện thoại thông minh đã trở nên phổ biến khắp nơi trong cuộc sống hiện đại.`,
+          grammar_note: "Cấu trúc ngữ pháp: 'become + adjective' (trở nên như thế nào)."
         };
       })
     };
@@ -783,12 +816,38 @@ CRITICAL RULES FOR JSON OUTPUT:
         // Post-process & normalize _vietnamese keys for client UI compatibility
         if (parsed) {
           if (gamemode === "fill_blank" && parsed.questions) {
-            parsed.questions = parsed.questions.map((q: any) => ({
-              ...q,
-              options_translations: q.options_vietnamese || q.options_translations || [],
-              sentence_translation: q.sentence_vietnamese || q.sentence_translation || "",
-              explanation_short: q.explanation_vietnamese || q.explanation_short || ""
-            }));
+            parsed.questions = parsed.questions.map((q: any) => {
+              const rawOpts = q.options || [];
+              const opts = rawOpts.map((o: any) => typeof o === 'object' ? (o.text || o.word || String(o)) : String(o));
+              const trans = q.options_vietnamese || q.options_translations || [];
+              let details = Array.isArray(q.options_details) ? q.options_details : [];
+
+              if (!details.length && opts.length) {
+                details = opts.map((optText: string, idx: number) => {
+                  const isCorrect = idx === q.correct_index;
+                  const tr = trans[idx] || (typeof rawOpts[idx] === 'object' ? rawOpts[idx].translation : '');
+                  const reason = isCorrect
+                    ? (q.explanation_vietnamese || q.explanation_short || `Từ '${optText}' phù hợp với ngữ cảnh câu.`)
+                    : `Không phù hợp: Từ '${optText}' ${tr ? `(${tr})` : ''} không chính xác trong ngữ cảnh này.`;
+                  return {
+                    text: optText,
+                    translation: tr,
+                    is_correct: isCorrect,
+                    reason: reason
+                  };
+                });
+              }
+
+              return {
+                ...q,
+                options: opts,
+                options_translations: trans,
+                options_details: details,
+                sentence_translation: q.sentence_vietnamese || q.full_sentence_translation || q.sentence_translation || "",
+                explanation_short: q.explanation_vietnamese || q.explanation_short || "",
+                grammar_note: q.grammar_note_vietnamese || q.grammar_note || ""
+              };
+            });
           } else if (gamemode === "cloze") {
             if (parsed.sentence_meaning_vietnamese || parsed.sentence_vietnamese) {
               parsed.sentence_meaning = parsed.sentence_meaning_vietnamese || parsed.sentence_vietnamese || parsed.sentence_meaning || "";

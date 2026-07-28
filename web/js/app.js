@@ -347,6 +347,46 @@ const App = (() => {
     });
   }
 
+  function buildOptionDetailsHtml(q, chosen) {
+    const optTrans = q.options_translations || [];
+    const details = q.options_details || [];
+
+    const items = q.options.map((opt, idx) => {
+      const isAns = idx === q.correct_index;
+      const isUserChoice = idx === chosen;
+      const letter = String.fromCharCode(65 + idx);
+      const detailObj = details[idx] || {};
+      const tr = detailObj.translation || optTrans[idx] || '';
+      const reason = detailObj.reason || (isAns ? (q.explanation_short || 'Từ phù hợp ngữ cảnh câu.') : 'Phương án gây nhiễu.');
+
+      let badgeBg = isAns ? '#d1fae5' : (isUserChoice ? '#fee2e2' : 'var(--bg)');
+      let badgeColor = isAns ? '#047857' : (isUserChoice ? '#b91c1c' : 'var(--text-secondary)');
+      let badgeLabel = isAns ? '✓ Đáp án đúng' : (isUserChoice ? '✕ Bạn chọn' : 'Từ gây nhiễu');
+      let borderColor = isAns ? 'var(--success)' : (isUserChoice ? 'var(--error)' : 'var(--border)');
+
+      return `
+        <div style="padding:10px 12px; border-left:4px solid ${borderColor}; background:var(--bg); border-radius:4px; margin-bottom:8px; text-align:left;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px; margin-bottom:4px;">
+            <span style="font-size:14px;"><b>${letter}. ${esc(opt)}</b> ${tr ? `<span style="color:var(--text-secondary); font-size:13px;">— ${esc(tr)}</span>` : ''}</span>
+            <span style="font-size:11px; padding:2px 8px; border-radius:10px; font-weight:600; background:${badgeBg}; color:${badgeColor}; border:1px solid ${borderColor};">${badgeLabel}</span>
+          </div>
+          <div style="font-size:13px; color:var(--text); line-height:1.4;">
+            <b>Lý do:</b> ${esc(reason)}
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    return `
+      <div style="margin-top:14px; text-align:left;">
+        <b style="font-size:14px;">📊 Phân tích chi tiết các lựa chọn:</b>
+        <div style="margin-top:8px;">
+          ${items}
+        </div>
+      </div>
+    `;
+  }
+
   function renderHistoryDetail(gameId, idx) {
     const item = state.history[gameId]?.[idx];
     if (!item) return;
@@ -368,52 +408,30 @@ const App = (() => {
       detailContent = questions.map((q, qIdx) => {
         const chosen = userAnswers[qIdx];
         const isCorrect = chosen === q.correct_index;
-        const optTrans = q.options_translations || [];
-
-        const optItems = q.options.map((opt, oIdx) => {
-          const tr = optTrans[oIdx] ? ` — ${esc(optTrans[oIdx])}` : '';
-          const isAns = oIdx === q.correct_index;
-          const isUserChoice = oIdx === chosen;
-
-          let style = '';
-          let badge = '';
-          if (isAns) {
-            style = 'font-weight:600; color:var(--success);';
-            badge = ' ✓ (Đáp án đúng)';
-          } else if (isUserChoice && !isCorrect) {
-            style = 'font-weight:600; color:var(--error); text-decoration:line-through;';
-            badge = ' ✕ (Bạn chọn)';
-          }
-
-          return `<li style="${style}"><b>${String.fromCharCode(65 + oIdx)}. ${esc(opt)}</b>${tr}${badge}</li>`;
-        }).join('');
 
         return `
           <div class="question-card" style="margin-bottom:16px;">
             <div class="q-number">Câu ${qIdx + 1}/${questions.length}</div>
-            <div class="q-text">${esc(q.sentence_with_blank)}</div>
+            <div class="q-text" style="font-size:16px; font-weight:600;">${esc(q.sentence_with_blank)}</div>
 
             <div class="feedback ${chosen !== undefined ? (isCorrect ? 'good' : 'bad') : ''}" style="margin-top:12px;">
               ${chosen !== undefined ? `
-                <div style="font-weight:600; font-size:14px; margin-bottom:8px; color:${isCorrect ? 'var(--success)' : 'var(--error)'};">
+                <div style="font-weight:700; font-size:15px; margin-bottom:8px; color:${isCorrect ? 'var(--success)' : 'var(--error)'};">
                   ${isCorrect ? 'Chính xác! ✓' : 'Chưa đúng ✕'}
                 </div>
               ` : '<div style="color:var(--text-secondary); margin-bottom:8px;">(Chưa làm bài)</div>'}
 
-              <p style="margin-bottom:6px;">
-                <b>💡 Lý do chọn:</b> ${esc(q.explanation_short || '')}
-              </p>
-
-              <p style="margin-bottom:6px;">
-                <b>🌐 Dịch câu:</b> ${esc(q.sentence_translation || '')}
-              </p>
-
-              <div style="margin-top:10px;">
-                <b>📚 Bản dịch các từ lựa chọn:</b>
-                <ul style="margin:6px 0 0 18px; padding:0; list-style-type:disc; font-size:13px; line-height:1.6;">
-                  ${optItems}
-                </ul>
+              <div style="margin-bottom:8px;">
+                <b>🌐 Dịch câu hoàn chỉnh:</b> ${esc(q.sentence_translation || q.full_sentence_translation || 'Không có bản dịch')}
               </div>
+
+              <div style="margin-bottom:8px;">
+                <b>💡 Lý do chọn:</b> ${esc(q.explanation_short || '')}
+              </div>
+
+              ${q.grammar_note ? `<div style="margin-bottom:8px;"><b>📌 Ghi chú ngữ pháp:</b> ${esc(q.grammar_note)}</div>` : ''}
+
+              ${buildOptionDetailsHtml(q, chosen)}
             </div>
           </div>
         `;
@@ -896,14 +914,6 @@ const App = (() => {
       let feedbackHtml = '';
       if (isGraded) {
         const isCorrect = chosen === q.correct_index;
-        const optTrans = q.options_translations || [];
-        const optItems = q.options.map((opt, idx) => {
-          const tr = optTrans[idx] ? ` — ${esc(optTrans[idx])}` : '';
-          const isAns = idx === q.correct_index;
-          return `<li style="${isAns ? 'font-weight:600; color:var(--success);' : ''}">
-            <b>${String.fromCharCode(65 + idx)}. ${esc(opt)}</b>${tr} ${isAns ? ' ✓ (Đáp án đúng)' : ''}
-          </li>`;
-        }).join('');
 
         feedbackHtml = `
           <div class="feedback ${isCorrect ? 'good' : 'bad'}" style="margin-top:16px; padding:16px; border-radius:8px;">
@@ -912,25 +922,29 @@ const App = (() => {
             </div>
             
             <div style="margin-bottom:10px;">
-              <b>💡 Lý do chọn (Giải thích Tiếng Việt):</b>
+              <b>🌐 Dịch câu hoàn chỉnh:</b>
+              <div style="margin-top:4px; padding:10px 12px; background:rgba(0,0,0,0.03); border-radius:6px; font-size:13.5px; line-height:1.5;">
+                ${esc(q.sentence_translation || q.full_sentence_translation || 'Không có bản dịch')}
+              </div>
+            </div>
+
+            <div style="margin-bottom:10px;">
+              <b>💡 Lý do chọn:</b>
               <div style="margin-top:4px; padding:10px 12px; background:rgba(0,0,0,0.03); border-radius:6px; font-size:13.5px; line-height:1.5;">
                 ${esc(q.explanation_short || 'Không có giải thích')}
               </div>
             </div>
 
+            ${q.grammar_note ? `
             <div style="margin-bottom:10px;">
-              <b>🌐 Dịch câu hoàn chỉnh:</b>
+              <b>📌 Ghi chú ngữ pháp:</b>
               <div style="margin-top:4px; padding:10px 12px; background:rgba(0,0,0,0.03); border-radius:6px; font-size:13.5px; line-height:1.5;">
-                ${esc(q.sentence_translation || 'Không có bản dịch')}
+                ${esc(q.grammar_note)}
               </div>
             </div>
+            ` : ''}
 
-            <div style="margin-top:12px;">
-              <b>📚 Bản dịch các từ lựa chọn:</b>
-              <ul style="margin:6px 0 0 18px; padding:0; list-style-type:disc; font-size:13.5px; line-height:1.6;">
-                ${optItems}
-              </ul>
-            </div>
+            ${buildOptionDetailsHtml(q, chosen)}
           </div>
         `;
       }
@@ -1494,6 +1508,18 @@ const App = (() => {
           <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 20px;">
             Kết quả bài làm đã được tự động lưu vào Lịch sử.
           </p>
+
+          <div style="margin-bottom: 24px; text-align: left;">
+            <b style="font-size: 15px;">📚 Ôn tập danh sách cặp từ vựng vừa ghép:</b>
+            <div style="margin-top: 10px; display: grid; gap: 8px;">
+              ${allPairs.map((p, pIdx) => `
+                <div style="padding: 10px 14px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                  <b>${pIdx + 1}. ${esc(p.term)}</b>
+                  <span style="color: var(--primary); font-weight: 600;">➔ ${esc(p.definition)}</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
 
           <div style="display: flex; justify-content: center; gap: 12px; flex-wrap: wrap;">
             <button class="btn primary" id="restart-matching-btn" style="padding: 10px 24px;">🔄 Chơi lại bài này</button>
