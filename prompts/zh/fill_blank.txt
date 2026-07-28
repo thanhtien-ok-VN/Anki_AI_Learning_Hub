@@ -4,26 +4,50 @@
 
 每个句子必须：
 - 恰好有一个空白处标记为 _____
-- 是一个完整、自然的句子，适合学习者的水平
-- 测试一个有意义的词汇或语法点
-
-对于每个空白：
-- 提供恰好 4 个选项：1 个正确 + 3 个干扰项
-- 干扰项必须合理（相同的词性，该水平常见的学习者错误）
-- 提供关于所测试语法/词汇的简短提示
-- 提供为什么答案是正确的原因
-- 提供语义解释（上下文中的含义）
-- 提供语法规则解释
-- 提供词汇关系说明（搭配、同义词、反义词）
+- 提供 4 个选项：1 个正确 + 3 个干扰项
+- 必须提供 4 个选项的详细分析（字段：options_details），包括每个选项的越南语翻译、是否正确、以及详细的原因解释
 - 提供完整句子的越南语翻译（字段：sentence_translation）
-- 提供正确词汇的越南语释义（字段：word_meaning）
-- 提供 {language} 中的用法示例句子（字段：usage_example）
+- 提供简短的语法/搭配说明（字段：grammar_note）
 
 输出有效 JSON：
-{{ "questions": [
-  {{ "sentence_with_blank": "...", "full_sentence": "...", "blank_word": "...",
-     "options": ["A","B","C","D"], "correct_index": 0,
-     "hint": "...", "explanation_short": "...",
-     "semantic": "...", "grammar": "...", "vocab_relation": "...",
-     "sentence_translation": "...", "word_meaning": "...", "usage_example": "..." }}
-] }}
+{
+  "questions": [
+    {
+      "sentence_with_blank": "...",
+      "full_sentence": "...",
+      "blank_word": "...",
+      "options": ["A","B","C","D"],
+      "correct_index": 0,
+      "options_translations": ["Nghĩa A", "Nghĩa B", "Nghĩa C", "Nghĩa D"],
+      "options_details": [
+        {
+          "text": "A",
+          "translation": "Nghĩa tiếng Việt A",
+          "is_correct": true,
+          "reason": "Lý do đúng chi tiết bằng tiếng Việt"
+        },
+        {
+          "text": "B",
+          "translation": "Nghĩa tiếng Việt B",
+          "is_correct": false,
+          "reason": "Lý do sai chi tiết bằng tiếng Việt"
+        },
+        {
+          "text": "C",
+          "translation": "Nghĩa tiếng Việt C",
+          "is_correct": false,
+          "reason": "Lý do sai"
+        },
+        {
+          "text": "D",
+          "translation": "Nghĩa tiếng Việt D",
+          "is_correct": false,
+          "reason": "Lý do sai"
+        }
+      ],
+      "sentence_translation": "Dịch toàn bộ câu sang tiếng Việt",
+      "explanation_short": "Lý do chọn đáp án đúng",
+      "grammar_note": "Ghi chú ngữ pháp/collocation"
+    }
+  ]
+}
