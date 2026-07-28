@@ -101,68 +101,139 @@ const App = (() => {
     Bridge.send('clear_context');
   }
 
+  let currentAbortController = new AbortController();
+
+  function abortActiveRequests() {
+    if (currentAbortController) {
+      currentAbortController.abort();
+    }
+    currentAbortController = new AbortController();
+    if (typeof Bridge !== 'undefined' && Bridge.abortAll) {
+      Bridge.abortAll();
+    }
+  }
+
+  function getSignal() {
+    if (!currentAbortController || currentAbortController.signal.aborted) {
+      currentAbortController = new AbortController();
+    }
+    return currentAbortController.signal;
+  }
+
   const state = { route: 'home', decks: [], pairs: [], seen: new Set(), exercise: null, index: 0, answers: {}, busy: false, history: {}, userPrefs: {} };
   loadPrefs();
   loadHistory();
 
   const root = document.querySelector('#app');
+  const t = (key, fallback, ...args) => window.t ? window.t(key, fallback, ...args) : (fallback || key);
+  const normalizeText = text => {
+    if (!text) return "";
+    return String(text)
+      .trim()
+      .toLowerCase()
+      .normalize('NFKD')
+      .replace(/[.,!?;:]$/, '')
+      .replace(/\s+/g, ' ');
+  };
+  const norm = normalizeText;
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const sanitizeHtml = htmlContent => {
+    if (!htmlContent || typeof htmlContent !== 'string') return htmlContent || '';
+    return htmlContent
+      .replace(/<(script|iframe|object|embed|style|link|form|input|button)\b[^<]*(?:(?!<\/\1>)<[^<]*)*<\/\1>/gi, '')
+      .replace(/<(script|iframe|object|embed|style|link|form|input|button)\b[^>]*\/?>/gi, '')
+      .replace(/\s*on\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+      .replace(/(href|src|action)\s*=\s*["']?\s*javascript:[^"'>]*["']?/gi, '');
+  };
   const toast = m => { const e = document.createElement('div'); e.className = 'toast'; e.textContent = m; document.body.append(e); setTimeout(() => e.remove(), 3500); };
-  const nav = r => { state.route = r; location.hash = r === 'home' ? '' : r; render(); };
-  const shell = body => { state.busy = false; root.innerHTML = `<div class="timer-bar"><span class="timer-label">AI Learning Hub</span><span id="busy-label"></span><button id="close-hub">Đóng Hub</button></div>${body}<div id="loading" class="loading-overlay" hidden><div class="spinner"></div><span id="loading-text">Đang xử lý…</span></div>`; document.querySelector('#loading').hidden = true; };
+  const nav = r => {
+    if (window._activeMatchingTimer) { clearInterval(window._activeMatchingTimer); window._activeMatchingTimer = null; }
+    abortActiveRequests();
+    state.route = r;
+    location.hash = r === 'home' ? '' : r;
+    render();
+  };
+  const shell = body => {
+    state.busy = false;
+    root.innerHTML = `<div class="timer-bar"><span class="timer-label">${esc(t('app.title', 'AI Learning Hub'))}</span><span id="busy-label"></span><button id="close-hub" aria-label="${esc(t('app.close_hub', 'Đóng Hub'))}">${esc(t('app.close_hub', 'Đóng Hub'))}</button></div>${body}<div id="loading" class="loading-overlay" hidden><div class="spinner"></div><span id="loading-text">${esc(t('app.processing', 'Đang xử lý…'))}</span><button id="loading-cancel-btn" class="btn" style="margin-top:16px; background:#ef4444; color:white; border:none; padding:8px 20px; border-radius:6px; font-weight:600; cursor:pointer;" type="button">${esc(t('app.cancel_gen', 'Hủy tạo bài'))}</button></div>`;
+    document.querySelector('#loading').hidden = true;
+  };
 
-  function setBusy(on, text = 'Đang tạo bài…') {
+  function setBusy(on, text = t('app.generating', 'Đang tạo bài…')) {
     state.busy = on;
     const e = document.querySelector('#loading');
     if (e) {
       e.hidden = !on;
-      document.querySelector('#loading-text').textContent = text;
+      const tEl = document.querySelector('#loading-text');
+      if (tEl) tEl.textContent = text;
+      const cBtn = document.querySelector('#loading-cancel-btn');
+      if (cBtn) {
+        cBtn.textContent = text.includes('tạo bài') || text.includes('Generating') ? t('app.cancel_gen', 'Hủy tạo bài') : t('app.cancel_action', 'Hủy thao tác');
+      }
     }
-    document.querySelectorAll('button,input,select,textarea').forEach(x => { if (x.id !== 'close-hub') x.disabled = on; });
+    const cancelGen = document.querySelector('#cancel-gen');
+    if (cancelGen) {
+      cancelGen.style.display = on ? 'inline-block' : 'none';
+    }
+    document.querySelectorAll('button,input,select,textarea').forEach(x => {
+      if (x.id !== 'close-hub' && x.id !== 'loading-cancel-btn' && x.id !== 'cancel-gen' && x.id !== 'back') {
+        x.disabled = on;
+      }
+    });
   }
 
   function home() {
-    shell('<main class="container"><div class="header" style="padding-top:50px"><h1>AI Learning Hub</h1><p>Chọn một game để học từ bộ thẻ Anki</p><div class="api-check"><button class="btn btn-outline" id="test-keys">Kiểm tra API</button><span id="api-result" aria-live="polite"></span></div></div><div class="game-grid">' + games.map(g => '<button class="game-card" data-game="' + g[0] + '"><div class="icon">' + g[1] + '</div><h3>' + g[2] + '</h3><p>' + getGameDesc(g[0]) + '</p></button>').join('') + '</div></main>');
+    shell('<main class="container"><div class="header" style="padding-top:50px"><h1>' + esc(t('app.title', 'AI Learning Hub')) + '</h1><p>' + esc(t('app.home_subtitle', 'Chọn một game để học từ bộ thẻ Anki')) + '</p><div class="api-check"><button class="btn btn-outline" id="test-keys">' + esc(t('app.test_api', 'Kiểm tra API')) + '</button><span id="api-result" aria-live="polite"></span></div></div><div class="game-grid">' + games.map(g => '<button class="game-card" data-game="' + g[0] + '"><div class="icon">' + g[1] + '</div><h3>' + esc(t(g[0] + '.title', g[2])) + '</h3><p>' + esc(getGameDesc(g[0])) + '</p></button>').join('') + '</div></main>');
     bindCommon();
     document.querySelectorAll('[data-game]').forEach(e => e.onclick = () => nav(e.dataset.game));
     document.querySelector('#test-keys').onclick = testKeys;
   }
 
   function getGameDesc(id) {
-    const m = { fill_blank: 'Điền từ vào chỗ trống trong câu', cloze: 'Điền từ vào đoạn văn có chỗ trống', translation: 'Dịch câu từ tiếng Việt sang ngoại ngữ', unscramble: 'Sắp xếp từ thành câu hoàn chỉnh', matching: 'Nối từ với định nghĩa tương ứng', story: 'Đọc truyện và trả lời câu hỏi', sentence_transform: 'Biến đổi câu theo yêu cầu ngữ pháp', taboo: 'Đoán từ qua mô tả (không dùng từ cấm)' };
-    return m[id] || 'Luyện tập tương tác';
+    const m = {
+      fill_blank: t('desc.fill_blank', 'Điền từ vào chỗ trống trong câu'),
+      cloze: t('desc.cloze', 'Điền từ vào đoạn văn có chỗ trống'),
+      translation: t('desc.translation', 'Dịch câu từ tiếng Việt sang ngoại ngữ'),
+      unscramble: t('desc.unscramble', 'Sắp xếp từ thành câu hoàn chỉnh'),
+      matching: t('desc.matching', 'Nối từ với định nghĩa tương ứng'),
+      story: t('desc.story', 'Đọc truyện và trả lời câu hỏi'),
+      sentence_transform: t('desc.sentence_transform', 'Biến đổi câu theo yêu cầu ngữ pháp'),
+      taboo: t('desc.taboo', 'Đoán từ qua mô tả (không dùng từ cấm)')
+    };
+    return m[id] || t('desc.default', 'Luyện tập tương tác');
   }
 
   function source() {
-    return `<section class="config-panel source-panel"><h3>Nguồn từ vựng Anki</h3><label>Tìm deck <input id="deck-search" placeholder="Gõ một phần tên deck…"></label><select id="deck" class="deck-list" size="7"></select><div class="selector-grid"><label>Note type<select id="model"><option>Chọn deck</option></select></label><label>Thuật ngữ<select id="term"><option>Chọn note type</option></select></label><label>Định nghĩa<select id="definition"><option>Chọn note type</option></select></label></div><div class="config-row"><label>Số từ mẫu <input id="sample-limit" type="number" value="20" min="1" max="50"></label><button id="sample" class="btn btn-outline">Lấy mẫu</button><button id="reset-samples" class="btn btn-outline">Làm mới vòng</button></div><p id="source-status" class="source-status">Mẫu được chọn ngẫu nhiên, không lặp trong phiên Hub.</p><details id="sample-preview"><summary>Chưa có mẫu để xem</summary><ol id="sample-list"></ol></details></section>`;
+    return `<section class="config-panel source-panel"><h3>${esc(t('source.title', 'Nguồn từ vựng Anki'))}</h3><label>${esc(t('source.search', 'Tìm deck'))} <input id="deck-search" placeholder="${esc(t('source.search_placeholder', 'Gõ một phần tên deck…'))}"></label><select id="deck" class="deck-list" size="7"></select><div class="selector-grid"><label>${esc(t('source.note_type', 'Note type'))}<select id="model"><option>${esc(t('source.select_deck_first', 'Chọn deck'))}</option></select></label><label>${esc(t('source.term', 'Thuật ngữ'))}<select id="term"><option>${esc(t('source.select_notetype_first', 'Chọn note type'))}</option></select></label><label>${esc(t('source.definition', 'Định nghĩa'))}<select id="definition"><option>${esc(t('source.select_notetype_first', 'Chọn note type'))}</option></select></label></div><div class="config-row"><label>${esc(t('source.sample_count', 'Số từ mẫu'))} <input id="sample-limit" type="number" value="20" min="1" max="50"></label><button id="sample" class="btn btn-outline">${esc(t('source.get_samples', 'Lấy mẫu'))}</button><button id="reset-samples" class="btn btn-outline">${esc(t('source.reset_round', 'Làm mới vòng'))}</button></div><p id="source-status" class="source-status">${esc(t('source.status', 'Mẫu được chọn ngẫu nhiên, không lặp trong phiên Hub.'))}</p><details id="sample-preview"><summary>${esc(t('source.preview_empty', 'Chưa có mẫu để xem'))}</summary><ol id="sample-list"></ol></details></section>`;
   }
 
   function controls(id) {
     let max = id === 'matching' ? 20 : 5, min = id === 'matching' ? 5 : 1, extra = '';
     if (id === 'cloze') {
       max = 1; min = 1;
-      extra = '<label>Số blank<select id="num_blanks">' + Array.from({ length: 6 }, (_, i) => '<option ' + (i + 5 === 5 ? 'selected' : '') + '>' + (i + 5) + '</option>').join('') + '</select></label>';
+      extra = '<label>' + esc(t('controls.num_blanks', 'Số blank')) + '<select id="num_blanks">' + Array.from({ length: 6 }, (_, i) => '<option ' + (i + 5 === 5 ? 'selected' : '') + '>' + (i + 5) + '</option>').join('') + '</select></label>';
     }
     if (id === 'sentence_transform') {
       max = 1; min = 1;
-      extra = '<label>Dạng<select id="focus"><option value="voice">Voice (Câu bị động)</option><option value="conditional">Conditional (Câu điều kiện)</option><option value="reported">Reported (Câu tường thuật)</option><option value="comparative">Comparative (So sánh)</option></select></label>';
+      extra = '<label>' + esc(t('controls.form_type', 'Dạng')) + '<select id="focus"><option value="voice">' + esc(t('controls.voice_passive', 'Voice (Câu bị động)')) + '</option><option value="conditional">' + esc(t('controls.conditional', 'Conditional (Câu điều kiện)')) + '</option><option value="reported">' + esc(t('controls.reported', 'Reported (Câu tường thuật)')) + '</option><option value="comparative">' + esc(t('controls.comparative', 'Comparative (So sánh)')) + '</option></select></label>';
     }
     if (id === 'translation' || id === 'taboo') { max = 1; min = 1; }
 
     const hideCount = (max === min && min === 1) || id === 'cloze' || id === 'translation' || id === 'taboo' || id === 'sentence_transform';
-    const countLabel = id === 'matching' ? 'Số cặp từ' : 'Số câu';
-    const countSelect = hideCount ? '' : '<label>' + countLabel + '<select id="count">' + Array.from({ length: max - min + 1 }, (_, i) => '<option ' + ((i + min === 10 || (max < 10 && i + min === min)) ? 'selected' : '') + '>' + (i + min) + '</option>').join('') + '</select></label>';
+    const countLabel = id === 'matching' ? t('controls.pair_count', 'Số cặp từ') : t('controls.question_count', 'Số câu');
+    const countSelect = hideCount ? '' : '<label>' + esc(countLabel) + '<select id="count">' + Array.from({ length: max - min + 1 }, (_, i) => '<option ' + ((i + min === 10 || (max < 10 && i + min === min)) ? 'selected' : '') + '>' + (i + min) + '</option>').join('') + '</select></label>';
 
-    return '<section class="config-panel"><div class="selector-grid"><label>Ngôn ngữ<select id="language"><option value="en">English</option><option value="zh">中文 (Chinese)</option></select></label><label>Trình độ<select id="level"><option value="beginner">A1 Beginner</option><option value="elementary">A2 Elementary</option><option value="intermediate" selected>B1 Intermediate</option><option value="upper_intermediate">B2 Upper-intermediate</option><option value="advanced">C1–C2 Advanced</option></select></label>' + countSelect + extra + '<label>Chủ đề<input id="topic" value="daily_life"></label></div><button class="btn" id="generate">Tạo bài</button></section>';
+    return '<section class="config-panel"><div class="selector-grid"><label>' + esc(t('app.language', 'Ngôn ngữ')) + '<select id="language"><option value="en">' + esc(t('app.language_en', 'English')) + '</option><option value="zh">' + esc(t('app.language_zh', '中文 (Chinese)')) + '</option></select></label><label>' + esc(t('app.level', 'Trình độ')) + '<select id="level"><option value="beginner">' + esc(t('controls.level_beginner', 'A1 Beginner')) + '</option><option value="elementary">' + esc(t('controls.level_elementary', 'A2 Elementary')) + '</option><option value="intermediate" selected>' + esc(t('controls.level_intermediate', 'B1 Intermediate')) + '</option><option value="upper_intermediate">' + esc(t('controls.level_upper_intermediate', 'B2 Upper-intermediate')) + '</option><option value="advanced">' + esc(t('controls.level_advanced', 'C1–C2 Advanced')) + '</option></select></label>' + countSelect + extra + '<label>' + esc(t('app.topic', 'Chủ đề')) + '<input id="topic" value="daily_life"></label></div><div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-top:12px;"><button class="btn primary" id="generate">' + esc(t('controls.generate', 'Tạo bài')) + '</button><button class="btn" id="cancel-gen" style="display:none; background:#ef4444; color:white; border:none; padding:10px 20px; font-weight:600;" type="button">' + esc(t('app.cancel_gen', 'Hủy tạo bài')) + '</button></div></section>';
   }
 
   function game() {
     const g = games.find(x => x[0] === state.route);
+    const titleText = t(g[0] + '.title', g[2]);
     shell(`<main class="container game-page" style="padding-top:50px">
       <div class="game-header">
-        <button id="back" class="back-btn">← Hub</button>
-        <h2 class="game-title">${g[1]} ${g[2]}</h2>
-        <button id="open-history-btn" class="history-btn">📜 Lịch sử</button>
+        <button id="back" class="back-btn">${esc(t('app.back_hub', '← Hub'))}</button>
+        <h2 class="game-title">${g[1]} ${esc(titleText)}</h2>
+        <button id="open-history-btn" class="history-btn">${esc(t('app.history', '📜 Lịch sử'))}</button>
       </div>
       ${source()}
       ${controls(g[0])}
@@ -171,8 +242,8 @@ const App = (() => {
       <div id="history-modal" class="modal-overlay" hidden>
         <div class="modal-content">
           <div class="modal-header">
-            <h3 id="history-modal-title">📜 Lịch sử làm bài</h3>
-            <button id="close-history-modal" class="modal-close-btn">✕</button>
+            <h3 id="history-modal-title">${esc(t('app.history_title', '📜 Lịch sử làm bài'))}</h3>
+            <button id="close-history-modal" class="modal-close-btn">${esc(t('app.close', '✕'))}</button>
           </div>
           <div id="history-modal-body" class="modal-body"></div>
         </div>
@@ -191,6 +262,8 @@ const App = (() => {
       state.isGraded = sess.isGraded || false;
       state.currentHistoryItem = sess.historyItem || null;
       play(gameId);
+    } else {
+      resetGameState(gameId);
     }
 
     document.querySelector('#back').onclick = () => { savePrefs(); nav('home'); };
@@ -232,10 +305,10 @@ const App = (() => {
     const historyList = state.history[gameId] || [];
     const container = document.querySelector('#history-modal-body');
     const title = document.querySelector('#history-modal-title');
-    if (title) title.textContent = '📜 Lịch sử làm bài';
+    if (title) title.textContent = t('app.history_title', '📜 Lịch sử làm bài');
 
     if (!historyList.length) {
-      container.innerHTML = '<div class="empty-state"><p>Chưa có lịch sử làm bài nào.</p></div>';
+      container.innerHTML = '<div class="empty-state"><p>' + esc(t('app.no_history', 'Chưa có lịch sử làm bài nào.')) + '</p></div>';
       return;
     }
 
@@ -494,10 +567,30 @@ const App = (() => {
   }
 
   function bindCommon() {
-    document.querySelector('#close-hub').onclick = () => {
-      clearPrefs();
-      Bridge.send('close_hub');
-    };
+    const closeBtn = document.querySelector('#close-hub');
+    if (closeBtn) {
+      closeBtn.onclick = () => {
+        abortActiveRequests();
+        clearPrefs();
+        Bridge.send('close_hub');
+      };
+    }
+    const cancelBtn = document.querySelector('#loading-cancel-btn');
+    if (cancelBtn) {
+      cancelBtn.onclick = () => {
+        abortActiveRequests();
+        setBusy(false);
+        toast('Đã hủy thao tác.');
+      };
+    }
+    const cancelGen = document.querySelector('#cancel-gen');
+    if (cancelGen) {
+      cancelGen.onclick = () => {
+        abortActiveRequests();
+        setBusy(false);
+        toast('Đã hủy tạo bài.');
+      };
+    }
   }
 
   function options(sel, items, label = x => x.name) {
@@ -514,8 +607,9 @@ const App = (() => {
   }
 
   async function bindSource() {
+    const signal = getSignal();
     try {
-      state.decks = (await Bridge.sendAsync('list_decks')).decks || [];
+      state.decks = (await Bridge.sendAsync('list_decks', {}, { signal })).decks || [];
       drawDecks();
 
       const p = state.userPrefs;
@@ -525,6 +619,7 @@ const App = (() => {
         await loadModels();
       }
     } catch (e) {
+      if (e.name === 'AbortError' || e.error_code === 'E_ABORTED') return;
       toast(e.message);
     }
 
@@ -581,10 +676,11 @@ const App = (() => {
   async function loadModels() {
     state.seen.clear();
     state.pairs = [];
+    const signal = getSignal();
     try {
       const deckVal = document.querySelector('#deck')?.value;
       if (!deckVal) return;
-      options('#model', (await Bridge.sendAsync('get_source_models', { deck_id: +deckVal })).models || []);
+      options('#model', (await Bridge.sendAsync('get_source_models', { deck_id: +deckVal }, { signal })).models || []);
       options('#term', []);
       options('#definition', []);
 
@@ -595,6 +691,7 @@ const App = (() => {
         await loadFields();
       }
     } catch (e) {
+      if (e.name === 'AbortError' || e.error_code === 'E_ABORTED') return;
       toast(e.message);
     }
   }
@@ -602,10 +699,11 @@ const App = (() => {
   async function loadFields() {
     state.seen.clear();
     state.pairs = [];
+    const signal = getSignal();
     try {
       const modelVal = document.querySelector('#model')?.value;
       if (!modelVal) return;
-      const f = (await Bridge.sendAsync('get_source_fields', { model_id: +modelVal })).fields || [];
+      const f = (await Bridge.sendAsync('get_source_fields', { model_id: +modelVal }, { signal })).fields || [];
       options('#term', f, x => x);
       options('#definition', f, x => x);
 
@@ -619,6 +717,7 @@ const App = (() => {
         defElem.value = p.definition;
       }
     } catch (e) {
+      if (e.name === 'AbortError' || e.error_code === 'E_ABORTED') return;
       toast(e.message);
     }
   }
@@ -640,24 +739,32 @@ const App = (() => {
   }
 
   async function sample() {
+    const signal = getSignal();
     try {
-      const data = await Bridge.sendAsync('sample_vocab_pairs', request());
+      const data = await Bridge.sendAsync('sample_vocab_pairs', request(), { signal });
       if (data.exhausted) throw Error('Đã dùng hết mẫu trong vòng này. Bấm Làm mới vòng.');
       state.pairs = data.pairs || [];
       state.pairs.forEach(x => state.seen.add(x.key));
-      document.querySelector('#source-status').textContent = `Đã lấy ${data.total} cặp ngẫu nhiên.`;
+      const srcStat = document.querySelector('#source-status');
+      if (srcStat) srcStat.textContent = `Đã lấy ${data.total} cặp ngẫu nhiên.`;
       preview();
       savePrefs();
       return !!state.pairs.length;
     } catch (e) {
+      if (e.name === 'AbortError' || e.error_code === 'E_ABORTED') return false;
       toast(e.message);
       return false;
     }
   }
   async function generate(id){
+    const signal = getSignal();
     try {
+      resetGameState(id);
       setBusy(true);
-      if(!state.pairs.length && !await sample()) return;
+      if(!state.pairs.length && !await sample()) {
+        if (signal.aborted) return;
+      }
+      if (signal.aborted) return;
       const lang = document.querySelector('#language');
       const countEl = document.querySelector('#count');
       const levelEl = document.querySelector('#level');
@@ -678,7 +785,8 @@ const App = (() => {
         const fs = document.querySelector('#focus');
         if (fs) opts.focus = fs.value;
       }
-      state.exercise = await Bridge.sendAsync('generate', opts);
+      state.exercise = await Bridge.sendAsync('generate', opts, { signal });
+      if (signal.aborted) return;
       state.index = 0;
       state.answers = {};
       state.isGraded = false;
@@ -695,9 +803,10 @@ const App = (() => {
 
       play(id);
     } catch(e) {
+      if (e.name === 'AbortError' || e.error_code === 'E_ABORTED') return;
       toast(e.message);
     } finally {
-      setBusy(false);
+      if (!signal.aborted) setBusy(false);
     }
   }
 
@@ -1090,7 +1199,7 @@ const App = (() => {
 
     // Normalize pairs list with unique IDs
     const pairs = x.pairs.map((p, idx) => ({
-      id: 'p_' + idx,
+      id: p.id || ('p_' + Math.random().toString(36).substring(2, 9) + '_' + idx),
       word: p.term || p.word || '',
       meaning: p.definition || p.meaning || ''
     }));
@@ -1497,22 +1606,35 @@ const App = (() => {
 
   /* ---- UNSCRAMBLE: all questions vertical, white words ---- */
   function renderUnscrambleAll(x){const d=document.querySelector('#play');d.innerHTML=x.questions.map((q,i)=>{return'<div class="question-card unscramble-card fade-in"><p class="hint-text">'+esc(q.hint)+'</p><div id="us-'+i+'" class="unscramble-area"></div><button class="btn" id="ugrade-'+i+'">Chấm điểm</button><div id="ufeedback-'+i+'"></div></div>'}).join('');x.questions.forEach((q,i)=>{renderUnscrambleSingle(q,i,x.questions)});}
-  function renderUnscrambleSingle(q,i,all){const chosen=[];const area=document.querySelector('#us-'+i);function draw(){area.innerHTML='<div class="drop-zone">'+chosen.map(w=>'<button class="drag-word" data-back="'+esc(w)+'">'+esc(w)+'</button>').join('')+'</div><div class="drag-container">'+q.shuffled_words.filter((w,j)=>!chosen.includes(w)||chosen.filter(x=>x===w).length<q.shuffled_words.slice(0,j+1).filter(x=>x===w).length).map(w=>'<button class="drag-word" data-word="'+esc(w)+'">'+esc(w)+'</button>').join('')+'</div>';area.querySelectorAll('[data-word]').forEach(e=>e.onclick=()=>{chosen.push(e.dataset.word);draw()});area.querySelectorAll('[data-back]').forEach(e=>e.onclick=()=>{chosen.splice(chosen.indexOf(e.dataset.back),1);draw()})}draw();document.querySelector('#ugrade-'+i).onclick=()=>{const ok=chosen.join(' ').toLowerCase()===q.correct_sentence.toLowerCase();const fb=document.querySelector('#ufeedback-'+i);let html='<div class="feedback '+(ok?'good':'bad')+'"><b>'+(ok?'Chính xác!':'Chưa đúng.')+'</b><p>'+esc(q.correct_sentence)+'</p>';if(q.sentence_meaning)html+='<p>🌐 '+esc(q.sentence_meaning)+'</p>';if(q.key_vocab)html+=q.key_vocab.map(k=>'<p>📖 <b>'+esc(k.word)+'</b>: '+esc(k.meaning)+'</p>').join('');html+='</div>';fb.innerHTML=html}}
+  function renderUnscrambleSingle(q,i,all){const chosen=[];const area=document.querySelector('#us-'+i);function draw(){area.innerHTML='<div class="drop-zone">'+chosen.map(w=>'<button class="drag-word" data-back="'+esc(w)+'">'+esc(w)+'</button>').join('')+'</div><div class="drag-container">'+q.shuffled_words.filter((w,j)=>!chosen.includes(w)||chosen.filter(x=>x===w).length<q.shuffled_words.slice(0,j+1).filter(x=>x===w).length).map(w=>'<button class="drag-word" data-word="'+esc(w)+'">'+esc(w)+'</button>').join('')+'</div>';area.querySelectorAll('[data-word]').forEach(e=>e.onclick=()=>{chosen.push(e.dataset.word);draw()});area.querySelectorAll('[data-back]').forEach(e=>e.onclick=()=>{chosen.splice(chosen.indexOf(e.dataset.back),1);draw()})}draw();document.querySelector('#ugrade-'+i).onclick=()=>{const ok=norm(chosen.join(' '))===norm(q.correct_sentence);const fb=document.querySelector('#ufeedback-'+i);let html='<div class="feedback '+(ok?'good':'bad')+'"><b>'+(ok?'Chính xác!':'Chưa đúng.')+'</b><p>'+esc(q.correct_sentence)+'</p>';if(q.sentence_meaning)html+='<p>🌐 '+esc(q.sentence_meaning)+'</p>';if(q.key_vocab)html+=q.key_vocab.map(k=>'<p>📖 <b>'+esc(k.word)+'</b>: '+esc(k.meaning)+'</p>').join('');html+='</div>';fb.innerHTML=html}}
+
+  function resetGameState(gameId) {
+    state.exercise = null;
+    state.answers = {};
+    state.isGraded = false;
+    state.index = 0;
+    if (gameId && state.activeSessions && state.activeSessions[gameId]) {
+      delete state.activeSessions[gameId];
+    }
+    const d = document.querySelector('#play');
+    if (d) d.innerHTML = '';
+  }
 
   /* ---- STORY: read + comprehension questions (Vertical options, Detailed Explanation & Evidence) ---- */
   function renderStory(x) {
     const d = document.querySelector('#play');
-    if (!x || !x.story || !x.comprehension_questions || !x.comprehension_questions.length) {
+    if (!d) return;
+    if (!x || !x.story) {
       d.innerHTML = '<div class="empty-state"><p>Không có dữ liệu bài đọc.</p></div>';
       return;
     }
 
     const isGraded = !!state.isGraded;
     const gameId = state.route;
-    const questions = x.comprehension_questions;
+    const questions = Array.isArray(x.comprehension_questions) ? x.comprehension_questions : [];
 
     let score = 0;
-    if (isGraded) {
+    if (isGraded && questions.length) {
       questions.forEach((q, i) => {
         if (state.answers[i] === q.correct_index) score++;
       });
@@ -1530,6 +1652,18 @@ const App = (() => {
         </div>
       </div>
     `;
+
+    if (!questions.length) {
+      d.innerHTML = `
+        <div class="story-container">
+          ${passageHtml}
+          <div class="feedback bad" style="margin-top:20px; padding:16px; border-radius:8px;">
+            <p style="margin:0;"><b>⚠️ Không thể tạo câu hỏi tự động:</b> Rất tiếc, hệ thống không thể khởi tạo bộ câu hỏi đọc hiểu cho bài này. Vui lòng đọc nội dung trên hoặc bấm <b>"Tạo bài"</b> để tạo bài đọc mới.</p>
+          </div>
+        </div>
+      `;
+      return;
+    }
 
     // Questions list
     const questionsHtml = questions.map((q, i) => {
@@ -1720,17 +1854,125 @@ const App = (() => {
   }
 
   /* ---- TRANSLATION: 1 sentence, detailed AI grade ---- */
-  function renderTranslation(x){const q=x.sentences[0];document.querySelector('#play').innerHTML='<div class="question-card"><p class="q-text">'+esc(q.source_text)+'</p><textarea id="answer" placeholder="Nhập bản dịch…"></textarea><button class="btn" id="grade">Chấm điểm</button><div id="feedback"></div></div>';document.querySelector('#grade').onclick=async()=>{try{setBusy(true,'Đang chấm điểm…');let r=await Bridge.sendAsync('ai_grade',{gamemode:'translation',level:document.querySelector('#level').value,user_answer:document.querySelector('#answer').value,expected:q.target_text,source_text:q.source_text});const fb=document.querySelector('#feedback');let html='<div class="feedback '+(r.correct?'good':'bad')+'"><b>'+(r.correct?'Chính xác!':'Cần cải thiện')+'</b><p>'+esc(r.explanation||r.feedback||'')+'</p><p>Đáp án: '+esc(q.target_text)+'</p>';if(q.detailed_feedback){const df=q.detailed_feedback;html+='<hr>';if(df.word_by_word){html+='<p><b>Phân tích từ:</b></p>'+df.word_by_word.map(w=>'<p>• <b>'+esc(w.word)+'</b>: '+esc(w.translation)+(w.notes?' — '+esc(w.notes):'')+'</p>').join('')}if(df.common_mistakes&&df.common_mistakes.length){html+='<p><b>Lỗi thường gặp:</b></p><ul>'+df.common_mistakes.map(m=>'<li>'+esc(m)+'</li>').join('')+'</ul>'}if(df.alternative_translations&&df.alternative_translations.length){html+='<p><b>Cách dịch khác:</b></p><ul>'+df.alternative_translations.map(t=>'<li>'+esc(t)+'</li>').join('')+'</ul>'}if(df.improvement_tips)html+='<p><b>Gợi ý:</b> '+esc(df.improvement_tips)+'</p>'}html+='<button class="btn" id="retry-trans">Làm lại</button></div>';fb.innerHTML=html;document.querySelector('#retry-trans').onclick=()=>{state.answers={};play(state.route)}}catch(e){toast(e.message)}finally{setBusy(false)}}}
+  function renderTranslation(x){
+    const q=x.sentences[0];
+    document.querySelector('#play').innerHTML='<div class="question-card"><p class="q-text">'+esc(q.source_text)+'</p><textarea id="answer" placeholder="'+esc(t('placeholder.translation', 'Nhập bản dịch…'))+'"></textarea><button class="btn" id="grade">'+esc(t('app.grade', 'Chấm điểm'))+'</button><div id="feedback"></div></div>';
+    document.querySelector('#grade').onclick=async()=>{
+      const signal = getSignal();
+      try{
+        setBusy(true, t('app.grading', 'Đang chấm điểm…'));
+        let r=await Bridge.sendAsync('ai_grade',{gamemode:'translation',level:document.querySelector('#level').value,user_answer:document.querySelector('#answer').value,expected:q.target_text,source_text:q.source_text}, { signal });
+        if (signal.aborted) return;
+        const fb=document.querySelector('#feedback');
+        if(!fb)return;
+        let html='<div class="feedback '+(r.correct?'good':'bad')+'"><b>'+(r.correct?esc(t('feedback.exact', 'Chính xác!')):esc(t('feedback.needs_improvement', 'Cần cải thiện')))+'</b><p>'+esc(r.explanation||r.feedback||'')+'</p><p>'+esc(t('feedback.answer_label', 'Đáp án: {0}', q.target_text))+'</p>';
+        if(q.detailed_feedback){
+          const df=q.detailed_feedback;
+          html+='<hr>';
+          if(df.word_by_word){html+='<p><b>'+esc(t('feedback.word_analysis', 'Phân tích từ:'))+'</b></p>'+df.word_by_word.map(w=>'<p>• <b>'+esc(w.word)+'</b>: '+esc(w.translation)+(w.notes?' — '+esc(w.notes):'')+'</p>').join('')}
+          if(df.common_mistakes&&df.common_mistakes.length){html+='<p><b>'+esc(t('feedback.common_errors', 'Lỗi thường gặp:'))+'</b></p><ul>'+df.common_mistakes.map(m=>'<li>'+esc(m)+'</li>').join('')+'</ul>'}
+          if(df.alternative_translations&&df.alternative_translations.length){html+='<p><b>'+esc(t('feedback.alt_translations', 'Cách dịch khác:'))+'</b></p><ul>'+df.alternative_translations.map(tText=>'<li>'+esc(tText)+'</li>').join('')+'</ul>'}
+          if(df.improvement_tips)html+='<p>'+esc(t('feedback.tips', 'Gợi ý: {0}', df.improvement_tips))+'</p>'
+        }
+        html+='<button class="btn" id="retry-trans">'+esc(t('app.retry', 'Làm lại'))+'</button></div>';
+        fb.innerHTML=html;
+        const retryBtn=document.querySelector('#retry-trans');
+        if(retryBtn)retryBtn.onclick=()=>{state.answers={};play(state.route)}
+      }catch(e){
+        if(e.name==='AbortError'||e.error_code==='E_ABORTED')return;
+        toast(e.message)
+      }finally{
+        if(!signal.aborted)setBusy(false)
+      }
+    }
+  }
 
   /* ---- SENTENCE TRANSFORM: 1 sentence, focus selector, detailed ---- */
-  function renderSentenceTransform(x){const q=x.questions[0];document.querySelector('#play').innerHTML='<div class="question-card"><p class="q-text"><b>Yêu cầu:</b> '+esc(q.instruction)+'</p><p class="q-text"><b>Câu gốc:</b> '+esc(q.original_sentence)+'</p><textarea id="answer" placeholder="Nhập câu trả lời..."></textarea><button class="btn primary" id="grade">Chấm điểm</button><div id="feedback"></div></div>';document.querySelector('#grade').onclick=async()=>{try{setBusy(true,'Đang chấm điểm…');let r=await Bridge.sendAsync('ai_grade',{gamemode:'sentence_transform',level:document.querySelector('#level').value,user_answer:document.querySelector('#answer').value,expected:q.expected_answer,instruction:q.instruction,original:q.original_sentence});const fb=document.querySelector('#feedback');let html='<div class="feedback '+(r.correct?'good':'bad')+'"><b>'+(r.correct?'Chính xác!':'Cần cải thiện')+'</b><p>'+esc(r.explanation||r.feedback||'')+'</p><p>Đáp án: '+esc(q.expected_answer)+'</p>';if(q.detailed_explanation){const de=q.detailed_explanation;html+='<hr><p><b>Giải thích:</b> '+esc(de.rule_description||q.grammar_rule||'')+'</p>';if(de.step_by_step&&de.step_by_step.length)html+='<p><b>Các bước:</b></p><ol>'+de.step_by_step.map(s=>'<li>'+esc(s)+'</li>').join('')+'</ol>';if(de.common_errors&&de.common_errors.length)html+='<p><b>Lỗi thường gặp:</b></p><ul>'+de.common_errors.map(e=>'<li>'+esc(e)+'</li>').join('')+'</ul>';if(de.comparison)html+='<p><b>So sánh:</b> '+esc(de.comparison)+'</p>'}html+='<button class="btn" id="retry-trans">Làm lại</button></div>';fb.innerHTML=html;document.querySelector('#retry-trans').onclick=()=>{state.answers={};play(state.route)}}catch(e){toast(e.message)}finally{setBusy(false)}}}
+  function renderSentenceTransform(x){
+    const q=x.questions[0];
+    document.querySelector('#play').innerHTML='<div class="question-card"><p class="q-text"><b>'+esc(t('feedback.requirement', 'Yêu cầu:'))+'</b> '+esc(q.instruction)+'</p><p class="q-text"><b>'+esc(t('feedback.original_sentence', 'Câu gốc:'))+'</b> '+esc(q.original_sentence)+'</p><textarea id="answer" placeholder="'+esc(t('placeholder.sentence_transform', 'Nhập câu trả lời...'))+'"></textarea><button class="btn primary" id="grade">'+esc(t('app.grade', 'Chấm điểm'))+'</button><div id="feedback"></div></div>';
+    document.querySelector('#grade').onclick=async()=>{
+      const signal = getSignal();
+      try{
+        setBusy(true, t('app.grading', 'Đang chấm điểm…'));
+        let r=await Bridge.sendAsync('ai_grade',{gamemode:'sentence_transform',level:document.querySelector('#level').value,user_answer:document.querySelector('#answer').value,expected:q.expected_answer,instruction:q.instruction,original:q.original_sentence}, { signal });
+        if (signal.aborted) return;
+        const fb=document.querySelector('#feedback');
+        if(!fb)return;
+        let html='<div class="feedback '+(r.correct?'good':'bad')+'"><b>'+(r.correct?esc(t('feedback.exact', 'Chính xác!')):esc(t('feedback.needs_improvement', 'Cần cải thiện')))+'</b><p>'+esc(r.explanation||r.feedback||'')+'</p><p>'+esc(t('feedback.answer_label', 'Đáp án: {0}', q.expected_answer))+'</p>';
+        if(q.detailed_explanation){
+          const de=q.detailed_explanation;
+          html+='<hr><p>'+esc(t('feedback.explanation_label', 'Giải thích: {0}', de.rule_description||q.grammar_rule||''))+'</p>';
+          if(de.step_by_step&&de.step_by_step.length)html+='<p><b>'+esc(t('feedback.steps_label', 'Các bước:'))+'</b></p><ol>'+de.step_by_step.map(s=>'<li>'+esc(s)+'</li>').join('')+'</ol>';
+          if(de.common_errors&&de.common_errors.length)html+='<p><b>'+esc(t('feedback.common_errors', 'Lỗi thường gặp:'))+'</b></p><ul>'+de.common_errors.map(eItem=>'<li>'+esc(eItem)+'</li>').join('')+'</ul>';
+          if(de.comparison)html+='<p>'+esc(t('feedback.comparison', 'So sánh: {0}', de.comparison))+'</p>'
+        }
+        html+='<button class="btn" id="retry-trans">'+esc(t('app.retry', 'Làm lại'))+'</button></div>';
+        fb.innerHTML=html;
+        const retryBtn=document.querySelector('#retry-trans');
+        if(retryBtn)retryBtn.onclick=()=>{state.answers={};play(state.route)}
+      }catch(e){
+        if(e.name==='AbortError'||e.error_code==='E_ABORTED')return;
+        toast(e.message)
+      }finally{
+        if(!signal.aborted)setBusy(false)
+      }
+    }
+  }
 
   /* ---- TABOO: 1 round, concept → English, AI grade ---- */
-  function renderTaboo(x){const q=x.rounds[0];document.querySelector('#play').innerHTML='<div class="question-card taboo-card fade-in"><div class="secret-word">???</div><div class="forbidden">'+q.forbidden_words.map(w=>'<span>🚫 '+esc(w)+'</span>').join('')+'</div><div class="description">'+esc(q.ai_description)+'</div><textarea id="answer" placeholder="Nhập từ bạn đoán bằng '+(state.userPrefs.language||'en')+'..."></textarea><button class="btn primary" id="grade">Chấm điểm</button><div id="feedback"></div></div>';document.querySelector('#grade').onclick=async()=>{try{setBusy(true,'Đang chấm điểm…');let r=await Bridge.sendAsync('ai_grade',{gamemode:'taboo',level:document.querySelector('#level').value,user_answer:document.querySelector('#answer').value,secret_word:q.secret_word});document.querySelector('#feedback').innerHTML='<div class="feedback '+(r.correct?'good':'bad')+'"><b>'+(r.correct?'Chính xác!':'Sai rồi')+'</b><p>'+esc(r.explanation||r.feedback||'')+'</p><p>Đáp án: <b>'+esc(q.secret_word)+'</b></p><p>📖 <b>Nghĩa:</b> '+esc(q.ai_description)+'</p><button class="btn" id="retry-trans">Làm lại</button></div>';document.querySelector('#retry-trans').onclick=()=>{state.answers={};play(state.route)}}catch(e){toast(e.message)}finally{setBusy(false)}}}
+  function renderTaboo(x){
+    const q=x.rounds[0];
+    const langLabel = state.userPrefs.language || 'en';
+    document.querySelector('#play').innerHTML='<div class="question-card taboo-card fade-in"><div class="secret-word">???</div><div class="forbidden">'+q.forbidden_words.map(w=>'<span>🚫 '+esc(w)+'</span>').join('')+'</div><div class="description">'+esc(q.ai_description)+'</div><textarea id="answer" placeholder="'+esc(t('placeholder.taboo', 'Nhập từ bạn đoán bằng {0}...', langLabel))+'"></textarea><button class="btn primary" id="grade">'+esc(t('app.grade', 'Chấm điểm'))+'</button><div id="feedback"></div></div>';
+    document.querySelector('#grade').onclick=async()=>{
+      const signal = getSignal();
+      try{
+        setBusy(true, t('app.grading', 'Đang chấm điểm…'));
+        let r=await Bridge.sendAsync('ai_grade',{gamemode:'taboo',level:document.querySelector('#level').value,user_answer:document.querySelector('#answer').value,secret_word:q.secret_word}, { signal });
+        if (signal.aborted) return;
+        const fb=document.querySelector('#feedback');
+        if(!fb)return;
+        fb.innerHTML='<div class="feedback '+(r.correct?'good':'bad')+'"><b>'+(r.correct?esc(t('feedback.exact', 'Chính xác!')):esc(t('feedback.wrong_short', 'Sai rồi')))+'</b><p>'+esc(r.explanation||r.feedback||'')+'</p><p>'+esc(t('feedback.answer_label', 'Đáp án: {0}', q.secret_word))+'</p><p>📖 '+esc(t('feedback.definition_label', 'Nghĩa: {0}', q.ai_description))+'</p><button class="btn" id="retry-trans">'+esc(t('app.retry', 'Làm lại'))+'</button></div>';
+        const retryBtn=document.querySelector('#retry-trans');
+        if(retryBtn)retryBtn.onclick=()=>{state.answers={};play(state.route)}
+      }catch(e){
+        if(e.name==='AbortError'||e.error_code==='E_ABORTED')return;
+        toast(e.message)
+      }finally{
+        if(!signal.aborted)setBusy(false)
+      }
+    }
+  }
 
   /* ---- API KEY TESTER ---- */
-  async function testKeys(){const button=document.querySelector('#test-keys'),out=document.querySelector('#api-result');try{button.innerHTML='<span class="button-spinner"></span> Đang kiểm tra…';setBusy(true,'Đang kiểm tra API…');const data=await Bridge.sendAsync('test_all_keys');const results=data.results||[],ok=results.filter(item=>item.ok).length;out.innerHTML=results.map(item=>`<span class="api-key-status ${item.ok?'ok':'fail'}">Key ${item.key} ${item.ok?'✓':'✕'}</span>`).join('')+` <b>${ok}/${results.length} hoạt động</b>`}catch(e){out.textContent=`Không thể kiểm tra: ${e.message}`}finally{setBusy(false);button.innerHTML='Kiểm tra API'}}
+  async function testKeys(){
+    const button=document.querySelector('#test-keys'),out=document.querySelector('#api-result');
+    const signal = getSignal();
+    try{
+      if(button)button.innerHTML='<span class="button-spinner"></span> ' + esc(t('app.testing_api', 'Đang kiểm tra…'));
+      setBusy(true, t('app.testing_api_status', 'Đang kiểm tra API…'));
+      const data=await Bridge.sendAsync('test_all_keys', {}, { signal });
+      if (signal.aborted) return;
+      const results=data.results||[],ok=results.filter(item=>item.ok).length;
+      if(out)out.innerHTML=results.map(item=>`<span class="api-key-status ${item.ok?'ok':'fail'}">${esc(t('app.key_status', 'Key {0} {1}', item.key, item.ok?'✓':'✕'))}</span>`).join('')+` <b>${esc(t('app.api_active_count', '{0}/{1} hoạt động', ok, results.length))}</b>`
+    }catch(e){
+      if(e.name==='AbortError'||e.error_code==='E_ABORTED')return;
+      if(out)out.textContent=t('app.cannot_test_api', 'Không thể kiểm tra: {0}', e.message)
+    }finally{
+      if(!signal.aborted){
+        setBusy(false);
+        if(button)button.innerHTML=esc(t('app.test_api', 'Kiểm tra API'))
+      }
+    }
+  }
 
   function render(){state.route==='home'?home():game()}
-  return {start:render,navigate:nav,retry:()=>{state.answers={};play(state.route)}}
+  async function startApp(){
+    if (window.Utils && typeof window.Utils.initI18n === 'function') {
+      await window.Utils.initI18n();
+    }
+    render();
+  }
+  return {start:startApp,navigate:nav,retry:()=>{state.answers={};play(state.route)}}
 })();window.App=App;document.addEventListener('DOMContentLoaded',App.start);

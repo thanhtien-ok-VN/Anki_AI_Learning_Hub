@@ -13,8 +13,31 @@ const Utils = {
         this.renderI18n();
     },
 
-    t(key, fallback = '') {
-        return this.__[key] || fallback || key;
+    t(key, fallback = '', ...args) {
+        let text = this.__[key];
+        let params = args;
+        let defaultText = fallback;
+
+        if (typeof fallback !== 'string') {
+            params = [fallback, ...args];
+            defaultText = key;
+        }
+
+        text = text || defaultText || key;
+
+        if (params.length > 0) {
+            if (typeof params[0] === 'object' && params[0] !== null && !Array.isArray(params[0])) {
+                const obj = params[0];
+                Object.keys(obj).forEach(k => {
+                    text = text.replace(new RegExp('\\{' + k + '\\}', 'g'), obj[k]);
+                });
+            } else {
+                params.forEach((val, idx) => {
+                    text = text.replace(new RegExp('\\{' + idx + '\\}', 'g'), val ?? '');
+                });
+            }
+        }
+        return text;
     },
 
     renderI18n() {
@@ -110,3 +133,4 @@ const Utils = {
 };
 
 window.Utils = Utils;
+window.t = Utils.t.bind(Utils);

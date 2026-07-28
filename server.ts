@@ -286,6 +286,34 @@ function shuffleArray<T>(array: T[]): T[] {
   return result;
 }
 
+// XSS Sanitization helper for AI content
+function sanitizeHtml(htmlContent: string): string {
+  if (!htmlContent || typeof htmlContent !== "string") return htmlContent || "";
+  let clean = htmlContent.replace(/<(script|iframe|object|embed|style|link|form|input|button)\b[^<]*(?:(?!<\/\1>)<[^<]*)*<\/\1>/gi, "");
+  clean = clean.replace(/<(script|iframe|object|embed|style|link|form|input|button)\b[^>]*\/?>/gi, "");
+  clean = clean.replace(/\s*on\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, "");
+  clean = clean.replace(/(href|src|action)\s*=\s*["']?\s*javascript:[^"'>]*["']?/gi, "");
+  return clean;
+}
+
+function sanitizeAiOutput<T>(data: T): T {
+  if (data === null || data === undefined) return data;
+  if (typeof data === "string") {
+    return sanitizeHtml(data) as unknown as T;
+  }
+  if (Array.isArray(data)) {
+    return data.map(item => sanitizeAiOutput(item)) as unknown as T;
+  }
+  if (typeof data === "object") {
+    const cleanObj: Record<string, any> = {};
+    for (const key of Object.keys(data as object)) {
+      cleanObj[key] = sanitizeAiOutput((data as Record<string, any>)[key]);
+    }
+    return cleanObj as T;
+  }
+  return data;
+}
+
 // Fallback Generators when API Key is not configured or fails
 function getFallbackExercise(gamemode: string, data: any) {
   const count = data.count || 3;
@@ -611,28 +639,30 @@ app.post("/api/bridge", async (req, res) => {
 
     if (action === "generate") {
       const gamemode = data.gamemode || "fill_blank";
-      const count = Number(data.count) || 5;
-      const language = data.language || "en";
-      const level = data.level || "intermediate";
-      const topic = data.topic || "daily_life";
-      const vocabPairs = data.vocab_pairs || [];
+      const rawCount = Number(data.count) || 5;
+      const count = Math.max(1, Math.min(rawCount, 15)); // Clamp between 1 and 15
+      const language = String(data.language || "en").substring(0, 20);
+      const level = String(data.level || "intermediate").substring(0, 30);
+      const topic = String(data.topic || "daily_life").substring(0, 100);
+      const vocabPairs = Array.isArray(data.vocab_pairs) ? data.vocab_pairs : [];
 
       // Game Mode 5: Word Matching is offline logic
       if (gamemode === "matching") {
-        const pairs = vocabPairs.length > 0 
-          ? vocabPairs.map((p: any) => ({ term: p.term, definition: p.definition }))
+        const rawPairs = vocabPairs.length > 0 
+          ? vocabPairs.map((p: any) => ({ term: p.term || p.word || "", definition: p.definition || p.meaning || "" }))
           : VOCAB_POOLS[1].slice(0, count).map(p => ({ term: p.term, definition: p.definition }));
         
-        const left = pairs.map((p: any) => p.term).sort(() => Math.random() - 0.5);
-        const right = pairs.map((p: any) => p.definition).sort(() => Math.random() - 0.5);
+        const pairs = rawPairs.map((p: any, idx: number) => ({
+          id: `p_${Math.random().toString(36).substring(2, 9)}_${idx}`,
+          term: p.term,
+          definition: p.definition
+        }));
 
         return res.json({
           success: true,
           data: {
             error: false,
-            pairs,
-            left_column: left,
-            right_column: right
+            pairs
           }
         });
       }
@@ -653,7 +683,14 @@ app.post("/api/bridge", async (req, res) => {
             }))
           };
         }
-        return res.json({ success: true, data: fallback });
+        return res.json({
+          success: true,
+          data: {
+            ...fallback,
+            is_fallback: true,
+            fallback_reason: "Chưa cấu hình GEMINI_API_KEY. Đang sử dụng bài tập mẫu."
+          }
+        });
       }
 
       // Generate via Gemini API
@@ -740,6 +777,9 @@ CRITICAL RULES FOR JSON OUTPUT:
           parsed = getFallbackExercise(gamemode, data);
         }
 
+        // Sanitize AI Output to prevent XSS script tags and inline handlers
+        parsed = sanitizeAiOutput(parsed);
+
         // Post-process & normalize _vietnamese keys for client UI compatibility
         if (parsed) {
           if (gamemode === "fill_blank" && parsed.questions) {
@@ -817,37 +857,66 @@ CRITICAL RULES FOR JSON OUTPUT:
       } catch (err: any) {
         console.error(`[Server] Gemini API error for ${gamemode}:`, err);
         const fallback = getFallbackExercise(gamemode, data);
-        return res.json({ success: true, data: fallback });
+        const isQuotaError = err?.status === 429 || String(err?.message || "").includes("429") || String(err?.message || "").includes("quota");
+        const reasonMsg = isQuotaError
+          ? "Đã vượt quá hạn ngạch AI (429 Rate Limit). Đang tự động chuyển sang bài tập mẫu."
+          : "Lỗi kết nối Gemini AI. Đang tự động chuyển sang bài tập mẫu.";
+        return res.json({
+          success: true,
+          data: {
+            ...fallback,
+            is_fallback: true,
+            fallback_reason: reasonMsg
+          }
+        });
       }
     }
 
     if (action === "ai_grade") {
       const { gamemode, user_answer, expected, secret_word } = data;
+      const targetAns = expected || secret_word || "";
+
+      // Normalize text helper: lowercase, NFKD unicode normalization, strip trailing punctuation, strip extra whitespace
+      const normalizeText = (text: string): string => {
+        if (!text) return "";
+        return String(text)
+          .trim()
+          .toLowerCase()
+          .normalize("NFKD")
+          .replace(/[.,!?;:]$/, "")
+          .replace(/\s+/g, " ");
+      };
+
+      const uNorm = normalizeText(user_answer);
+      const tNorm = normalizeText(targetAns);
+      const isExactMatch = uNorm.length > 0 && uNorm === tNorm;
+
       const ai = getAiClient();
 
-      if (!ai) {
-        const userNorm = (user_answer || "").trim().toLowerCase();
-        const expectedNorm = (expected || secret_word || "").trim().toLowerCase();
-        const isCorrect = userNorm === expectedNorm || (expectedNorm.length > 0 && userNorm.includes(expectedNorm));
+      if (!ai || isExactMatch) {
+        const isCorrect = isExactMatch || (tNorm.length > 0 && (uNorm.includes(tNorm) || tNorm.includes(uNorm)));
 
         return res.json({
           success: true,
           data: {
             correct: isCorrect,
-            score: isCorrect ? 100 : 50,
-            explanation: isCorrect 
-              ? "Good job! Your answer matches the expected solution." 
-              : `Needs improvement. Expected: '${expected || secret_word}'`
+            score: isExactMatch ? 100 : (isCorrect ? 85 : 40),
+            explanation: isExactMatch
+              ? "Xuất sắc! Câu trả lời hoàn toàn chính xác."
+              : isCorrect
+                ? `Khá tốt! Đáp án chính xác gợi ý: '${targetAns}'`
+                : `Cần cải thiện. Đáp án chính xác: '${targetAns}'`
           }
         });
       }
 
       try {
         const prompt = `Evaluate student response for exercise type '${gamemode}':
-Target/Expected Answer: "${expected || secret_word}"
+Target/Expected Answer: "${targetAns}"
 Student Answer: "${user_answer}"
 
 Rules:
+- Be flexible with minor punctuation or capitalization variations.
 - Assess accuracy, grammar, vocabulary fit, and natural expression.
 - Provide encouraging, clear, concise feedback in Vietnamese.`;
 
@@ -875,20 +944,26 @@ Rules:
         try {
           result = JSON.parse(response.text || "{}");
         } catch (_) {
-          result = { correct: true, score: 90, explanation: "Answer received and recorded." };
+          result = { correct: true, score: 90, explanation: "Đã nhận và lưu câu trả lời." };
         }
+
+        result = sanitizeAiOutput(result);
 
         return res.json({
           success: true,
           data: result
         });
       } catch (err: any) {
+        console.error("[Server] Error during ai_grade:", err?.message || err);
+        const isPartial = tNorm.length > 0 && (uNorm.includes(tNorm) || tNorm.includes(uNorm));
         return res.json({
           success: true,
           data: {
-            correct: true,
-            score: 80,
-            explanation: "Evaluated response."
+            correct: isPartial,
+            score: isPartial ? 80 : 40,
+            explanation: isPartial
+              ? `Câu trả lời khá sát. Đáp án gợi ý: '${targetAns}'`
+              : `Đáp án gợi ý: '${targetAns}'`
           }
         });
       }
