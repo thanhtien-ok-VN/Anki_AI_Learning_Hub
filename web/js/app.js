@@ -797,22 +797,28 @@ const App = (() => {
         }).join('');
 
         feedbackHtml = `
-          <div class="feedback ${isCorrect ? 'good' : 'bad'}" style="margin-top:16px;">
-            <div style="font-weight:600; font-size:15px; margin-bottom:8px; color:${isCorrect ? 'var(--success)' : 'var(--error)'};">
+          <div class="feedback ${isCorrect ? 'good' : 'bad'}" style="margin-top:16px; padding:16px; border-radius:8px;">
+            <div style="font-weight:700; font-size:16px; margin-bottom:12px; color:${isCorrect ? 'var(--success)' : 'var(--error)'};">
               ${isCorrect ? 'Chính xác! ✓' : 'Chưa đúng ✕'}
             </div>
             
-            <p style="margin-bottom:6px;">
-              <b>💡 Lý do chọn:</b> ${esc(q.explanation_short || '')}
-            </p>
+            <div style="margin-bottom:10px;">
+              <b>💡 Lý do chọn (Giải thích Tiếng Việt):</b>
+              <div style="margin-top:4px; padding:10px 12px; background:rgba(0,0,0,0.03); border-radius:6px; font-size:13.5px; line-height:1.5;">
+                ${esc(q.explanation_short || 'Không có giải thích')}
+              </div>
+            </div>
 
-            <p style="margin-bottom:6px;">
-              <b>🌐 Dịch câu:</b> ${esc(q.sentence_translation || '')}
-            </p>
+            <div style="margin-bottom:10px;">
+              <b>🌐 Dịch câu hoàn chỉnh:</b>
+              <div style="margin-top:4px; padding:10px 12px; background:rgba(0,0,0,0.03); border-radius:6px; font-size:13.5px; line-height:1.5;">
+                ${esc(q.sentence_translation || 'Không có bản dịch')}
+              </div>
+            </div>
 
-            <div style="margin-top:10px;">
+            <div style="margin-top:12px;">
               <b>📚 Bản dịch các từ lựa chọn:</b>
-              <ul style="margin:6px 0 0 18px; padding:0; list-style-type:disc; font-size:13px; line-height:1.6;">
+              <ul style="margin:6px 0 0 18px; padding:0; list-style-type:disc; font-size:13.5px; line-height:1.6;">
                 ${optItems}
               </ul>
             </div>
@@ -823,7 +829,7 @@ const App = (() => {
       return `
         <div class="question-card" id="qcard-${i}">
           <div class="q-number">Câu ${i + 1}/${x.questions.length}</div>
-          <div class="q-text">${esc(q.sentence_with_blank)}</div>
+          <div class="q-text" style="font-size:16px; font-weight:600; margin-bottom:12px;">${esc(q.sentence_with_blank)}</div>
           <div class="options-grid" id="choices-${i}">
             ${optsHtml}
           </div>

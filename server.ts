@@ -85,22 +85,39 @@ const SCHEMAS: Record<string, any> = {
         items: {
           type: "object",
           properties: {
-            sentence_with_blank: { type: "string" },
-            full_sentence: { type: "string" },
-            blank_word: { type: "string" },
+            sentence_with_blank: { type: "string", description: "Natural sentence in target language containing '_____'." },
+            full_sentence: { type: "string", description: "Complete correct sentence in target language." },
+            blank_word: { type: "string", description: "The exact word missing in target language." },
             options: {
               type: "array",
               items: { type: "string" },
+              description: "Exactly 4 distinct choices in target language."
             },
-            options_translations: {
+            correct_index: { type: "integer", description: "Index 0-3 of the correct option." },
+            options_vietnamese: {
               type: "array",
               items: { type: "string" },
+              description: "BẮT BUỘC: 4 bản dịch TIẾNG VIỆT tương ứng 1-1 với 4 options."
             },
-            correct_index: { type: "integer" },
-            explanation_short: { type: "string" },
-            sentence_translation: { type: "string" },
+            sentence_vietnamese: {
+              type: "string",
+              description: "BẮT BUỘC: Bản dịch full_sentence sang TIẾNG VIỆT tự nhiên."
+            },
+            explanation_vietnamese: {
+              type: "string",
+              description: "BẮT BUỘC: Giải thích lý do chọn đáp án đúng bằng TIẾNG VIỆT chi tiết (ngữ pháp, từ vựng, ngữ cảnh)."
+            }
           },
-          required: ["sentence_with_blank", "options", "options_translations", "correct_index", "sentence_translation", "explanation_short"],
+          required: [
+            "sentence_with_blank",
+            "full_sentence",
+            "blank_word",
+            "options",
+            "correct_index",
+            "options_vietnamese",
+            "sentence_vietnamese",
+            "explanation_vietnamese"
+          ],
         },
       },
     },
@@ -109,29 +126,30 @@ const SCHEMAS: Record<string, any> = {
   cloze: {
     type: "object",
     properties: {
-      paragraph_with_blanks: { type: "string" },
-      paragraph_full: { type: "string" },
-      sentence_meaning: { type: "string" },
+      paragraph_with_blanks: { type: "string", description: "Text in target language containing placeholders [1], [2]..." },
+      paragraph_full: { type: "string", description: "Complete passage in target language with correct words filled in." },
+      sentence_meaning_vietnamese: { type: "string", description: "BẮT BUỘC: Dịch toàn bộ đoạn văn sang TIẾNG VIỆT tự nhiên." },
       blanks: {
         type: "array",
         items: {
           type: "object",
           properties: {
             blank_id: { type: "integer" },
-            correct_word: { type: "string" },
+            correct_word: { type: "string", description: "Target word in target language." },
             options: {
               type: "array",
               items: { type: "string" },
+              description: "4 choices in target language."
             },
             correct_index: { type: "integer" },
-            explanation_short: { type: "string" },
-            meaning_in_vietnamese: { type: "string" },
+            meaning_vietnamese: { type: "string", description: "BẮT BUỘC: Nghĩa TIẾNG VIỆT ngắn gọn của correct_word." },
+            explanation_vietnamese: { type: "string", description: "BẮT BUỘC: Giải thích lý do chọn từ này bằng TIẾNG VIỆT." }
           },
-          required: ["correct_word", "options", "correct_index"],
+          required: ["blank_id", "correct_word", "options", "correct_index", "meaning_vietnamese", "explanation_vietnamese"],
         },
       },
     },
-    required: ["paragraph_with_blanks", "blanks"],
+    required: ["paragraph_with_blanks", "paragraph_full", "sentence_meaning_vietnamese", "blanks"],
   },
   translation: {
     type: "object",
@@ -141,11 +159,11 @@ const SCHEMAS: Record<string, any> = {
         items: {
           type: "object",
           properties: {
-            source_text: { type: "string" },
-            target_text: { type: "string" },
-            grammar_notes: { type: "string" },
+            source_text: { type: "string", description: "Sentence in target language." },
+            target_text_vietnamese: { type: "string", description: "BẮT BUỘC: Bản dịch TIẾNG VIỆT chính xác, tự nhiên." },
+            grammar_notes_vietnamese: { type: "string", description: "BẮT BUỘC: Ghi chú ngữ pháp hoặc cấu trúc bằng TIẾNG VIỆT." }
           },
-          required: ["source_text", "target_text"],
+          required: ["source_text", "target_text_vietnamese", "grammar_notes_vietnamese"],
         },
       },
     },
@@ -159,22 +177,23 @@ const SCHEMAS: Record<string, any> = {
         items: {
           type: "object",
           properties: {
-            correct_sentence: { type: "string" },
-            hint: { type: "string" },
-            translation: { type: "string" },
-            sentence_meaning: { type: "string" },
+            correct_sentence: { type: "string", description: "Complete natural sentence in target language." },
+            hint_vietnamese: { type: "string", description: "BẮT BUỘC: Gợi ý bằng TIẾNG VIỆT để giúp ghép câu." },
+            translation_vietnamese: { type: "string", description: "BẮT BUỘC: Bản dịch TIẾNG VIỆT của correct_sentence." },
+            sentence_meaning_vietnamese: { type: "string", description: "BẮT BUỘC: Ý nghĩa câu bằng TIẾNG VIỆT." },
             key_vocab: {
               type: "array",
               items: {
                 type: "object",
                 properties: {
-                  word: { type: "string" },
-                  meaning: { type: "string" },
+                  word: { type: "string", description: "Vocabulary word in target language." },
+                  meaning_vietnamese: { type: "string", description: "BẮT BUỘC: Nghĩa từ bằng TIẾNG VIỆT." }
                 },
+                required: ["word", "meaning_vietnamese"]
               },
             },
           },
-          required: ["correct_sentence"],
+          required: ["correct_sentence", "hint_vietnamese", "translation_vietnamese", "sentence_meaning_vietnamese"],
         },
       },
     },
@@ -183,26 +202,33 @@ const SCHEMAS: Record<string, any> = {
   story: {
     type: "object",
     properties: {
-      story: { type: "string" },
+      story: { type: "string", description: "Reading passage in target language." },
+      passage_vietnamese: { type: "string", description: "BẮT BUỘC: Bản dịch toàn bài đọc sang TIẾNG VIỆT tự nhiên." },
       comprehension_questions: {
         type: "array",
         items: {
           type: "object",
           properties: {
-            question: { type: "string" },
+            question: { type: "string", description: "Clear question in target language." },
             options: {
               type: "array",
               items: { type: "string" },
+              description: "Exactly 4 choice options in target language."
+            },
+            options_vietnamese: {
+              type: "array",
+              items: { type: "string" },
+              description: "BẮT BUỘC: 4 bản dịch TIẾNG VIỆT tương ứng với 4 options."
             },
             correct_index: { type: "integer" },
-            explanation: { type: "string" },
-            quote_evidence: { type: "string" },
+            explanation_vietnamese: { type: "string", description: "BẮT BUỘC: Giải thích lý do chọn bằng TIẾNG VIỆT chi tiết." },
+            quote_evidence: { type: "string", description: "Exact verbatim quote/sentence from story in target language providing evidence." }
           },
-          required: ["question", "options", "correct_index"],
+          required: ["question", "options", "options_vietnamese", "correct_index", "explanation_vietnamese", "quote_evidence"],
         },
       },
     },
-    required: ["story", "comprehension_questions"],
+    required: ["story", "passage_vietnamese", "comprehension_questions"],
   },
   sentence_transform: {
     type: "object",
@@ -212,13 +238,13 @@ const SCHEMAS: Record<string, any> = {
         items: {
           type: "object",
           properties: {
-            original_sentence: { type: "string" },
-            instruction: { type: "string" },
-            hint_word: { type: "string" },
-            expected_answer: { type: "string" },
-            grammar_rule: { type: "string" },
+            original_sentence: { type: "string", description: "Starting sentence in target language." },
+            instruction_vietnamese: { type: "string", description: "BẮT BUỘC: Yêu cầu bài tập bằng TIẾNG VIỆT (vd: 'Viết lại câu sử dụng từ gợi ý...')." },
+            hint_word: { type: "string", description: "Key word or structure in target language to incorporate." },
+            expected_answer: { type: "string", description: "Correct transformed sentence in target language." },
+            grammar_rule_vietnamese: { type: "string", description: "BẮT BUỘC: Giải thích cấu trúc ngữ pháp đã dùng bằng TIẾNG VIỆT." }
           },
-          required: ["original_sentence", "instruction", "expected_answer"],
+          required: ["original_sentence", "instruction_vietnamese", "hint_word", "expected_answer", "grammar_rule_vietnamese"],
         },
       },
     },
@@ -232,15 +258,17 @@ const SCHEMAS: Record<string, any> = {
         items: {
           type: "object",
           properties: {
-            secret_word: { type: "string" },
+            secret_word: { type: "string", description: "Target secret word to guess in target language." },
             forbidden_words: {
               type: "array",
               items: { type: "string" },
+              description: "Exactly 4 forbidden related words in target language."
             },
-            ai_description: { type: "string" },
-            category: { type: "string" },
+            ai_description: { type: "string", description: "Helpful description/clue in target language WITHOUT using secret_word or forbidden_words." },
+            word_meaning_vietnamese: { type: "string", description: "BẮT BUỘC: Dịch nghĩa secret_word sang TIẾNG VIỆT." },
+            category: { type: "string", description: "Word topic or category." }
           },
-          required: ["secret_word", "forbidden_words", "ai_description"],
+          required: ["secret_word", "forbidden_words", "ai_description", "word_meaning_vietnamese", "category"],
         },
       },
     },
@@ -644,78 +672,62 @@ app.post("/api/bridge", async (req, res) => {
         );
         const vocabSample = shuffledPool.slice(0, sampleSize);
 
-        const vocabPrompt = vocabSample.length > 0
-          ? `\nMandatory vocabulary terms to feature (randomly selected ${vocabSample.length} terms): ${vocabSample.map((p: any) => `${p.term} (${p.definition})`).join("; ")}.`
-          : "";
+        const vocabSection = vocabSample.length > 0
+          ? `Mandatory vocabulary terms to feature (randomly selected ${vocabSample.length} terms): ${vocabSample.map((p: any) => `${p.term} (${p.definition})`).join("; ")}`
+          : "None";
 
-        let prompt = `Generate a high-quality '${gamemode}' language exercise in ${language} (Level: ${level}, Topic: ${topic}, Count: ${count}).${vocabPrompt}\n`;
+        const prompt = `<task>
+Generate a high-quality '${gamemode}' language exercise.
+Target Language: ${language}
+Level: ${level}
+Topic: ${topic}
+Count: ${count}
+${gamemode === "cloze" ? `Blanks Count: ${data.num_blanks || 5}` : ""}
+</task>
 
-        if (gamemode === "fill_blank") {
-          prompt += `Generate ${count} fill-in-the-blank questions.
-- sentence_with_blank: Natural sentence in ${language} containing '_____' for missing blank.
-- full_sentence: Complete correct sentence in ${language}.
-- options: Exactly 4 distinct choices in ${language} (1 correct, 3 distractors).
-- options_translations: Exactly 4 corresponding concise Vietnamese translations for each option.
-- correct_index: Integer 0-3 of the correct choice.
-- sentence_translation: Natural Vietnamese translation of full_sentence.
-- explanation_short: Concise Vietnamese explanation (1-2 sentences) explaining why correct option fits context and grammar.`;
-        } else if (gamemode === "cloze") {
-          const numBlanks = data.num_blanks || 5;
-          prompt += `Generate 1 coherent cloze passage in ${language} with ${numBlanks} blanks.
-- paragraph_with_blanks: Text containing placeholders [1], [2]... [${numBlanks}].
-- paragraph_full: Complete passage with correct words filled in.
-- sentence_meaning: Natural Vietnamese translation of the complete passage.
-- blanks: Array of ${numBlanks} blank definitions:
-  - blank_id: Integer 1..${numBlanks}
-  - correct_word: Target word in ${language}
-  - options: Array of all ${numBlanks} target correct words in this passage
-  - correct_index: Integer index of correct_word in options
-  - meaning_in_vietnamese: Concise Vietnamese translation of correct_word
-  - explanation_short: Short Vietnamese explanation why this word fits blank [i].`;
-        } else if (gamemode === "story") {
-          prompt += `Generate 1 reading passage in ${language} (120-180 words suited for level '${level}' and topic '${topic}') with ${count} comprehension questions.
-For each comprehension question:
-- question: Clear question in ${language} testing passage comprehension
-- options: Exactly 4 choice options (A, B, C, D) in ${language}
-- correct_index: Integer 0-3 of the correct choice
-- explanation: Detailed explanation in Vietnamese explaining WHY this option is correct
-- quote_evidence: Exact verbatim quote/sentence from the reading passage in ${language} that provides direct evidence for the answer.`;
-        } else if (gamemode === "translation") {
-          prompt += `Generate ${count} translation practice sentences in ${language}.
-- source_text: Sentence in ${language}
-- target_text: Accurate, natural Vietnamese translation
-- grammar_notes: Key grammar patterns or vocabulary usage notes in Vietnamese.`;
-        } else if (gamemode === "unscramble") {
-          prompt += `Generate ${count} sentence unscramble items in ${language}.
-- correct_sentence: Complete natural sentence in ${language}
-- hint: Short hint in Vietnamese
-- translation: Full Vietnamese translation
-- sentence_meaning: Full Vietnamese translation
-- key_vocab: Array of key vocabulary words with Vietnamese meanings [{ "word": "...", "meaning": "..." }].`;
-        } else if (gamemode === "sentence_transform") {
-          prompt += `Generate ${count} sentence transformation questions in ${language}.
-- original_sentence: Starting sentence in ${language}
-- instruction: Task instruction in Vietnamese (e.g. "Viết lại câu sử dụng từ gợi ý...")
-- hint_word: Key word or structure to incorporate
-- expected_answer: Correct transformed sentence in ${language}
-- grammar_rule: Explanation in Vietnamese of the grammar rule/structure applied.`;
-        } else if (gamemode === "taboo") {
-          prompt += `Generate ${count} Taboo vocabulary guessing rounds in ${language}.
-- secret_word: Target word in ${language}
-- forbidden_words: Array of 4 forbidden related words in ${language}
-- ai_description: Helpful description/clue in ${language} WITHOUT using secret_word or forbidden_words
-- category: Word topic/category.`;
-        }
+<context>
+${vocabSection}
+</context>
+
+<language_constraints>
+- TARGET LANGUAGE (${language}): Used EXCLUSIVELY for raw exercise content (sentences, reading passages, blank options, secret words).
+- SUPPORT LANGUAGE (Tiếng Việt): Used EXCLUSIVELY for ALL keys ending with '_vietnamese' (explanations, translations, hints). NEVER output ${language} in these fields.
+</language_constraints>
+
+<example_output_format>
+Here is an example of the STRICT bilingual format expected (for fill_blank):
+{
+  "sentence_with_blank": "If you want to see your family, you can make a _____.",
+  "full_sentence": "If you want to see your family, you can make a video call.",
+  "blank_word": "video call",
+  "options": ["video call", "video game", "video clip", "video player"],
+  "options_vietnamese": ["cuộc gọi video", "trò chơi điện tử", "đoạn video ngắn", "đầu phát video"],
+  "correct_index": 0,
+  "sentence_vietnamese": "Nếu bạn muốn gặp gia đình mình, bạn có thể thực hiện một cuộc gọi video.",
+  "explanation_vietnamese": "Chọn 'video call' (cuộc gọi video) vì nó phù hợp nhất với ngữ cảnh muốn liên lạc và nhìn thấy người thân ở xa."
+}
+</example_output_format>
+
+<schema_requirements>
+Generate exactly ${count} items following the exact JSON schema provided in the API configuration. Ensure EVERY single field ending with '_vietnamese' is populated in fluent Vietnamese without leaving any field blank or falling back to ${language}.
+</schema_requirements>`;
 
         const schema = SCHEMAS[gamemode];
 
         const response = await ai.models.generateContent({
-          model: "gemini-2.5-flash",
+          model: "gemini-3.6-flash",
           contents: prompt,
           config: schema ? {
-            systemInstruction: "You are an AI language learning engine. Generate precise, high-quality, strictly formatted JSON language exercises. Follow the requested schema strictly without conversational filler or markdown code block markers.",
-            temperature: 0.3,
-            maxOutputTokens: 2500,
+            systemInstruction: `You are an elite AI language educator designed for Vietnamese learners. 
+Your primary directive is STRICT BILINGUAL SEPARATION. You must seamlessly switch between the TARGET LANGUAGE (${language}) and the SUPPORT LANGUAGE (Vietnamese).
+
+CRITICAL RULES FOR JSON OUTPUT:
+1. THE TARGET LANGUAGE ONLY RULE: Fields containing raw exercise content (sentences, reading passages, blank options, secret words) MUST be 100% in the target language (${language}).
+2. THE VIETNAMESE ONLY RULE: Fields requiring explanation, translation, hints, grammar notes, or word meanings (all keys ending with _vietnamese) MUST be 100% in natural, fluent Vietnamese (Tiếng Việt). NEVER output ${language} or English in _vietnamese fields.
+3. EXPLANATION QUALITY: When explaining "WHY" an option is correct (explanation_vietnamese), clearly cite the grammar rule, vocabulary context, or collocation IN VIETNAMESE.
+4. STRUCTURAL INTEGRITY: Output NOTHING but valid JSON. No markdown backticks (\`\`\`json), no conversational filler.`,
+            temperature: 0.2,
+            maxOutputTokens: 3000,
             responseMimeType: "application/json",
             responseSchema: schema
           } : undefined
@@ -728,17 +740,74 @@ For each comprehension question:
           parsed = getFallbackExercise(gamemode, data);
         }
 
-        // Post-process UI formats
-        if (gamemode === "unscramble" && parsed.sentences) {
-          parsed = {
-            questions: parsed.sentences.map((s: any) => ({
-              correct_sentence: s.correct_sentence,
-              shuffled_words: s.correct_sentence.split(" ").sort(() => Math.random() - 0.5),
-              hint: s.hint,
-              translation: s.translation,
-              word_count: s.correct_sentence.split(" ").length
-            }))
-          };
+        // Post-process & normalize _vietnamese keys for client UI compatibility
+        if (parsed) {
+          if (gamemode === "fill_blank" && parsed.questions) {
+            parsed.questions = parsed.questions.map((q: any) => ({
+              ...q,
+              options_translations: q.options_vietnamese || q.options_translations || [],
+              sentence_translation: q.sentence_vietnamese || q.sentence_translation || "",
+              explanation_short: q.explanation_vietnamese || q.explanation_short || ""
+            }));
+          } else if (gamemode === "cloze") {
+            if (parsed.sentence_meaning_vietnamese || parsed.sentence_vietnamese) {
+              parsed.sentence_meaning = parsed.sentence_meaning_vietnamese || parsed.sentence_vietnamese || parsed.sentence_meaning || "";
+            }
+            if (parsed.blanks) {
+              parsed.blanks = parsed.blanks.map((b: any) => ({
+                ...b,
+                meaning_in_vietnamese: b.meaning_vietnamese || b.meaning_in_vietnamese || "",
+                explanation_short: b.explanation_vietnamese || b.explanation_short || ""
+              }));
+            }
+          } else if (gamemode === "story") {
+            if (parsed.passage_vietnamese) {
+              parsed.passage_translation = parsed.passage_vietnamese;
+            }
+            if (parsed.comprehension_questions) {
+              parsed.comprehension_questions = parsed.comprehension_questions.map((q: any) => ({
+                ...q,
+                options_translations: q.options_vietnamese || q.options_translations || [],
+                explanation: q.explanation_vietnamese || q.explanation || ""
+              }));
+            }
+          } else if (gamemode === "translation" && parsed.sentences) {
+            parsed.sentences = parsed.sentences.map((s: any) => ({
+              ...s,
+              target_text: s.target_text_vietnamese || s.target_text || "",
+              grammar_notes: s.grammar_notes_vietnamese || s.grammar_notes || ""
+            }));
+          } else if (gamemode === "unscramble" && parsed.sentences) {
+            parsed = {
+              questions: parsed.sentences.map((s: any) => {
+                const hint = s.hint_vietnamese || s.hint || "";
+                const translation = s.translation_vietnamese || s.translation || "";
+                return {
+                  correct_sentence: s.correct_sentence,
+                  shuffled_words: s.correct_sentence.split(" ").sort(() => Math.random() - 0.5),
+                  hint: hint,
+                  translation: translation,
+                  sentence_meaning: s.sentence_meaning_vietnamese || s.sentence_meaning || translation,
+                  key_vocab: (s.key_vocab || []).map((v: any) => ({
+                    word: v.word,
+                    meaning: v.meaning_vietnamese || v.meaning || ""
+                  })),
+                  word_count: s.correct_sentence.split(" ").length
+                };
+              })
+            };
+          } else if (gamemode === "sentence_transform" && parsed.questions) {
+            parsed.questions = parsed.questions.map((q: any) => ({
+              ...q,
+              instruction: q.instruction_vietnamese || q.instruction || "",
+              grammar_rule: q.grammar_rule_vietnamese || q.grammar_rule || ""
+            }));
+          } else if (gamemode === "taboo" && parsed.rounds) {
+            parsed.rounds = parsed.rounds.map((r: any) => ({
+              ...r,
+              word_meaning_vietnamese: r.word_meaning_vietnamese || r.meaning_vietnamese || ""
+            }));
+          }
         }
 
         return res.json({
@@ -783,7 +852,7 @@ Rules:
 - Provide encouraging, clear, concise feedback in Vietnamese.`;
 
         const response = await ai.models.generateContent({
-          model: "gemini-2.5-flash",
+          model: "gemini-3.6-flash",
           contents: prompt,
           config: {
             systemInstruction: "You are an encouraging AI language teacher grading a student's answer. Return a strict JSON response with exact keys.",
