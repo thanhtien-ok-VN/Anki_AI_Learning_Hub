@@ -206,9 +206,10 @@ def open_settings():
             status_label.setText("...")
             status_label.setStyleSheet("color: gray; font-weight: bold;")
 
+        selected_model = model_cb.currentText()
         def run_test():
             from core.api_client import GeminiClient
-            client = GeminiClient([key], "auto")
+            client = GeminiClient([key], selected_model)
             return client.test_key(key)
 
         def on_done(future):
@@ -243,8 +244,12 @@ def open_settings():
         log.info("Settings dialog accepted")
         dialog.accept()
 
+    def on_reject():
+        log.debug("Settings dialog cancelled")
+        dialog.reject()
+
     buttons.accepted.connect(on_accept)
-    buttons.rejected.connect(lambda: log.debug("Settings dialog cancelled"))
+    buttons.rejected.connect(on_reject)
     dialog.exec()
 
 
