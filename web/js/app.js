@@ -300,7 +300,24 @@ const App = (() => {
       `;
     }
 
-    shell('<main class="container"><div class="header" style="padding-top:50px">' + resumeBanner + '<h1>' + esc(t('app.title', 'AI Learning Hub')) + '</h1><p>' + esc(t('app.home_subtitle', 'Chọn một game để học từ bộ thẻ Anki')) + '</p><div class="api-check"><button class="btn btn-outline" id="test-keys">' + esc(t('app.test_api', 'Kiểm tra API')) + '</button><span id="api-result" aria-live="polite"></span></div></div><div class="game-grid">' + games.map(g => '<button class="game-card" data-game="' + g[0] + '"><div class="icon">' + g[1] + '</div><h3>' + esc(t(g[0] + '.title', g[2])) + '</h3><p>' + esc(getGameDesc(g[0])) + '</p></button>').join('') + '</div></main>');
+    const pendingGen = loadPendingGen();
+    let pendingBanner = '';
+    if (pendingGen) {
+      const gameInfo = games.find(g => g[0] === pendingGen.gamemode);
+      pendingBanner = `
+        <div class="resume-banner" style="background: rgba(239, 68, 68, 0.06); border: 1px solid #ef4444; border-radius: 8px; padding: 16px; margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between; gap: 12px; animation: slideDown 0.3s ease;">
+          <div style="font-size: 14.5px; color: var(--text-primary); text-align: left;">
+            ⚠️ <b>Bài tập chưa tạo xong:</b> Lần trước quá trình tạo bài <b>${esc(t(pendingGen.gamemode + '.title', gameInfo ? gameInfo[2] : pendingGen.gamemode))}</b> đã bị gián đoạn.
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <button class="btn" id="retry-pending-btn" style="padding: 8px 16px; background: #ef4444; color: white; border: none; font-weight: 600; cursor: pointer;">Thử lại</button>
+            <button class="btn btn-outline" id="discard-pending-btn" style="padding: 8px 16px; border-color: #6b7280; color: #6b7280; background: white; font-weight: 600; cursor: pointer;">Bỏ qua</button>
+          </div>
+        </div>
+      `;
+    }
+
+    shell('<main class="container"><div class="header" style="padding-top:50px">' + resumeBanner + pendingBanner + '<h1>' + esc(t('app.title', 'AI Learning Hub')) + '</h1><p>' + esc(t('app.home_subtitle', 'Chọn một game để học từ bộ thẻ Anki')) + '</p><div class="api-check"><button class="btn btn-outline" id="test-keys">' + esc(t('app.test_api', 'Kiểm tra API')) + '</button><span id="api-result" aria-live="polite"></span></div></div><div class="game-grid">' + games.map(g => '<button class="game-card" data-game="' + g[0] + '"><div class="icon">' + g[1] + '</div><h3>' + esc(t(g[0] + '.title', g[2])) + '</h3><p>' + esc(getGameDesc(g[0])) + '</p></button>').join('') + '</div></main>');
     bindCommon();
     document.querySelectorAll('[data-game]').forEach(e => e.onclick = () => nav(e.dataset.game));
     document.querySelector('#test-keys').onclick = testKeys;
@@ -325,6 +342,23 @@ const App = (() => {
       if (discardBtn) {
         discardBtn.onclick = () => {
           clearActiveSession();
+          home();
+        };
+      }
+    }
+
+    if (pendingGen) {
+      const retryBtn = document.querySelector('#retry-pending-btn');
+      if (retryBtn) {
+        retryBtn.onclick = () => {
+          clearPendingGen();
+          nav(pendingGen.gamemode);
+        };
+      }
+      const discardBtn = document.querySelector('#discard-pending-btn');
+      if (discardBtn) {
+        discardBtn.onclick = () => {
+          clearPendingGen();
           home();
         };
       }
@@ -768,6 +802,7 @@ const App = (() => {
     if (closeBtn) {
       closeBtn.onclick = () => {
         abortActiveRequests();
+        clearPendingGen();
         clearPrefs();
         Bridge.send('close_hub');
       };
@@ -776,6 +811,7 @@ const App = (() => {
     if (cancelBtn) {
       cancelBtn.onclick = () => {
         abortActiveRequests();
+        clearPendingGen();
         setBusy(false);
         toast('Đã hủy thao tác.');
       };
@@ -784,6 +820,7 @@ const App = (() => {
     if (cancelGen) {
       cancelGen.onclick = () => {
         abortActiveRequests();
+        clearPendingGen();
         setBusy(false);
         toast('Đã hủy tạo bài.');
       };
@@ -953,35 +990,63 @@ const App = (() => {
       return false;
     }
   }
-  async function generate(id){
+  const clearPendingGen = () => {
+    try { localStorage.removeItem('ai_learning_hub_pending_gen'); } catch (_) {}
+  };
+
+  const savePendingGen = (id, opts) => {
+    try {
+      localStorage.setItem('ai_learning_hub_pending_gen', JSON.stringify({
+        gamemode: id, opts, timestamp: Date.now()
+      }));
+    } catch (_) {}
+  };
+
+  const loadPendingGen = () => {
+    try {
+      const data = localStorage.getItem('ai_learning_hub_pending_gen');
+      if (!data) return null;
+      const p = JSON.parse(data);
+      if (Date.now() - p.timestamp > 3600000) { clearPendingGen(); return null; }
+      return p;
+    } catch (_) { return null; }
+  };
+
+  async function generate(id, optsOverride){
     const signal = getSignal();
     try {
-      resetGameState(id);
+      if (!optsOverride) resetGameState(id);
       setBusy(true);
-      if(!state.pairs.length && !await sample()) {
+      if(!state.pairs.length && !optsOverride && !await sample()) {
         if (signal.aborted) return;
       }
       if (signal.aborted) return;
-      const lang = document.querySelector('#language');
-      const countEl = document.querySelector('#count');
-      const levelEl = document.querySelector('#level');
-      const topicEl = document.querySelector('#topic');
-      const opts = {
-        gamemode: id,
-        language: lang ? lang.value : 'en',
-        level: levelEl ? levelEl.value : 'intermediate',
-        count: countEl ? +countEl.value : 1,
-        topic: topicEl ? topicEl.value : 'daily_life',
-        vocab_pairs: state.pairs
-      };
-      if (id === 'cloze') {
-        const nb = document.querySelector('#num_blanks');
-        if (nb) opts.num_blanks = +nb.value;
+      let opts;
+      if (optsOverride) {
+        opts = optsOverride;
+      } else {
+        const lang = document.querySelector('#language');
+        const countEl = document.querySelector('#count');
+        const levelEl = document.querySelector('#level');
+        const topicEl = document.querySelector('#topic');
+        opts = {
+          gamemode: id,
+          language: lang ? lang.value : 'en',
+          level: levelEl ? levelEl.value : 'intermediate',
+          count: countEl ? +countEl.value : 1,
+          topic: topicEl ? topicEl.value : 'daily_life',
+          vocab_pairs: state.pairs
+        };
+        if (id === 'cloze') {
+          const nb = document.querySelector('#num_blanks');
+          if (nb) opts.num_blanks = +nb.value;
+        }
+        if (id === 'sentence_transform') {
+          const fs = document.querySelector('#focus');
+          if (fs) opts.focus = fs.value;
+        }
       }
-      if (id === 'sentence_transform') {
-        const fs = document.querySelector('#focus');
-        if (fs) opts.focus = fs.value;
-      }
+      savePendingGen(id, opts);
       state.exercise = await Bridge.sendAsync('generate', opts, { signal });
       if (signal.aborted) return;
       state.index = 0;
@@ -1000,6 +1065,7 @@ const App = (() => {
       saveActiveSession();
 
       play(id);
+      clearPendingGen();
     } catch(e) {
       if (e.name === 'AbortError' || e.error_code === 'E_ABORTED') return;
       toast(e.message);

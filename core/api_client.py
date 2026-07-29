@@ -1,4 +1,5 @@
 import json
+import random
 import time
 from typing import Optional
 from urllib.request import Request, urlopen
@@ -28,11 +29,14 @@ class GeminiClient:
     
     _last_request_time = 0.0
     _min_interval = 1.5
+    _rate_limit_base = 2.0
 
     MODEL_MAP = {
-        "AQ.": "gemini-flash-latest",
+        "AQ.": "gemini-3.5-flash",
         "AIzaSy": "gemini-1.5-flash",
     }
+
+    FALLBACK_MODELS = ["gemini-3.5-flash-lite", "gemini-1.5-flash"]
 
     def __init__(self, api_keys: list[str], model_name: str = "auto"):
         self.keys = [k.strip() for k in api_keys if k.strip()]
@@ -100,6 +104,14 @@ class GeminiClient:
             time.sleep(delay)
         cls._last_request_time = time.time()
 
+    @staticmethod
+    def _retry_delay(attempt: int, base: float = 2.0) -> float:
+        return base * (2 ** attempt) + random.uniform(0, 0.5)
+
+    @staticmethod
+    def _should_retry(code: int) -> bool:
+        return code in (429, 503)
+
     def _call_api(self, payload: dict, key: str, model: str) -> dict:
         self._throttle()
         url = self._build_url(model)
@@ -118,8 +130,8 @@ class GeminiClient:
             code = e.code
             body = e.read().decode("utf-8", errors="replace")[:500]
             log.warn(f"HTTP {code}", {"model": model, "body": body[:200]})
-            if code == 429:
-                raise RateLimitError("Rate limited (quota exceeded)")
+            if self._should_retry(code):
+                raise RateLimitError(f"HTTP {code}: {body[:120]}")
             if code == 404:
                 raise ModelNotFoundError(f"Model '{model}' not found for this key type")
             if "response_schema" in body.lower() or "response_mime_type" in body.lower():
@@ -181,77 +193,81 @@ class GeminiClient:
         now = time.monotonic()
         order = [self._active_key_index] + [i for i in range(len(self.keys)) if i != self._active_key_index]
         eligible = [i for i in order if self._unhealthy_until.get(i, 0) <= now]
-        # When all keys are cooling down, make one attempt with the soonest key.
         if not eligible:
             eligible = [min(range(len(self.keys)), key=lambda i: self._unhealthy_until.get(i, 0))]
 
         for position, idx in enumerate(eligible):
             key = self.keys[idx]
-            model = self.resolve_model(self.model_name, key)
             key_label = f"key{idx+1} ({self.detect_key_type(key)})"
 
             if position > 0:
                 time.sleep(0.25)
 
-            for attempt in range(max_retries):
-                try:
-                    log.debug(f"Trying {key_label} attempt {attempt+1}/{max_retries}", {"model": model})
-                    result = self._call_api(payload, key, model)
-                    if isinstance(result, dict) and not result.get("error"):
-                        self._active_key_index = idx
-                        self._unhealthy_until.pop(idx, None)
-                        return self._ok(result, key_label, model)
-                    return result
-                except RateLimitError:
-                    self._unhealthy_until[idx] = time.monotonic() + 60
-                    if attempt < max_retries - 1:
-                        delay = base_delay * (2 ** attempt)
-                        log.warn(f"{key_label} rate limited, retry in {delay}s")
-                        time.sleep(delay)
-                        continue
-                    last_error = f"{key_label}: rate limited after {max_retries} retries"
-                except ModelNotFoundError as e:
-                    self._unhealthy_until[idx] = time.monotonic() + 300
-                    last_error = f"{key_label}: {e}"
-                    log.warn(last_error)
-                    break
-                except SchemaNotSupportedError as e:
-                    if has_schema:
-                        log.info(f"{key_label} schema unsupported, retry as text")
-                        new_payload = dict(payload)
-                        new_payload["generationConfig"] = dict(payload.get("generationConfig", {}))
-                        new_payload["generationConfig"].pop("response_schema", None)
-                        new_payload["generationConfig"]["response_mime_type"] = "text/plain"
-                        try:
-                            result = self._call_api(new_payload, key, model)
-                            if isinstance(result, dict) and not result.get("error"):
-                                self._active_key_index = idx
-                                self._unhealthy_until.pop(idx, None)
-                                return self._ok(result, f"{key_label} (text fallback)", model)
-                            return result
-                        except Exception as e2:
-                            last_error = f"{key_label}: schema+text both failed: {e2}"
-                            log.error(last_error)
-                            break
-                    last_error = f"{key_label}: {e}"
-                    break
-                except ApiError as e:
-                    last_error = f"{key_label}: {e}"
-                    # Invalid/unauthorised keys should not be retried on every
-                    # request; transient transport failures get a shorter rest.
-                    delay = 3600 if "invalid" in str(e).lower() or "authoriz" in str(e).lower() else 20
-                    self._unhealthy_until[idx] = time.monotonic() + delay
-                    if attempt < max_retries - 1:
-                        log.warn(f"{last_error}, retry in {base_delay}s")
-                        time.sleep(base_delay)
-                        continue
-                    break
-                except Exception as e:
-                    last_error = f"{key_label}: {e}"
-                    if attempt < max_retries - 1:
-                        time.sleep(base_delay)
-                        continue
-                    break
+            models_for_key = [self.resolve_model(self.model_name, key)]
+            if self.model_name == "auto" or self.model_name == self.resolve_model(self.model_name, key):
+                models_for_key.extend(self.FALLBACK_MODELS)
+
+            for model in models_for_key:
+                for attempt in range(max_retries):
+                    try:
+                        log.debug(f"Trying {key_label} attempt {attempt+1}/{max_retries}", {"model": model})
+                        result = self._call_api(payload, key, model)
+                        if isinstance(result, dict) and not result.get("error"):
+                            self._active_key_index = idx
+                            self._unhealthy_until.pop(idx, None)
+                            return self._ok(result, key_label, model)
+                        return result
+                    except RateLimitError:
+                        if attempt < max_retries - 1:
+                            delay = self._retry_delay(attempt, self._rate_limit_base)
+                            log.warn(f"{key_label} {model} rate limited, retry in {delay:.1f}s")
+                            time.sleep(delay)
+                            continue
+                        if model != models_for_key[-1]:
+                            log.warn(f"{key_label} {model} exhausted retries, fallback to next model")
+                            continue
+                        self._unhealthy_until[idx] = time.monotonic() + 60
+                        last_error = f"{key_label} {model}: rate limited after {max_retries} retries"
+                    except ModelNotFoundError as e:
+                        self._unhealthy_until[idx] = time.monotonic() + 300
+                        last_error = f"{key_label}: {e}"
+                        log.warn(last_error)
+                        break
+                    except SchemaNotSupportedError as e:
+                        if has_schema:
+                            log.info(f"{key_label} schema unsupported, retry as text")
+                            new_payload = dict(payload)
+                            new_payload["generationConfig"] = dict(payload.get("generationConfig", {}))
+                            new_payload["generationConfig"].pop("response_schema", None)
+                            new_payload["generationConfig"]["response_mime_type"] = "text/plain"
+                            try:
+                                result = self._call_api(new_payload, key, model)
+                                if isinstance(result, dict) and not result.get("error"):
+                                    self._active_key_index = idx
+                                    self._unhealthy_until.pop(idx, None)
+                                    return self._ok(result, f"{key_label} (text fallback)", model)
+                                return result
+                            except Exception as e2:
+                                last_error = f"{key_label}: schema+text both failed: {e2}"
+                                log.error(last_error)
+                                break
+                        last_error = f"{key_label}: {e}"
+                        break
+                    except ApiError as e:
+                        last_error = f"{key_label}: {e}"
+                        delay = 3600 if "invalid" in str(e).lower() or "authoriz" in str(e).lower() else 20
+                        self._unhealthy_until[idx] = time.monotonic() + delay
+                        if attempt < max_retries - 1:
+                            log.warn(f"{last_error}, retry in {base_delay}s")
+                            time.sleep(base_delay)
+                            continue
+                        break
+                    except Exception as e:
+                        last_error = f"{key_label}: {e}"
+                        if attempt < max_retries - 1:
+                            time.sleep(base_delay)
+                            continue
+                        break
 
         return self._err(EC["API_ERROR"], f"All keys failed. Last: {last_error}")
 
