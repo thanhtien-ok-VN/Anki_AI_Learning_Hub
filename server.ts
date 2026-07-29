@@ -815,7 +815,7 @@ Generate exactly ${count} items following the exact JSON schema provided in the 
         const schema = SCHEMAS[gamemode];
 
         const response = await ai.models.generateContent({
-          model: "gemini-3.5-flash",
+          model: "gemini-flash-latest",
           contents: prompt,
           config: schema ? {
             systemInstruction: `You are an elite AI language educator. You output ONLY valid JSON matching the provided schema.
@@ -911,7 +911,7 @@ Rules:
 - Provide encouraging, clear, concise feedback in Vietnamese.`;
 
         const response = await ai.models.generateContent({
-          model: "gemini-3.5-flash",
+          model: "gemini-flash-latest",
           contents: prompt,
           config: {
             systemInstruction: "You are an encouraging AI language teacher grading a student's answer. Return a strict JSON response with exact keys.",

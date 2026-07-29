@@ -1,6 +1,6 @@
 MODEL_CHAINS = {
-    "stable": ["gemini-3.5-flash", "gemini-3-flash", "gemini-2.5-flash"],
-    "simple": ["gemini-3.1-flash-lite", "gemini-3.5-flash"],
+    "stable": ["gemini-flash-latest", "gemini-3.6-flash", "gemma-4-31b-it"],
+    "simple": ["gemini-3.1-flash-lite", "gemini-flash-latest"],
 }
 
 KEY_CHAIN_MAP = {
