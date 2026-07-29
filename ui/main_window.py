@@ -22,6 +22,7 @@ BACKGROUND_ACTIONS = {"generate", "test_key", "test_all_keys", "ai_grade"}
 class AIHubView:
     def __init__(self, engine):
         self.engine = engine
+        self.engine.main_window = self
         self._tabs: QTabWidget | None = None
         self._hub_web: AnkiWebView | None = None
         self._main_web = None

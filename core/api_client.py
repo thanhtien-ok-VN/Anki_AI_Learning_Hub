@@ -182,7 +182,7 @@ class GeminiClient:
         except json.JSONDecodeError as e:
             raise ApiError(f"JSON parse failed after clean_json_response: {e}")
 
-    def _try_keys(self, payload: dict, max_retries: int, base_delay: float) -> dict:
+    def _try_keys(self, payload: dict, max_retries: int, base_delay: float, progress_callback: Optional[Callable[[str], None]] = None) -> dict:
         if not self.keys:
             return self._err(EC["NO_KEYS"], "No API keys configured. Set at least one in Settings.")
 
@@ -193,6 +193,13 @@ class GeminiClient:
         eligible = [i for i in order if self._unhealthy_until.get(i, 0) <= now]
         if not eligible:
             eligible = [min(range(len(self.keys)), key=lambda i: self._unhealthy_until.get(i, 0))]
+
+        def notify(text: str):
+            if progress_callback:
+                try:
+                    progress_callback(text)
+                except Exception as ex:
+                    log.error(f"progress_callback error: {ex}")
 
         # Vòng lặp ngoài: duyệt qua từng mức ưu tiên của model (step 0, step 1, step 2...)
         # Xác định số lượng model tối đa của các key
@@ -222,6 +229,7 @@ class GeminiClient:
                 for attempt in range(max_retries):
                     try:
                         log.debug(f"Trying {key_label} step {step} model {model} attempt {attempt+1}/{max_retries}")
+                        notify(f"Đang gọi: key{idx+1} ({model})...")
                         result = self._call_api(payload, key, model)
                         if isinstance(result, dict) and not result.get("error"):
                             self._active_key_index = idx
@@ -232,18 +240,22 @@ class GeminiClient:
                         if attempt < max_retries - 1:
                             delay = self._retry_delay(attempt)
                             log.warn(f"{key_label} {model} rate limited, retry in {delay:.1f}s")
+                            notify(f"Key{idx+1} ({model}) bận. Đang thử lại sau {delay:.1f}s...")
                             time.sleep(delay)
                             continue
                         self._unhealthy_until[idx] = time.monotonic() + 60
                         last_error = f"{key_label} {model}: rate limited after {max_retries} retries"
+                        notify(f"Key{idx+1} ({model}) hết lượt gọi. Đang chuyển key...")
                     except ModelNotFoundError as e:
                         self._unhealthy_until[idx] = time.monotonic() + 300
                         last_error = f"{key_label}: {e}"
                         log.warn(last_error)
+                        notify(f"Key{idx+1} không hỗ trợ model {model}. Đang chuyển key...")
                         break
                     except SchemaNotSupportedError as e:
                         if has_schema:
                             log.info(f"{key_label} schema unsupported, retry as text")
+                            notify(f"Key{idx+1} ({model}) không hỗ trợ schema. Đang chuyển cấu trúc...")
                             new_payload = dict(payload)
                             new_payload["generationConfig"] = dict(payload.get("generationConfig", {}))
                             new_payload["generationConfig"].pop("response_schema", None)
@@ -258,6 +270,7 @@ class GeminiClient:
                             except Exception as e2:
                                 last_error = f"{key_label}: schema+text both failed: {e2}"
                                 log.error(last_error)
+                                notify(f"Key{idx+1} ({model}) gọi dự phòng thất bại. Đang chuyển key...")
                                 break
                         last_error = f"{key_label}: {e}"
                         break
@@ -268,9 +281,11 @@ class GeminiClient:
                         self._unhealthy_until[idx] = time.monotonic() + delay
                         if is_auth_error:
                             log.warn(f"Auth error on {key_label}. Skipping this key entirely.")
+                            notify(f"Key{idx+1} lỗi xác thực. Bỏ qua key này...")
                             if idx in eligible:
                                 eligible.remove(idx)
                             break
+                        notify(f"Key{idx+1} gặp lỗi API. Đang chuyển key...")
                         if attempt < max_retries - 1:
                             log.warn(f"{last_error}, retry in {base_delay}s")
                             time.sleep(base_delay)
@@ -278,6 +293,7 @@ class GeminiClient:
                         break
                     except Exception as e:
                         last_error = f"{key_label}: {e}"
+                        notify(f"Key{idx+1} lỗi không xác định. Đang chuyển key...")
                         if attempt < max_retries - 1:
                             time.sleep(base_delay)
                             continue
@@ -292,6 +308,7 @@ class GeminiClient:
         temperature: float = 0.7,
         max_retries: int = 3,
         base_delay: float = 4.0,
+        progress_callback: Optional[Callable[[str], None]] = None,
     ) -> dict:
         payload = self._build_payload(prompt, response_schema, temperature)
         log.info("generate_structured", {
@@ -299,12 +316,12 @@ class GeminiClient:
             "has_schema": response_schema is not None,
             "temperature": temperature,
         })
-        return self._try_keys(payload, max_retries, base_delay)
+        return self._try_keys(payload, max_retries, base_delay, progress_callback)
 
-    def generate_text(self, prompt: str, temperature: float = 0.7) -> Optional[str]:
+    def generate_text(self, prompt: str, temperature: float = 0.7, progress_callback: Optional[Callable[[str], None]] = None) -> Optional[str]:
         payload = self._build_payload(prompt, schema=None, temperature=temperature)
         log.info("generate_text", {"prompt_len": len(prompt)})
-        result = self._try_keys(payload, max_retries=2, base_delay=1.0)
+        result = self._try_keys(payload, max_retries=2, base_delay=1.0, progress_callback=progress_callback)
         if result.get("error"):
             return None
         return json.dumps(result, ensure_ascii=False)

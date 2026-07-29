@@ -2562,5 +2562,10 @@ const App = (() => {
     }
     render();
   }
+  if (!window.Bridge) window.Bridge = {};
+  window.Bridge.updateStatus = function(text) {
+    const el = document.querySelector('#loading-text');
+    if (el) el.textContent = text;
+  };
   return {start:startApp,navigate:nav,retry:()=>{state.answers={};play(state.route)}}
 })();window.App=App;document.addEventListener('DOMContentLoaded',App.start);

@@ -199,6 +199,14 @@ class AIEngine:
         self.timer.tick.connect(self._on_timer_tick)
         gui_hooks.profile_will_close.append(self._on_profile_close)
 
+    def _send_progress(self, text: str):
+        from aqt import mw
+        def update_ui():
+            if hasattr(self, "main_window") and self.main_window and self.main_window._hub_web:
+                js = f"if(window.Bridge && window.Bridge.updateStatus) window.Bridge.updateStatus({json.dumps(text)});"
+                self.main_window._hub_web.eval(js)
+        mw.taskman.run_on_main_thread(update_ui)
+
     def _get_context_mgr(self):
         if self._context_mgr is None:
             from core.context_manager import ContextManager
@@ -413,6 +421,7 @@ class AIEngine:
             prompt=prompt,
             response_schema=schema,
             temperature=self.settings.get("temperature", 0.7),
+            progress_callback=self._send_progress,
         )
 
         if result.get("error"):
@@ -651,7 +660,7 @@ class AIEngine:
         if not client:
             return {"error": True, "error_code": "E_NO_KEYS", "message": "No API key"}
 
-        result = client.generate_text(prompt, temperature=0.3)
+        result = client.generate_text(prompt, temperature=0.3, progress_callback=self._send_progress)
         if result:
             try:
                 parsed = json.loads(result)
