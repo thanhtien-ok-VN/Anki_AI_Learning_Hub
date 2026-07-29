@@ -2,9 +2,11 @@ Generate a fill-in-the-blank English exercise for a Vietnamese learner.
 Difficulty: {level_instruction}
 Topic: {topic}
 
+MANDATORY: The entire content MUST revolve around the topic "{topic}".
+
 Requirements:
-- Create ONE meaningful sentence with ONE missing word (_____).
-- Provide exactly 4 options:
+- Create exactly {count} fill-in-the-blank sentences. Each with ONE missing word (_____).
+- Provide exactly 4 options per sentence:
   + 1 correct word.
   + 1 antonym (trái nghĩa).
   + 1 grammar error (sai từ loại/ngữ pháp).
@@ -12,18 +14,23 @@ Requirements:
 - Explain thoroughly why the correct answer fits and why distractors are wrong.
 - All explanations MUST be in Vietnamese.
 
-Return ONLY raw JSON matching this structure:
+Output raw JSON only, no markdown formatting.
+
 {
-  "sentence": "The project was ______ due to lack of funding.",
-  "target_word": "abandoned",
-  "meaning_vi": "bị bỏ rơi",
-  "full_translation": "Dự án đã bị bỏ rơi do thiếu kinh phí.",
-  "options": [
-    {"word": "abandoned", "is_correct": true, "type": "correct", "reason": "..."},
-    {"word": "continued", "is_correct": false, "type": "antonym", "reason": "..."},
-    {"word": "abandonedly", "is_correct": false, "type": "grammar_error", "reason": "..."},
-    {"word": "lost", "is_correct": false, "type": "semantic_close", "reason": "..."}
-  ],
-  "explanation": "...",
-  "grammar_note": "..."
+  "questions": [
+    {
+      "sentence": "The project was ______ due to lack of funding.",
+      "target_word": "abandoned",
+      "meaning_vi": "bị bỏ rơi",
+      "full_translation": "Dự án đã bị bỏ rơi do thiếu kinh phí.",
+      "options": [
+        {"word": "abandoned", "is_correct": true, "type": "correct", "reason": "..."},
+        {"word": "continued", "is_correct": false, "type": "antonym", "reason": "..."},
+        {"word": "abandonedly", "is_correct": false, "type": "grammar_error", "reason": "..."},
+        {"word": "lost", "is_correct": false, "type": "semantic_close", "reason": "..."}
+      ],
+      "explanation": "...",
+      "grammar_note": "..."
+    }
+  ]
 }

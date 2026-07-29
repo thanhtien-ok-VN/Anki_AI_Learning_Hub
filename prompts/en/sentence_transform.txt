@@ -1,25 +1,33 @@
-Generate a sentence transformation exercise.
+Generate {count} sentence transformation exercises in English.
 Grammar focus: {focus}
 Difficulty: {level_instruction}
+Topic: {topic}
+
+MANDATORY: The entire content MUST revolve around the topic "{topic}".
 
 Requirements:
-- Provide an original sentence and a prompt/hint.
+- For each exercise provide an original sentence and a prompt/hint.
 - `normalized_answer`: MUST be fully lowercase with NO punctuation (except apostrophes).
 - List common errors students make with this structure.
 - List forbidden words that must NOT appear in the answer.
 
-Return ONLY raw JSON matching this structure:
+Output raw JSON only, no markdown formatting.
+
 {
-  "original": "She is too young to drive.",
-  "prompt": "Viết lại câu dùng 'so... that'",
-  "expected_answer": "She is so young that she cannot drive.",
-  "normalized_answer": "she is so young that she cannot drive",
-  "acceptable_variations": [
-    {"text": "She's so young that she can't drive.", "note": "Contraction OK"}
-  ],
-  "forbidden_words": ["too"],
-  "grammar_rule": "so + adj + that + clause...",
-  "common_errors": [
-    {"error": "She is so young that she can drive.", "feedback": "Missing negation..."}
+  "questions": [
+    {
+      "original": "She is too young to drive.",
+      "prompt": "Viết lại câu dùng 'so... that'",
+      "expected_answer": "She is so young that she cannot drive.",
+      "normalized_answer": "she is so young that she cannot drive",
+      "acceptable_variations": [
+        {"text": "She's so young that she can't drive.", "note": "Contraction OK"}
+      ],
+      "forbidden_words": ["too"],
+      "grammar_rule": "so + adj + that + clause...",
+      "common_errors": [
+        {"error": "She is so young that she can drive.", "feedback": "Missing negation..."}
+      ]
+    }
   ]
 }

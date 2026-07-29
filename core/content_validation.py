@@ -41,12 +41,17 @@ def _validate_cloze(r: dict) -> dict:
     blanks = r.get("blanks", [])
     if not blanks:
         return {"error": "No blanks found in cloze result."}
+    full_text = (r.get("full_solution_text") or r.get("paragraph") or "").lower()
+    text_words = set(w.strip(".,!?;:'\"()[]") for w in full_text.split())
     for i, b in enumerate(blanks):
         if not b.get("answer"):
             return {"error": f"Blank {i+1} missing answer."}
         distractors = b.get("distractors", [])
         if len(distractors) != 3:
             return {"error": f"Blank {i+1}: expected 3 distractors, got {len(distractors)}."}
+        for d in distractors:
+            if d.lower() not in text_words:
+                return {"error": f"Blank {i+1}: distractor '{d}' not found in text."}
     return {}
 
 

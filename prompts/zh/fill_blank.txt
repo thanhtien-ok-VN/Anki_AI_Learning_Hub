@@ -1,29 +1,36 @@
-为越南学习者生成一个英语填空练习。
+为越南学习者生成英语填空练习。
 难度：{level_instruction}
 主题：{topic}
 
+强制约束：所有内容必须围绕主题 "{topic}" 展开。
+
 要求：
-- 创建一个有意义的句子，其中有一个缺失的单词（_____）。
-- 提供恰好 4 个选项：
+- 恰好创建 {count} 个填空句子。每句有一个空白（_____）。
+- 每句提供恰好 4 个选项：
   + 1 个正确单词。
   + 1 个反义词（trái nghĩa）。
   + 1 个语法错误（sai từ loại/ngữ pháp）。
   + 1 个词义接近但语境错误的词（nghĩa gần giống nhưng sai ngữ cảnh）。
-- 详细解释为什么正确答案合适，以及为什么干扰项是错误的。
+- 详细解释为什么正确答案合适及干扰项错误的原因。
 - 所有解释必须使用越南语（Tiếng Việt）。
 
-仅返回符合此结构的原始 JSON：
+仅输出原始 JSON，不得使用 markdown 格式。
+
 {
-  "sentence": "The project was ______ due to lack of funding.",
-  "target_word": "abandoned",
-  "meaning_vi": "bị bỏ rơi",
-  "full_translation": "Dự án đã bị bỏ rơi do thiếu kinh phí.",
-  "options": [
-    {"word": "abandoned", "is_correct": true, "type": "correct", "reason": "..."},
-    {"word": "continued", "is_correct": false, "type": "antonym", "reason": "..."},
-    {"word": "abandonedly", "is_correct": false, "type": "grammar_error", "reason": "..."},
-    {"word": "lost", "is_correct": false, "type": "semantic_close", "reason": "..."}
-  ],
-  "explanation": "...",
-  "grammar_note": "..."
+  "questions": [
+    {
+      "sentence": "The project was ______ due to lack of funding.",
+      "target_word": "abandoned",
+      "meaning_vi": "bị bỏ rơi",
+      "full_translation": "Dự án đã bị bỏ rơi do thiếu kinh phí.",
+      "options": [
+        {"word": "abandoned", "is_correct": true, "type": "correct", "reason": "..."},
+        {"word": "continued", "is_correct": false, "type": "antonym", "reason": "..."},
+        {"word": "abandonedly", "is_correct": false, "type": "grammar_error", "reason": "..."},
+        {"word": "lost", "is_correct": false, "type": "semantic_close", "reason": "..."}
+      ],
+      "explanation": "...",
+      "grammar_note": "..."
+    }
+  ]
 }

@@ -2,6 +2,8 @@ Generate {count} sentence unscramble puzzles for a Vietnamese learner.
 Difficulty: {level_instruction}
 Topic: {topic}
 
+MANDATORY: The entire content MUST revolve around the topic "{topic}".
+
 Requirements:
 - Generate {count} grammatically correct English sentences.
 - Each sentence must have 6-12 words with clear structure.
@@ -10,7 +12,7 @@ Requirements:
 - Explain why this sentence has the difficulty level it has.
 - Include a grammar note about the sentence structure.
 
-Return ONLY raw JSON matching this structure:
+Output raw JSON only, no markdown formatting.
 {
   "questions": [
     {

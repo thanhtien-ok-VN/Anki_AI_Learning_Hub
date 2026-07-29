@@ -2,13 +2,15 @@
 主题：{topic}
 配对数量：{num_pairs}
 
+强制约束：所有内容必须围绕主题 "{topic}" 展开。
+
 核心规则：
 - 生成平铺的项目数组。
 - 使用共享的 `pair_id`（例如 "pair_1"）连接匹配的词汇和释义。
 - 不要包含 `is_correct` 标志。
 - 打乱输出数组中项目的顺序。
 
-仅返回符合此结构的原始 JSON：
+仅输出原始 JSON，不得使用 markdown 格式。
 {
   "game_id": "uuid_random_string",
   "items": [

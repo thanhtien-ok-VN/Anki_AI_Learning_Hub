@@ -6,7 +6,7 @@
 - 提供参考翻译和其他正确的备选版本。
 - 用越南语详细分析重点词汇和常见错误（附带修改建议）。
 
-仅返回符合此结构的原始 JSON：
+仅输出原始 JSON，不得使用 markdown 格式。
 {
   "source_sentence": "Tôi đã định đi chơi nhưng trời mưa.",
   "target_language": "en",

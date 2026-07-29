@@ -2,6 +2,8 @@ Generate a word matching game (English terms to Vietnamese definitions).
 Topic: {topic}
 Pairs: {num_pairs}
 
+MANDATORY: The entire content MUST revolve around the topic "{topic}".
+
 CRITICAL LOGIC RULE:
 - Generate an array of flattened items. 
 - Do NOT nest the term and definition. 
@@ -9,7 +11,7 @@ CRITICAL LOGIC RULE:
 - DO NOT include any `is_correct` flags.
 - Shuffle the order of the items in the output array so terms and definitions are mixed.
 
-Return ONLY raw JSON matching this structure:
+Output raw JSON only, no markdown formatting.
 {
   "game_id": "uuid_random_string",
   "items": [

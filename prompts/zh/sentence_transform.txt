@@ -1,25 +1,33 @@
-生成一个句型转换/改写句子的练习。
+生成 {count} 个句型转换/改写句子练习。
 句型焦点：{focus}
 难度：{level_instruction}
+主题：{topic}
+
+强制约束：所有内容必须围绕主题 "{topic}" 展开。
 
 要求：
-- 提供原始句子和转换提示。
-- `normalized_answer` 必须是完全小写的字符串，且没有任何标点符号（省略号、句号等，撇号除外）。
-- 用越南语列出学生在此结构中常犯的错误。
-- 列出禁止在改写答案中出现的违禁词汇。
+- 每个练习提供原始句子和转换提示。
+- `normalized_answer` 必须是完全小写且无标点（撇号除外）。
+- 用越南语列出学生常犯错误。
+- 列出禁止在答案中出现的违禁词汇。
 
-仅返回符合此结构的原始 JSON：
+仅输出原始 JSON，不得使用 markdown 格式。
+
 {
-  "original": "She is too young to drive.",
-  "prompt": "Viết lại câu dùng 'so... that'",
-  "expected_answer": "She is so young that she cannot drive.",
-  "normalized_answer": "she is so young that she cannot drive",
-  "acceptable_variations": [
-    {"text": "She's so young that she can't drive.", "note": "Contraction OK"}
-  ],
-  "forbidden_words": ["too"],
-  "grammar_rule": "so + adj + that + clause...",
-  "common_errors": [
-    {"error": "She is so young that she can drive.", "feedback": "Missing negation..."}
+  "questions": [
+    {
+      "original": "She is too young to drive.",
+      "prompt": "Viết lại câu dùng 'so... that'",
+      "expected_answer": "She is so young that she cannot drive.",
+      "normalized_answer": "she is so young that she cannot drive",
+      "acceptable_variations": [
+        {"text": "She's so young that she can't drive.", "note": "Contraction OK"}
+      ],
+      "forbidden_words": ["too"],
+      "grammar_rule": "so + adj + that + clause...",
+      "common_errors": [
+        {"error": "She is so young that she can drive.", "feedback": "Missing negation..."}
+      ]
+    }
   ]
 }

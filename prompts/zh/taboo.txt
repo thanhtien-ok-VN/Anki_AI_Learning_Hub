@@ -1,20 +1,27 @@
-生成一个禁忌词（Taboo）游戏卡片。
+生成 {count} 个禁忌词（Taboo）游戏卡片。
 目标概念：{topic}
 难度：{level_instruction}
 
-要求：
-- 定义目标单词和 5 个高度相关的禁忌词（禁止在描述中使用的关联词汇）。
-- 用英语提供线索描述，要求在描述时绝对不能使用目标词和禁忌词。
-- 越南语意思写在 `meaning_vi` 中。
-- 包含可接受的和被禁止的短语示例，用作 AI 评分的指导依据。
+强制约束：所有内容必须围绕主题 "{topic}" 展开。
 
-仅返回符合此结构的原始 JSON：
+要求：
+- 每个卡片定义目标单词和 5 个禁忌词（禁止在描述中使用的关联词汇）。
+- 用英语提供线索描述，不得使用目标词和禁忌词。
+- 越南语意思写在 `meaning_vi` 中。
+- 包含可接受和禁止的短语示例，用作 AI 评分依据。
+
+仅输出原始 JSON，不得使用 markdown 格式。
+
 {
-  "target_word": "Internet",
-  "meaning_vi": "Mạng internet",
-  "taboo_words": ["Web", "Online", "Computer", "Network", "Wifi"],
-  "clue": "A global system that connects millions of devices...",
-  "difficulty_level": "Medium",
-  "sample_acceptable_phrases": ["Hệ thống toàn cầu", "Kết nối không dây"],
-  "sample_forbidden_phrases": ["Mạng máy tính", "Lướt web"]
+  "rounds": [
+    {
+      "target_word": "Internet",
+      "meaning_vi": "Mạng internet",
+      "taboo_words": ["Web", "Online", "Computer", "Network", "Wifi"],
+      "clue": "A global system that connects millions of devices...",
+      "difficulty_level": "Medium",
+      "sample_acceptable_phrases": ["Hệ thống toàn cầu", "Kết nối không dây"],
+      "sample_forbidden_phrases": ["Mạng máy tính", "Lướt web"]
+    }
+  ]
 }

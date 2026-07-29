@@ -6,7 +6,7 @@ Requirements:
 - Provide the reference translation and alternative correct versions.
 - Break down key vocabulary and common errors with corrections.
 
-Return ONLY raw JSON matching this structure:
+Output raw JSON only, no markdown formatting.
 {
   "source_sentence": "Tôi đã định đi chơi nhưng trời mưa.",
   "target_language": "en",

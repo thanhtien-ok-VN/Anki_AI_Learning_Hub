@@ -4,6 +4,8 @@ Topic: {topic}
 Length: ~{word_count} words.
 Target words: {target_words}
 
+MANDATORY: The entire content MUST revolve around the topic "{topic}".
+
 Requirements:
 - Include a story with a title.
 - Highlight 1-3 key vocabulary words in context.
@@ -11,7 +13,7 @@ Requirements:
 - EVERY correct answer MUST include an "evidence_quote" extracted directly from the story.
 - Provide full Vietnamese translation of the story.
 
-Return ONLY raw JSON matching this structure:
+Output raw JSON only, no markdown formatting.
 {
   "story": {
     "title": "The Last Train",

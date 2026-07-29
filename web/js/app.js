@@ -1044,12 +1044,21 @@ const App = (() => {
       x.questions = x.sentences;
       delete x.sentences;
     }
+    if (id === 'fill_blank' && !x.questions && x.sentence) {
+      x.questions = [x];
+    }
+    if (id === 'sentence_transform' && !x.questions && x.original) {
+      x.questions = [x];
+    }
+    if (id === 'taboo' && !x.rounds && x.target_word) {
+      x.rounds = [x];
+    }
     return x;
   }
   function play(id) {
     const d = document.querySelector('#play');
     let x = state.exercise;
-    if (!x) return;
+    if (!x) { d.innerHTML = '<div class="empty-state"><p>Không có dữ liệu bài tập.</p></div>'; return; }
     x = normalizeExercise(id, x);
     if (!state.answers) state.answers = {};
     if (id === 'fill_blank') renderFillBlank(x);
@@ -1066,6 +1075,7 @@ const App = (() => {
   /* ---- FILL-BLANK: all questions vertical ---- */
   function renderFillBlank(x) {
     const d = document.querySelector('#play');
+    if (!x?.questions?.length) { d.innerHTML = '<div class="empty-state"><p>Không có câu hỏi.</p></div>'; return; }
     const isGraded = !!state.isGraded;
     const gameId = state.route;
 
@@ -1279,6 +1289,7 @@ const App = (() => {
   /* ---- CLOZE: paragraph with selects + top word bank ---- */
   function renderCloze(x) {
     const d = document.querySelector('#play');
+    if (!x?.blanks?.length) { d.innerHTML = '<div class="empty-state"><p>Không có dữ liệu điền từ.</p></div>'; return; }
     const isGraded = !!state.isGraded;
     const gameId = state.route;
 
@@ -1846,7 +1857,7 @@ const App = (() => {
     renderBoard();
   }
 
-  function renderUnscrambleAll(x){const d=document.querySelector('#play');d.innerHTML=x.questions.map((q,i)=>{return'<div class="question-card unscramble-card fade-in"><p class="hint-text">'+esc(q.hint)+'</p><div id="us-'+i+'" class="unscramble-area"></div><button class="btn" id="ugrade-'+i+'">Chấm điểm</button><div id="ufeedback-'+i+'"></div></div>'}).join('');x.questions.forEach((q,i)=>{renderUnscrambleSingle(q,i,x.questions)});}
+  function renderUnscrambleAll(x){const d=document.querySelector('#play');if(!x?.questions?.length){d.innerHTML='<div class="empty-state"><p>Không có câu hỏi.</p></div>';return;}d.innerHTML=x.questions.map((q,i)=>{return'<div class="question-card unscramble-card fade-in"><p class="hint-text">'+esc(q.hint)+'</p><div id="us-'+i+'" class="unscramble-area"></div><button class="btn" id="ugrade-'+i+'">Chấm điểm</button><div id="ufeedback-'+i+'"></div></div>'}).join('');x.questions.forEach((q,i)=>{renderUnscrambleSingle(q,i,x.questions)});}
   function renderUnscrambleSingle(q,i,all){const chosen=[];const area=document.querySelector('#us-'+i);function draw(){area.innerHTML='<div class="drop-zone">'+chosen.map(w=>'<button class="drag-word" data-back="'+esc(w)+'">'+esc(w)+'</button>').join('')+'</div><div class="drag-container">'+q.shuffled_words.filter((w,j)=>!chosen.includes(w)||chosen.filter(x=>x===w).length<q.shuffled_words.slice(0,j+1).filter(x=>x===w).length).map(w=>'<button class="drag-word" data-word="'+esc(w)+'">'+esc(w)+'</button>').join('')+'</div>';area.querySelectorAll('[data-word]').forEach(e=>e.onclick=()=>{chosen.push(e.dataset.word);draw()});area.querySelectorAll('[data-back]').forEach(e=>e.onclick=()=>{chosen.splice(chosen.indexOf(e.dataset.back),1);draw()})}draw();document.querySelector('#ugrade-'+i).onclick=()=>{const ok=norm(chosen.join(' '))===norm(q.correct_sentence);const fb=document.querySelector('#ufeedback-'+i);let html='<div class="feedback '+(ok?'good':'bad')+'"><b>'+(ok?'Chính xác!':'Chưa đúng.')+'</b><p>'+esc(q.correct_sentence)+'</p>';const mean = q.meaning_vi || q.sentence_meaning; if(mean)html+='<p>🌐 '+esc(mean)+'</p>';const vocab = q.key_vocabulary || q.key_vocab; if(vocab)html+=vocab.map(k=>'<p>📖 <b>'+esc(k.word)+'</b>: '+esc(k.meaning_vi || k.meaning)+'</p>').join('');if(q.difficulty_reason)html+='<p>📊 <b>Mức độ:</b> '+esc(q.difficulty_reason)+'</p>';if(q.grammar_note)html+='<p>📌 <b>Ngữ pháp:</b> '+esc(q.grammar_note)+'</p>';html+='</div>';fb.innerHTML=html}}
 
   function resetGameState(gameId) {
@@ -2158,6 +2169,7 @@ const App = (() => {
 
   /* ---- TRANSLATION: 1 sentence, detailed AI grade ---- */
   function renderTranslation(x){
+    if (!x) { const d=document.querySelector('#play'); if(d)d.innerHTML='<div class="empty-state"><p>Không có dữ liệu bài tập.</p></div>'; return; }
     const isNewSchema = !!x.source_sentence;
     const sourceText = isNewSchema ? x.source_sentence : (x.sentences && x.sentences[0] ? x.sentences[0].source_text : '');
     const targetText = isNewSchema ? x.reference_translation : (x.sentences && x.sentences[0] ? x.sentences[0].target_text : '');
@@ -2228,6 +2240,7 @@ const App = (() => {
 
   /* ---- SENTENCE TRANSFORM: 1 sentence, focus selector, detailed ---- */
   function renderSentenceTransform(x){
+    if (!x?.questions?.length) { const d=document.querySelector('#play'); if(d)d.innerHTML='<div class="empty-state"><p>Không có câu hỏi.</p></div>'; return; }
     const q=x.questions[0];
     const originalText = q.original || q.original_sentence || '';
     const instructionText = q.prompt || q.instruction || '';
@@ -2357,6 +2370,7 @@ const App = (() => {
 
   /* ---- TABOO: 1 round, concept → English, AI grade ---- */
   function renderTaboo(x){
+    if (!x?.rounds?.length) { const d=document.querySelector('#play'); if(d)d.innerHTML='<div class="empty-state"><p>Không có dữ liệu bài tập.</p></div>'; return; }
     const q=x.rounds[0];
     const langLabel = state.userPrefs.language || 'en';
     const secretWord = q.target_word || '';
