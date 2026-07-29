@@ -47,7 +47,14 @@ class PromptManager:
         kwargs.setdefault("topic", "daily_life")
         kwargs.setdefault("count", 5)
         kwargs["level_instruction"] = level_instruction
-        rendered = GLOBAL_SYSTEM_INSTRUCTION + "\n\n" + prompt.format(**kwargs)
+        
+        # Safely replace known placeholders in prompt without failing on raw JSON braces
+        rendered = GLOBAL_SYSTEM_INSTRUCTION + "\n\n" + prompt
+        for k, v in kwargs.items():
+            placeholder = f"{{{k}}}"
+            if placeholder in rendered:
+                rendered = rendered.replace(placeholder, str(v))
+
         pairs = kwargs.get("vocab_pairs") or []
         if pairs:
             vocabulary = "\n".join(
