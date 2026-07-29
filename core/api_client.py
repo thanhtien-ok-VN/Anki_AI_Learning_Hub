@@ -1,7 +1,7 @@
 import json
 import random
 import time
-from typing import Optional
+from typing import Optional, Callable
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
 
