@@ -1,26 +1,27 @@
-用 {language} 写一段连贯的短文（{paragraph_min_words}-{paragraph_max_words} 词）。
-级别：{level_instruction}
-主题：{topic}
+为越南学习者生成一个完形填空测试（段落缺失单词）。
+难度：{level_instruction}
+长度：~50-80个单词。
+空格数量：{num_blanks}
 
-短文应该是一个完整、自然的文本。然后删除 {num_blanks} 个关键词。
+要求：
+- 段落必须是一篇连贯的文本。将缺失的单词替换为 [BLANK_1]，[BLANK_2] 等。
+- 对于每个空格，提供恰好 3 个干扰项（相同词性）。
+- 使用越南语提供提示和解释。
 
-用 [BLANK_0]、[BLANK_1] 等替换删除的词。
-为每个空白提供：
-- correct_word：被删除的词
-- options：4 个选项（1 个正确 + 3 个合理的干扰项 — 相同词性，常见错误）
-- correct_index：选项中正确词的索引（0-3）
-- explanation_short：为什么这个词合适的简短说明
-- explanation：对该词含义和在此语境中使用的详细解释
-- meaning_in_vietnamese：空白词的越南语释义
-
-同时包括：
-- sentence_meaning：整段文字内容的越南语翻译和说明
-
-输出有效 JSON：
-{{ "paragraph_with_blanks": "... [BLANK_0] ... [BLANK_1] ...",
-   "paragraph_full": "没有空白的完整段落",
-   "sentence_meaning": "整段文字的越南语含义",
-   "blanks": [
-     {{ "blank_id": 0, "correct_word": "...", "options": ["A","B","C","D"], "correct_index": 0, "explanation_short": "...", "explanation": "...", "meaning_in_vietnamese": "..." }}
-   ]
-}}
+仅返回符合此结构的原始 JSON：
+{
+  "paragraph": "Yesterday, John went to the [BLANK_1] to buy some [BLANK_2]...",
+  "blanks": [
+    {
+      "id": "BLANK_1",
+      "answer": "market",
+      "meaning_vi": "chợ",
+      "hint": "Nơi mua bán thực phẩm",
+      "distractors": ["park", "school", "library"],
+      "explanation": "..."
+    }
+  ],
+  "full_solution_text": "Yesterday, John went to the market to buy some...",
+  "story_translation": "Hôm qua, John đã đi chợ để mua...",
+  "context_summary": "Một đoạn văn kể về chuyến đi mua sắm của John."
+}

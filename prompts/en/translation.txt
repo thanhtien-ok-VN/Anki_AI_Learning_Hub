@@ -1,31 +1,24 @@
-Generate 1 translation exercise.
-Source language: {source_lang} (Vietnamese)
-Target language: {target_lang}
-Level: {level_instruction}
-Topic: {topic}
+Provide a Vietnamese to English translation exercise.
+Sentence complexity: {level_instruction}
 
-For the exercise:
-- source_text: a natural sentence in VIETNAMESE (source_lang) appropriate for the level
-- target_text: the accurate translation in {target_lang}
-- vocabulary_highlight: key words from the sentence with translations and usage notes
-- grammar_notes: explanation of important grammar differences between Vietnamese and {target_lang}
-- detailed_feedback: an object with:
-  - "word_by_word": [{word: "...", translation: "...", notes: "..."}] — analyze each important word
-  - "common_mistakes": ["...", "..."] — common learner errors for this sentence
-  - "alternative_translations": ["...", "..."] — other valid ways to translate
-  - "improvement_tips": "..." — general advice for the learner
+Requirements:
+- Focus on common mistakes made by Vietnamese learners (tense, pluralization, articles).
+- Provide the reference translation and alternative correct versions.
+- Break down key vocabulary and common errors with corrections.
 
-Important: source_lang is VIETNAMESE, not English. Write natural Vietnamese sentences.
-Output valid JSON:
-{{ "sentences": [
-  {{ "source_text": "Câu tiếng Việt...", "target_text": "translation...",
-     "vocabulary_highlight": [{{"word":"...","translation":"...","notes":"..."}}],
-     "grammar_notes": "...",
-     "detailed_feedback": {{
-       "word_by_word": [{{"word":"...","translation":"...","notes":"..."}}],
-       "common_mistakes": ["...","..."],
-       "alternative_translations": ["...","..."],
-       "improvement_tips": "..."
-     }}
-  }}
-] }}
+Return ONLY raw JSON matching this structure:
+{
+  "source_sentence": "Tôi đã định đi chơi nhưng trời mưa.",
+  "target_language": "en",
+  "reference_translation": "I intended to go out, but it rained.",
+  "alternative_translations": [
+    {"text": "I planned to go out, but it was raining.", "note": "..."}
+  ],
+  "key_vocabulary": [
+    {"source": "định", "target": "intend/plan", "note": "..."}
+  ],
+  "common_mistakes": [
+    {"wrong": "I want to go out but rain.", "error_type": "Tense & Structure", "correction": "..."}
+  ],
+  "grading_rubric": "..."
+}

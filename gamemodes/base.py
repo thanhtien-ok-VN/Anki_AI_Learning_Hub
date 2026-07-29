@@ -18,6 +18,7 @@ class GameModeBase(ABC):
         self.prompts = prompt_mgr
 
     def generate(self, **kwargs) -> dict:
+        from core.schema_registry import get_schema, get_pydantic_model
         schema = get_schema(self.name)
         if not schema:
             return {"error": True, "message": f"No schema for {self.name}"}
@@ -31,6 +32,23 @@ class GameModeBase(ABC):
             prompt=prompt,
             response_schema=schema,
         )
+
+        if not result.get("error"):
+            pydantic_cls = get_pydantic_model(self.name)
+            if pydantic_cls:
+                try:
+                    key_used = result.get("_key_used")
+                    model_used = result.get("_model_used")
+                    err_code = result.get("error_code")
+
+                    validated = pydantic_cls.model_validate(result)
+                    result = validated.model_dump()
+
+                    if key_used: result["_key_used"] = key_used
+                    if model_used: result["_model_used"] = model_used
+                    if err_code: result["error_code"] = err_code
+                except Exception:
+                    pass
         return result
 
     @abstractmethod

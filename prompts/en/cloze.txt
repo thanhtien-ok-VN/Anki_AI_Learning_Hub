@@ -1,26 +1,28 @@
-Write ONE coherent paragraph in {language} ({paragraph_min_words}-{paragraph_max_words} words).
-Level: {level_instruction}
-Topic: {topic}
+Generate a Cloze test (paragraph with missing words) for a Vietnamese learner.
+Difficulty: {level_instruction}
+Length: ~50-80 words.
+Number of blanks: {num_blanks}
 
-The paragraph should be a complete, natural text. Then remove {num_blanks} key words.
+Requirements:
+- The paragraph must be a coherent text.
+- Replace each missing word with [BLANK_1], [BLANK_2], etc.
+- For each blank, provide exactly 3 distractors (same part of speech).
+- Provide hints and explanations in Vietnamese.
 
-Format the paragraph with [BLANK_0], [BLANK_1], etc. in place of removed words.
-For each blank provide:
-- correct_word: the removed word
-- options: 4 choices (1 correct + 3 plausible distractors — same POS, common errors)
-- correct_index: index of the correct word in options (0-3)
-- explanation_short: brief why this word fits
-- explanation: detailed explanation of the word's meaning and usage in this context
-- meaning_in_vietnamese: the meaning of the blank word in Vietnamese
-
-Also include:
-- sentence_meaning: the FULL meaning of the paragraph in Vietnamese, explaining what it means
-
-Output valid JSON:
-{{ "paragraph_with_blanks": "... [BLANK_0] ... [BLANK_1] ...",
-   "paragraph_full": "the complete paragraph without blanks",
-   "sentence_meaning": "Vietnamese meaning of the whole paragraph",
-   "blanks": [
-     {{ "blank_id": 0, "correct_word": "...", "options": ["A","B","C","D"], "correct_index": 0, "explanation_short": "...", "explanation": "...", "meaning_in_vietnamese": "..." }}
-   ]
-}}
+Return ONLY raw JSON matching this structure:
+{
+  "paragraph": "Yesterday, John went to the [BLANK_1] to buy some [BLANK_2]...",
+  "blanks": [
+    {
+      "id": "BLANK_1",
+      "answer": "market",
+      "meaning_vi": "chợ",
+      "hint": "Nơi mua bán thực phẩm",
+      "distractors": ["park", "school", "library"],
+      "explanation": "..."
+    }
+  ],
+  "full_solution_text": "Yesterday, John went to the market to buy some...",
+  "story_translation": "Hôm qua, John đã đi chợ để mua...",
+  "context_summary": "Một đoạn văn kể về chuyến đi mua sắm của John."
+}

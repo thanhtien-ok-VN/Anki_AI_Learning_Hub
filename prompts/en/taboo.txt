@@ -1,16 +1,19 @@
-Generate 1 Taboo round in {language}.
-Level: {level_instruction}
-Topic: {topic}
+Generate a Taboo game card.
+Target concept: {topic}
+Difficulty: {level_instruction}
 
-For the round provide:
-- secret_word: a word at the appropriate level
-- forbidden_words: 4-5 related words that cannot be used when describing the secret word
-- ai_description: a description of the secret word in {language} that does NOT use any forbidden words. The description explains the CONCEPT clearly.
-- category: the category of the word
-- difficulty: easy, medium, or hard
+Requirements:
+- Define the target word and 5 taboo words (highly related words that cannot be used).
+- Provide a clue description explaining the target word without using the taboo words.
+- Include sample acceptable and forbidden phrases to guide the AI Grader.
 
-The description should clearly explain the concept so the learner can guess the secret word.
-The learner will read the description and reply with the secret word in {language}.
-
-Output valid JSON matching this schema:
-{{ "rounds": [{{ "secret_word": "...", "forbidden_words": ["A","B","C","D"], "ai_description": "...", "category": "...", "difficulty": "medium" }}] }}
+Return ONLY raw JSON matching this structure:
+{
+  "target_word": "Internet",
+  "meaning_vi": "Mạng internet",
+  "taboo_words": ["Web", "Online", "Computer", "Network", "Wifi"],
+  "clue": "A global system that connects millions of devices...",
+  "difficulty_level": "Medium",
+  "sample_acceptable_phrases": ["Hệ thống toàn cầu", "Kết nối không dây"],
+  "sample_forbidden_phrases": ["Mạng máy tính", "Lướt web"]
+}

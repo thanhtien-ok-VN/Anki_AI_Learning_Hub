@@ -1,6 +1,13 @@
 import json
 import os
 
+GLOBAL_SYSTEM_INSTRUCTION = """You are an expert English teacher and curriculum designer.
+CRITICAL RULES:
+1. You MUST output ONLY valid, raw JSON.
+2. DO NOT wrap the JSON in markdown code blocks (no ```json ... ```).
+3. DO NOT output any text before or after the JSON.
+4. All explanations must be deeply pedagogical, helping Vietnamese learners understand the "WHY" behind correct and incorrect answers."""
+
 
 class PromptManager:
     def __init__(self, prompts_dir: str):
@@ -40,7 +47,7 @@ class PromptManager:
         kwargs.setdefault("topic", "daily_life")
         kwargs.setdefault("count", 5)
         kwargs["level_instruction"] = level_instruction
-        rendered = prompt.format(**kwargs)
+        rendered = GLOBAL_SYSTEM_INSTRUCTION + "\n\n" + prompt.format(**kwargs)
         pairs = kwargs.get("vocab_pairs") or []
         if pairs:
             vocabulary = "\n".join(

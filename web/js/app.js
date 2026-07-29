@@ -352,12 +352,13 @@ const App = (() => {
     const details = q.options_details || [];
 
     const items = q.options.map((opt, idx) => {
-      const isAns = idx === q.correct_index;
+      let word = typeof opt === 'object' ? opt.word : opt;
+      let isAns = typeof opt === 'object' ? opt.is_correct : (idx === q.correct_index);
+      let reason = typeof opt === 'object' ? opt.reason : (details[idx]?.reason || (isAns ? (q.explanation_short || 'Từ phù hợp ngữ cảnh câu.') : 'Phương án gây nhiễu.'));
+      let tr = typeof opt === 'object' ? '' : (details[idx]?.translation || optTrans[idx] || '');
+
       const isUserChoice = idx === chosen;
       const letter = String.fromCharCode(65 + idx);
-      const detailObj = details[idx] || {};
-      const tr = detailObj.translation || optTrans[idx] || '';
-      const reason = detailObj.reason || (isAns ? (q.explanation_short || 'Từ phù hợp ngữ cảnh câu.') : 'Phương án gây nhiễu.');
 
       let badgeBg = isAns ? '#d1fae5' : (isUserChoice ? '#fee2e2' : 'var(--bg)');
       let badgeColor = isAns ? '#047857' : (isUserChoice ? '#b91c1c' : 'var(--text-secondary)');
@@ -367,7 +368,7 @@ const App = (() => {
       return `
         <div style="padding:10px 12px; border-left:4px solid ${borderColor}; background:var(--bg); border-radius:4px; margin-bottom:8px; text-align:left;">
           <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px; margin-bottom:4px;">
-            <span style="font-size:14px;"><b>${letter}. ${esc(opt)}</b> ${tr ? `<span style="color:var(--text-secondary); font-size:13px;">— ${esc(tr)}</span>` : ''}</span>
+            <span style="font-size:14px;"><b>${letter}. ${esc(word)}</b> ${tr ? `<span style="color:var(--text-secondary); font-size:13px;">— ${esc(tr)}</span>` : ''}</span>
             <span style="font-size:11px; padding:2px 8px; border-radius:10px; font-weight:600; background:${badgeBg}; color:${badgeColor}; border:1px solid ${borderColor};">${badgeLabel}</span>
           </div>
           <div style="font-size:13px; color:var(--text); line-height:1.4;">
@@ -407,12 +408,19 @@ const App = (() => {
 
       detailContent = questions.map((q, qIdx) => {
         const chosen = userAnswers[qIdx];
-        const isCorrect = chosen === q.correct_index;
+        
+        let correctIdx = q.options.findIndex(o => typeof o === 'object' ? o.is_correct : false);
+        if (correctIdx === -1) correctIdx = q.correct_index;
+        const isCorrect = chosen === correctIdx;
+
+        const sentenceText = q.sentence || q.sentence_with_blank || '';
+        const trans = q.full_translation || q.sentence_translation || q.full_sentence_translation || 'Không có bản dịch';
+        const explanation = q.explanation || q.explanation_short || '';
 
         return `
           <div class="question-card" style="margin-bottom:16px;">
             <div class="q-number">Câu ${qIdx + 1}/${questions.length}</div>
-            <div class="q-text" style="font-size:16px; font-weight:600;">${esc(q.sentence_with_blank)}</div>
+            <div class="q-text" style="font-size:16px; font-weight:600;">${esc(sentenceText)}</div>
 
             <div class="feedback ${chosen !== undefined ? (isCorrect ? 'good' : 'bad') : ''}" style="margin-top:12px;">
               ${chosen !== undefined ? `
@@ -422,11 +430,11 @@ const App = (() => {
               ` : '<div style="color:var(--text-secondary); margin-bottom:8px;">(Chưa làm bài)</div>'}
 
               <div style="margin-bottom:8px;">
-                <b>🌐 Dịch câu hoàn chỉnh:</b> ${esc(q.sentence_translation || q.full_sentence_translation || 'Không có bản dịch')}
+                <b>🌐 Dịch câu hoàn chỉnh:</b> ${esc(trans)}
               </div>
 
               <div style="margin-bottom:8px;">
-                <b>💡 Lý do chọn:</b> ${esc(q.explanation_short || '')}
+                <b>💡 Lý do chọn:</b> ${esc(explanation)}
               </div>
 
               ${q.grammar_note ? `<div style="margin-bottom:8px;"><b>📌 Ghi chú ngữ pháp:</b> ${esc(q.grammar_note)}</div>` : ''}
@@ -443,14 +451,15 @@ const App = (() => {
       const blanksHtml = data.blanks.map((b, bIdx) => {
         const chosen = userAnswers[bIdx];
         const isCorrect = chosen === b.correct_index;
-        const correctOpt = b.options[b.correct_index];
+        const correctOpt = b.options[b.correct_index] || b.answer || '';
         const chosenOpt = chosen !== undefined ? b.options[chosen] : 'Chưa chọn';
+        const meaning = b.meaning_vi || b.meaning_in_vietnamese || '';
 
         return `
           <div style="padding:10px; border:1px solid var(--border); border-radius:var(--radius-sm); margin-bottom:10px; background:var(--bg);">
-            <b>Blank [${bIdx + 1}]</b>: <b style="color:var(--success);">${esc(correctOpt)}</b> ${b.meaning_in_vietnamese ? `(${esc(b.meaning_in_vietnamese)})` : ''}
+            <b>Blank [${bIdx + 1}]</b>: <b style="color:var(--success);">${esc(correctOpt)}</b> ${meaning ? `(${esc(meaning)})` : ''}
             <div>Kết quả: <span style="font-weight:600; color:${isCorrect ? 'var(--success)' : 'var(--error)'};">${isCorrect ? '✓ Đúng' : '✕ Sai'}</span> (Bạn chọn: <i>${esc(chosenOpt)}</i>)</div>
-            <div style="font-size:13px; color:var(--text-secondary); margin-top:4px;">💡 ${esc(b.explanation_short || b.explanation || '')}</div>
+            <div style="font-size:13px; color:var(--text-secondary); margin-top:4px;">💡 ${esc(b.explanation || b.explanation_short || '')}</div>
           </div>
         `;
       }).join('');
@@ -459,17 +468,26 @@ const App = (() => {
         <div class="question-card" style="margin-bottom:16px;">
           <p><b>Đoạn văn hoàn chỉnh:</b></p>
           <div class="cloze-paragraph" style="background:var(--bg); padding:12px; border-radius:var(--radius-sm);">
-            ${esc(data.paragraph_full || data.paragraph_with_blanks)}
+            ${esc(data.full_solution_text || data.paragraph_full || data.paragraph_with_blanks || data.paragraph || '')}
           </div>
-          ${data.sentence_meaning || data.paragraph_translation ? `<p style="margin-top:8px;"><b>🌐 Dịch đoạn văn:</b> ${esc(data.sentence_meaning || data.paragraph_translation)}</p>` : ''}
+          ${(data.story_translation || data.sentence_meaning || data.paragraph_translation) ? `<p style="margin-top:8px;"><b>🌐 Dịch đoạn văn:</b> ${esc(data.story_translation || data.sentence_meaning || data.paragraph_translation)}</p>` : ''}
           <hr style="margin:16px 0;">
           <p><b>Chi tiết từng chỗ trống:</b></p>
           ${blanksHtml}
         </div>
       `;
-    } else if (gameId === 'matching' && item.data?.pairs) {
-      const pairs = item.data.pairs;
-      const total = item.total || pairs.length;
+    } else if (gameId === 'matching' && (item.data?.pairs || item.data?.items)) {
+      let pairsList = [];
+      if (item.data.items) {
+        const termItems = item.data.items.filter(it => it.type === 'term');
+        termItems.forEach(tItem => {
+          const dItem = item.data.items.find(it => it.type === 'definition' && it.pair_id === tItem.pair_id);
+          pairsList.push({ term: tItem.content, definition: dItem ? dItem.content : '' });
+        });
+      } else {
+        pairsList = item.data.pairs;
+      }
+      const total = item.total || pairsList.length;
       const score = item.score !== null && item.score !== undefined ? item.score : total;
       const wrongCount = item.wrongCount || 0;
       const accuracy = item.accuracy !== undefined ? item.accuracy : 100;
@@ -478,7 +496,7 @@ const App = (() => {
       const secs = timeSec % 60;
       const timeFormatted = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
 
-      const pairsHtml = pairs.map((p, pIdx) => `
+      const pairsHtml = pairsList.map((p, pIdx) => `
         <li style="margin-bottom:8px; padding:8px 12px; background:var(--bg); border:1px solid var(--border); border-radius:var(--radius-sm); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
           <b>${pIdx + 1}. ${esc(p.term || p.word)}</b> ➔ <span style="color:var(--primary); font-weight:500;">${esc(p.definition || p.meaning)}</span>
         </li>
@@ -513,58 +531,77 @@ const App = (() => {
         <div class="question-card" style="margin-bottom:12px;">
           <p><b>Câu ${qIdx + 1}:</b> ${esc(q.hint || '')}</p>
           <p style="color:var(--success); font-weight:600;">➔ ${esc(q.correct_sentence)}</p>
-          ${q.translation ? `<p style="font-size:13px; color:var(--text-secondary);">🌐 ${esc(q.translation)}</p>` : ''}
+          ${(q.meaning_vi || q.translation || q.sentence_meaning) ? `<p style="font-size:13px; color:var(--text-secondary);">🌐 ${esc(q.meaning_vi || q.translation || q.sentence_meaning)}</p>` : ''}
         </div>
       `).join('');
-    } else if (gameId === 'story' && item.data?.story) {
-      const qs = item.data.comprehension_questions || [];
+    } else if (gameId === 'story' && (item.data?.story || item.data?.questions)) {
+      const isNewStory = !!item.data.questions;
+      const qs = isNewStory ? item.data.questions : (item.data.comprehension_questions || []);
       const userAnswers = item.answers || {};
 
       const qsHtml = qs.map((q, qIdx) => {
         const chosen = userAnswers[qIdx];
-        const isCorrect = chosen === q.correct_index;
+        let correctIdx = q.options.findIndex(o => typeof o === 'object' ? o.is_correct : false);
+        if (correctIdx === -1) correctIdx = q.correct_index;
+
+        const isCorrect = chosen === correctIdx;
+        const correctOptText = typeof q.options[correctIdx] === 'object' ? q.options[correctIdx].text : q.options[correctIdx];
+        const chosenOptText = chosen !== undefined ? (typeof q.options[chosen] === 'object' ? q.options[chosen].text : q.options[chosen]) : 'Chưa chọn';
+
         return `
           <div style="margin-bottom:10px; padding:10px; background:var(--bg); border:1px solid var(--border); border-radius:var(--radius-sm);">
             <p style="margin-bottom:4px;"><b>${qIdx + 1}. ${esc(q.question)}</b></p>
-            <p style="margin:0; font-size:13px;">Đáp án đúng: <b style="color:var(--success);">${esc(q.options[q.correct_index])}</b></p>
-            ${chosen !== undefined ? `<p style="margin:2px 0 0; font-size:13px; color:${isCorrect ? 'var(--success)' : 'var(--error)'};">Bạn đã chọn: ${esc(q.options[chosen])} ${isCorrect ? '✓' : '✕'}</p>` : ''}
+            <p style="margin:0; font-size:13px;">Đáp án đúng: <b style="color:var(--success);">${esc(correctOptText)}</b></p>
+            ${chosen !== undefined ? `<p style="margin:2px 0 0; font-size:13px; color:${isCorrect ? 'var(--success)' : 'var(--error)'};">Bạn đã chọn: ${esc(chosenOptText)} ${isCorrect ? '✓' : '✕'}</p>` : ''}
           </div>
         `;
       }).join('');
 
+      const storyContent = typeof item.data.story === 'object' ? item.data.story.content : item.data.story;
+
       detailContent = `
         <div class="question-card">
-          <div class="story-text" style="font-size:14px;">${esc(item.data.story)}</div>
+          <div class="story-text" style="font-size:14px; max-height:200px; overflow-y:auto; background:rgba(0,0,0,0.02); padding:10px; border-radius:4px;">${esc(storyContent).replace(/\n\n/g, '<br><br>')}</div>
           <p><b>Câu hỏi đọc hiểu:</b></p>
           ${qsHtml}
         </div>
       `;
-    } else if (gameId === 'translation' && item.data?.sentences) {
-      const q = item.data.sentences[0];
+    } else if (gameId === 'translation' && (item.data?.sentences || item.data?.source_sentence)) {
+      const isNewTrans = !item.data.sentences;
+      const srcText = isNewTrans ? item.data.source_sentence : item.data.sentences[0].source_text;
+      const refText = isNewTrans ? item.data.reference_translation : item.data.sentences[0].target_text;
+      const gNotes = isNewTrans ? item.data.grading_rubric : item.data.sentences[0].grammar_notes;
       detailContent = `
         <div class="question-card">
-          <p><b>Câu gốc:</b> ${esc(q.source_text)}</p>
-          <p style="color:var(--success); font-weight:600;"><b>Đáp án chuẩn:</b> ${esc(q.target_text)}</p>
-          ${q.grammar_notes ? `<p style="font-size:13px; color:var(--text-secondary);">💡 ${esc(q.grammar_notes)}</p>` : ''}
+          <p><b>Câu gốc:</b> ${esc(srcText)}</p>
+          <p style="color:var(--success); font-weight:600;"><b>Đáp án chuẩn:</b> ${esc(refText)}</p>
+          ${gNotes ? `<p style="font-size:13px; color:var(--text-secondary);">💡 ${esc(gNotes)}</p>` : ''}
         </div>
       `;
-    } else if (gameId === 'sentence_transform' && item.data?.questions) {
-      const q = item.data.questions[0];
+    } else if (gameId === 'sentence_transform' && (item.data?.questions || item.data?.original)) {
+      const isNewTrans = !item.data.questions;
+      const original = isNewTrans ? item.data.original : item.data.questions[0].original_sentence;
+      const inst = isNewTrans ? item.data.prompt : item.data.questions[0].instruction;
+      const expected = isNewTrans ? item.data.expected_answer : item.data.questions[0].expected_answer;
+      const gRule = isNewTrans ? item.data.grammar_rule : item.data.questions[0].grammar_rule;
       detailContent = `
         <div class="question-card">
-          <p><b>Yêu cầu:</b> ${esc(q.instruction)}</p>
-          <p><b>Câu gốc:</b> ${esc(q.original_sentence)}</p>
-          <p style="color:var(--success); font-weight:600;"><b>Đáp án:</b> ${esc(q.expected_answer)}</p>
-          ${q.grammar_rule ? `<p style="font-size:13px; color:var(--text-secondary);">💡 ${esc(q.grammar_rule)}</p>` : ''}
+          <p><b>Yêu cầu:</b> ${esc(inst)}</p>
+          <p><b>Câu gốc:</b> ${esc(original)}</p>
+          <p style="color:var(--success); font-weight:600;"><b>Đáp án:</b> ${esc(expected)}</p>
+          ${gRule ? `<p style="font-size:13px; color:var(--text-secondary);">💡 ${esc(gRule)}</p>` : ''}
         </div>
       `;
-    } else if (gameId === 'taboo' && item.data?.rounds) {
-      const q = item.data.rounds[0];
+    } else if (gameId === 'taboo' && (item.data?.rounds || item.data?.target_word)) {
+      const isNewTaboo = !item.data.rounds;
+      const target = isNewTaboo ? item.data.target_word : item.data.rounds[0].secret_word;
+      const forbidden = isNewTaboo ? item.data.taboo_words : item.data.rounds[0].forbidden_words;
+      const clue = isNewTaboo ? item.data.clue : item.data.rounds[0].ai_description;
       detailContent = `
         <div class="question-card">
-          <p><b>Từ bí mật:</b> <b style="color:var(--primary); font-size:16px;">${esc(q.secret_word)}</b></p>
-          <p><b>Mô tả:</b> ${esc(q.ai_description)}</p>
-          <p><b>Các từ cấm:</b> ${q.forbidden_words.map(w => `<span class="badge-pending" style="margin-right:4px;">🚫 ${esc(w)}</span>`).join('')}</p>
+          <p><b>Từ bí mật:</b> <b style="color:var(--primary); font-size:16px;">${esc(target)}</b></p>
+          <p><b>Mô tả:</b> ${esc(clue)}</p>
+          <p><b>Các từ cấm:</b> ${forbidden.map(w => `<span class="badge-pending" style="margin-right:4px;">🚫 ${esc(w)}</span>`).join('')}</p>
         </div>
       `;
     } else {
@@ -873,6 +910,7 @@ const App = (() => {
   }
 
   /* ---- FILL-BLANK: all questions vertical ---- */
+  /* ---- FILL-BLANK: all questions vertical ---- */
   function renderFillBlank(x) {
     const d = document.querySelector('#play');
     const isGraded = !!state.isGraded;
@@ -881,7 +919,9 @@ const App = (() => {
     let score = 0;
     if (isGraded) {
       x.questions.forEach((q, i) => {
-        if (state.answers[i] === q.correct_index) score++;
+        let correctIdx = q.options.findIndex(o => typeof o === 'object' ? o.is_correct : false);
+        if (correctIdx === -1) correctIdx = q.correct_index;
+        if (state.answers[i] === correctIdx) score++;
       });
     }
 
@@ -890,10 +930,12 @@ const App = (() => {
       const optsHtml = q.options.map((o, idx) => {
         let cls = 'option-btn';
         let disabledAttr = '';
+        let word = typeof o === 'object' ? o.word : o;
+        let isCorrectOpt = typeof o === 'object' ? o.is_correct : (idx === q.correct_index);
 
         if (isGraded) {
           disabledAttr = 'disabled';
-          if (idx === q.correct_index) {
+          if (isCorrectOpt) {
             cls += ' correct';
           } else if (idx === chosen) {
             cls += ' wrong';
@@ -906,14 +948,16 @@ const App = (() => {
 
         return `
           <button class="${cls}" data-q="${i}" data-choice="${idx}" ${disabledAttr}>
-            ${String.fromCharCode(65 + idx)}. ${esc(o)}
+            ${String.fromCharCode(65 + idx)}. ${esc(word)}
           </button>
         `;
       }).join('');
 
       let feedbackHtml = '';
       if (isGraded) {
-        const isCorrect = chosen === q.correct_index;
+        let correctIdx = q.options.findIndex(o => typeof o === 'object' ? o.is_correct : false);
+        if (correctIdx === -1) correctIdx = q.correct_index;
+        const isCorrect = chosen === correctIdx;
 
         feedbackHtml = `
           <div class="feedback ${isCorrect ? 'good' : 'bad'}" style="margin-top:16px; padding:16px; border-radius:8px;">
@@ -924,14 +968,14 @@ const App = (() => {
             <div style="margin-bottom:10px;">
               <b>🌐 Dịch câu hoàn chỉnh:</b>
               <div style="margin-top:4px; padding:10px 12px; background:rgba(0,0,0,0.03); border-radius:6px; font-size:13.5px; line-height:1.5;">
-                ${esc(q.sentence_translation || q.full_sentence_translation || 'Không có bản dịch')}
+                ${esc(q.full_translation || q.sentence_translation || q.full_sentence_translation || 'Không có bản dịch')}
               </div>
             </div>
 
             <div style="margin-bottom:10px;">
               <b>💡 Lý do chọn:</b>
               <div style="margin-top:4px; padding:10px 12px; background:rgba(0,0,0,0.03); border-radius:6px; font-size:13.5px; line-height:1.5;">
-                ${esc(q.explanation_short || 'Không có giải thích')}
+                ${esc(q.explanation || q.explanation_short || 'Không có giải thích')}
               </div>
             </div>
 
@@ -952,7 +996,7 @@ const App = (() => {
       return `
         <div class="question-card" id="qcard-${i}">
           <div class="q-number">Câu ${i + 1}/${x.questions.length}</div>
-          <div class="q-text" style="font-size:16px; font-weight:600; margin-bottom:12px;">${esc(q.sentence_with_blank)}</div>
+          <div class="q-text" style="font-size:16px; font-weight:600; margin-bottom:12px;">${esc(q.sentence || q.sentence_with_blank)}</div>
           <div class="options-grid" id="choices-${i}">
             ${optsHtml}
           </div>
@@ -1005,7 +1049,9 @@ const App = (() => {
 
           let score = 0;
           x.questions.forEach((q, i) => {
-            if (state.answers[i] === q.correct_index) score++;
+            let correctIdx = q.options.findIndex(o => typeof o === 'object' ? o.is_correct : false);
+            if (correctIdx === -1) correctIdx = q.correct_index;
+            if (state.answers[i] === correctIdx) score++;
           });
 
           if (state.currentHistoryItem) {
@@ -1030,19 +1076,20 @@ const App = (() => {
     const isGraded = !!state.isGraded;
     const gameId = state.route;
 
-    // Word bank at top: target correct words for all blanks (number of words = number of blanks)
-    const targetWords = x.blanks.map(b => b.correct_word || (b.options ? b.options[b.correct_index] : '')).filter(Boolean);
+    const isNewSchema = !!x.paragraph;
+    const targetWords = x.blanks.map(b => isNewSchema ? b.answer : (b.correct_word || (b.options ? b.options[b.correct_index] : ''))).filter(Boolean);
     const sortedWords = [...targetWords].sort((a, b) => a.localeCompare(b));
 
-    // Ensure options array for each blank uses sortedWords pool
-    x.blanks.forEach(b => {
-      b.options = sortedWords;
-      const target = b.correct_word || '';
-      const foundIdx = sortedWords.findIndex(w => w.toLowerCase() === target.toLowerCase());
-      if (foundIdx !== -1) {
-        b.correct_index = foundIdx;
-      }
-    });
+    if (!isNewSchema) {
+      x.blanks.forEach(b => {
+        b.options = sortedWords;
+        const target = b.correct_word || '';
+        const foundIdx = sortedWords.findIndex(w => w.toLowerCase() === target.toLowerCase());
+        if (foundIdx !== -1) {
+          b.correct_index = foundIdx;
+        }
+      });
+    }
 
     const wordBankHtml = `
       <div class="word-bank-box">
@@ -1054,9 +1101,9 @@ const App = (() => {
     `;
 
     // Process paragraph with inline selects
-    let rawText = x.paragraph_with_blanks || '';
+    let rawText = isNewSchema ? x.paragraph : (x.paragraph_with_blanks || '');
     let blankIdx = 0;
-    const placeholderRegex = /(\[\d+\]|\(\d+\)|\[blank_\d+\]|_{2,})/g;
+    const placeholderRegex = /(\[BLANK_\d+\]|\[\d+\]|\(\d+\)|\[blank_\d+\]|_{2,})/gi;
 
     let processedParagraph = rawText.replace(placeholderRegex, (match) => {
       if (blankIdx >= x.blanks.length) return match;
@@ -1118,22 +1165,27 @@ const App = (() => {
         const correctOpt = b.options[b.correct_index];
         const chosenOpt = state.answers[i] !== undefined ? b.options[state.answers[i]] : 'Chưa chọn';
         const isOk = state.answers[i] === b.correct_index;
-        const vnMeaning = b.meaning_in_vietnamese ? ` (${b.meaning_in_vietnamese})` : '';
+        const vnMeaning = (b.meaning_vi || b.meaning_in_vietnamese) ? ` (${b.meaning_vi || b.meaning_in_vietnamese})` : '';
 
         return `
           <div style="margin-bottom: 10px; font-size: 14px;">
             <b>[${i + 1}]</b> <span style="color: ${isOk ? 'var(--success)' : 'var(--error)'}; font-weight:600;">${isOk ? '✓ Đúng' : '✕ Sai'}</span>
             — Đáp án: <b style="color: var(--success);">${esc(correctOpt)}</b>${esc(vnMeaning)}
             ${!isOk ? `<span style="color: var(--text-secondary);">(Bạn chọn: ${esc(chosenOpt)})</span>` : ''}
+            ${b.hint ? `<div style="font-size: 13px; color: var(--text-secondary); margin-top: 2px;">💡 Gợi ý: ${esc(b.hint)}</div>` : ''}
             <div style="font-size: 13px; color: var(--text-secondary); margin-top: 2px;">
-              💡 ${esc(b.explanation_short || b.explanation || '')}
+              💡 Giải thích: ${esc(b.explanation || b.explanation_short || '')}
             </div>
           </div>
         `;
       }).join('');
 
-      const transHtml = x.sentence_meaning || x.paragraph_translation
-        ? `<div style="margin-top:12px; padding-top:10px; border-top:1px dashed var(--border); font-size:14px;"><b>🌐 Dịch đoạn văn:</b> ${esc(x.sentence_meaning || x.paragraph_translation)}</div>`
+      const transHtml = (x.story_translation || x.paragraph_translation || x.sentence_meaning)
+        ? `<div style="margin-top:12px; padding-top:10px; border-top:1px dashed var(--border); font-size:14px;">
+             <b>🌐 Dịch đoạn văn:</b> ${esc(x.story_translation || x.paragraph_translation || x.sentence_meaning)}
+             ${x.context_summary ? `<br><b>📝 Tóm tắt ngữ cảnh:</b> ${esc(x.context_summary)}` : ''}
+             ${x.full_solution_text ? `<br><b>📖 Đoạn văn hoàn chỉnh:</b> ${esc(x.full_solution_text)}` : ''}
+           </div>`
         : '';
 
       feedbackHtml = `
@@ -1500,27 +1552,28 @@ const App = (() => {
               <div style="font-size: 18px; font-weight: 700; color: ${wrongCount > 0 ? 'var(--error)' : 'var(--success)'}; margin-top: 4px;">❌ ${wrongCount} lần</div>
             </div>
             <div style="background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px;">
-              <div style="font-size: 12px; color: var(--text-secondary);">Tỉ lệ chính xác</div>
-              <div style="font-size: 18px; font-weight: 700; color: ${accuracy >= 80 ? 'var(--success)' : accuracy >= 50 ? 'var(--primary)' : 'var(--error)'}; margin-top: 4px;">🎯 ${accuracy}%</div>
-            </div>
+      const elapsedSec = Math.max(0, Math.round((Date.now() - startTime) / 1000));
+      const mins = Math.floor(elapsedSec / 60);
+      const secs = elapsedSec % 60;
+      const timeStr = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+      const accuracy = totalAttempts > 0 ? Math.round((matchedCount / totalAttempts) * 100) : 100;
+
+      const historyItem = state.currentHistoryItem || {};
+      historyItem.score = matchedCount;
+      historyItem.maxScore = totalPairsCount;
+      historyItem.timeTaken = elapsedSec;
+      historyItem.accuracy = accuracy;
+      saveHistory();
+
+      d.innerHTML = `
+        <div class="feedback good" style="text-align:center; padding: 24px;">
+          <h2 style="margin-bottom:12px; color: var(--success);">🎉 Ghép đôi hoàn thành!</h2>
+          <div style="font-size:16px; margin-bottom:20px; line-height:1.6;">
+            <p>⏱️ Thời gian: <b>${timeStr}</b></p>
+            <p>🎯 Ghép đúng: <b>${matchedCount}/${totalPairsCount}</b> cặp từ</p>
+            <p>❌ Số lần ghép sai: <b>${wrongCount}</b> lần</p>
+            <p>📊 Độ chính xác: <b>${accuracy}%</b></p>
           </div>
-
-          <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 20px;">
-            Kết quả bài làm đã được tự động lưu vào Lịch sử.
-          </p>
-
-          <div style="margin-bottom: 24px; text-align: left;">
-            <b style="font-size: 15px;">📚 Ôn tập danh sách cặp từ vựng vừa ghép:</b>
-            <div style="margin-top: 10px; display: grid; gap: 8px;">
-              ${allPairs.map((p, pIdx) => `
-                <div style="padding: 10px 14px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-                  <b>${pIdx + 1}. ${esc(p.term)}</b>
-                  <span style="color: var(--primary); font-weight: 600;">➔ ${esc(p.definition)}</span>
-                </div>
-              `).join('')}
-            </div>
-          </div>
-
           <div style="display: flex; justify-content: center; gap: 12px; flex-wrap: wrap;">
             <button class="btn primary" id="restart-matching-btn" style="padding: 10px 24px;">🔄 Chơi lại bài này</button>
             <button class="btn btn-outline" id="new-matching-btn" style="padding: 10px 24px;">⚡ Tạo bài nối mới</button>
@@ -1529,13 +1582,9 @@ const App = (() => {
       `;
 
       const restartBtn = d.querySelector('#restart-matching-btn');
-      if (restartBtn) {
-        restartBtn.onclick = () => play('matching');
-      }
+      if (restartBtn) restartBtn.onclick = () => play('matching');
       const newBtn = d.querySelector('#new-matching-btn');
-      if (newBtn) {
-        newBtn.onclick = () => generate('matching');
-      }
+      if (newBtn) newBtn.onclick = () => generate('matching');
     }
 
     function renderBoard() {
@@ -1630,9 +1679,8 @@ const App = (() => {
     renderBoard();
   }
 
-  /* ---- UNSCRAMBLE: all questions vertical, white words ---- */
   function renderUnscrambleAll(x){const d=document.querySelector('#play');d.innerHTML=x.questions.map((q,i)=>{return'<div class="question-card unscramble-card fade-in"><p class="hint-text">'+esc(q.hint)+'</p><div id="us-'+i+'" class="unscramble-area"></div><button class="btn" id="ugrade-'+i+'">Chấm điểm</button><div id="ufeedback-'+i+'"></div></div>'}).join('');x.questions.forEach((q,i)=>{renderUnscrambleSingle(q,i,x.questions)});}
-  function renderUnscrambleSingle(q,i,all){const chosen=[];const area=document.querySelector('#us-'+i);function draw(){area.innerHTML='<div class="drop-zone">'+chosen.map(w=>'<button class="drag-word" data-back="'+esc(w)+'">'+esc(w)+'</button>').join('')+'</div><div class="drag-container">'+q.shuffled_words.filter((w,j)=>!chosen.includes(w)||chosen.filter(x=>x===w).length<q.shuffled_words.slice(0,j+1).filter(x=>x===w).length).map(w=>'<button class="drag-word" data-word="'+esc(w)+'">'+esc(w)+'</button>').join('')+'</div>';area.querySelectorAll('[data-word]').forEach(e=>e.onclick=()=>{chosen.push(e.dataset.word);draw()});area.querySelectorAll('[data-back]').forEach(e=>e.onclick=()=>{chosen.splice(chosen.indexOf(e.dataset.back),1);draw()})}draw();document.querySelector('#ugrade-'+i).onclick=()=>{const ok=norm(chosen.join(' '))===norm(q.correct_sentence);const fb=document.querySelector('#ufeedback-'+i);let html='<div class="feedback '+(ok?'good':'bad')+'"><b>'+(ok?'Chính xác!':'Chưa đúng.')+'</b><p>'+esc(q.correct_sentence)+'</p>';if(q.sentence_meaning)html+='<p>🌐 '+esc(q.sentence_meaning)+'</p>';if(q.key_vocab)html+=q.key_vocab.map(k=>'<p>📖 <b>'+esc(k.word)+'</b>: '+esc(k.meaning)+'</p>').join('');html+='</div>';fb.innerHTML=html}}
+  function renderUnscrambleSingle(q,i,all){const chosen=[];const area=document.querySelector('#us-'+i);function draw(){area.innerHTML='<div class="drop-zone">'+chosen.map(w=>'<button class="drag-word" data-back="'+esc(w)+'">'+esc(w)+'</button>').join('')+'</div><div class="drag-container">'+q.shuffled_words.filter((w,j)=>!chosen.includes(w)||chosen.filter(x=>x===w).length<q.shuffled_words.slice(0,j+1).filter(x=>x===w).length).map(w=>'<button class="drag-word" data-word="'+esc(w)+'">'+esc(w)+'</button>').join('')+'</div>';area.querySelectorAll('[data-word]').forEach(e=>e.onclick=()=>{chosen.push(e.dataset.word);draw()});area.querySelectorAll('[data-back]').forEach(e=>e.onclick=()=>{chosen.splice(chosen.indexOf(e.dataset.back),1);draw()})}draw();document.querySelector('#ugrade-'+i).onclick=()=>{const ok=norm(chosen.join(' '))===norm(q.correct_sentence);const fb=document.querySelector('#ufeedback-'+i);let html='<div class="feedback '+(ok?'good':'bad')+'"><b>'+(ok?'Chính xác!':'Chưa đúng.')+'</b><p>'+esc(q.correct_sentence)+'</p>';const mean = q.meaning_vi || q.sentence_meaning; if(mean)html+='<p>🌐 '+esc(mean)+'</p>';const vocab = q.key_vocabulary || q.key_vocab; if(vocab)html+=vocab.map(k=>'<p>📖 <b>'+esc(k.word)+'</b>: '+esc(k.meaning_vi || k.meaning)+'</p>').join('');if(q.difficulty_reason)html+='<p>📊 <b>Mức độ:</b> '+esc(q.difficulty_reason)+'</p>';if(q.grammar_note)html+='<p>📌 <b>Ngữ pháp:</b> '+esc(q.grammar_note)+'</p>';html+='</div>';fb.innerHTML=html}}
 
   function resetGameState(gameId) {
     state.exercise = null;
@@ -1657,25 +1705,68 @@ const App = (() => {
 
     const isGraded = !!state.isGraded;
     const gameId = state.route;
-    const questions = Array.isArray(x.comprehension_questions) ? x.comprehension_questions : [];
+    
+    const isNewSchema = !!x.questions;
+    const questions = isNewSchema ? (x.questions || []) : (x.comprehension_questions || []);
 
     let score = 0;
     if (isGraded && questions.length) {
       questions.forEach((q, i) => {
-        if (state.answers[i] === q.correct_index) score++;
+        let correctIdx = q.options.findIndex(o => typeof o === 'object' ? o.is_correct : false);
+        if (correctIdx === -1) correctIdx = q.correct_index;
+        if (state.answers[i] === correctIdx) score++;
       });
     }
 
-    // Passage component
+    let title = "";
+    let content = "";
+    let fullTranslation = "";
+    let highlightedVocab = [];
+
+    if (typeof x.story === 'object') {
+      title = x.story.title || "";
+      content = x.story.content || "";
+      fullTranslation = x.story.full_translation || "";
+      highlightedVocab = x.story.highlighted_vocab || [];
+    } else {
+      content = String(x.story || "");
+    }
+
+    let vocabHtml = '';
+    if (highlightedVocab && highlightedVocab.length > 0) {
+      vocabHtml = `
+        <div style="margin-top: 12px; padding: 12px; background: rgba(14, 165, 233, 0.05); border-radius: 6px; text-align: left; border-left: 4px solid var(--primary);">
+          <b>📖 Từ vựng tiêu biểu:</b>
+          <div style="display: grid; gap: 8px; margin-top: 6px; font-size:13.5px;">
+            ${highlightedVocab.map(v => `
+              <div>
+                • <b style="color: var(--primary);">${esc(v.word)}</b>: ${esc(v.meaning_vi || v.meaning || '')} 
+                ${v.context_meaning ? `<i style="font-size: 13px; color: var(--text-secondary);">(${esc(v.context_meaning)})</i>` : ''}
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
     const passageHtml = `
       <div class="story-passage-card">
         <div class="story-passage-header">
-          <span class="story-passage-title">📖 Bài đọc hiểu (Reading Passage)</span>
+          <span class="story-passage-title">📖 ${title ? esc(title) : 'Bài đọc hiểu (Reading Passage)'}</span>
           <span class="story-passage-badge">${questions.length} câu hỏi</span>
         </div>
-        <div class="story-passage-content">
-          ${esc(x.story).replace(/\n\n/g, '<br><br>')}
+        <div class="story-passage-content" style="font-size:15px; line-height:1.6;">
+          ${esc(content).replace(/\n\n/g, '<br><br>')}
         </div>
+        ${vocabHtml}
+        ${fullTranslation ? `
+          <details style="margin-top:12px; border-top:1px dashed var(--border); padding-top:10px;">
+            <summary style="cursor:pointer; font-weight:600; color:var(--primary);">🌐 Xem bản dịch tiếng Việt</summary>
+            <div style="margin-top:8px; font-size:14.5px; color:var(--text); line-height:1.6;">
+              ${esc(fullTranslation).replace(/\n\n/g, '<br><br>')}
+            </div>
+          </details>
+        ` : ''}
       </div>
     `;
 
@@ -1698,9 +1789,13 @@ const App = (() => {
       const optionsHtml = q.options.map((opt, oIdx) => {
         let btnCls = 'story-option-btn';
         let disabledAttr = isGraded ? 'disabled' : '';
+        let optText = typeof opt === 'object' ? opt.text : opt;
+
+        let correctIdx = q.options.findIndex(o => typeof o === 'object' ? o.is_correct : false);
+        if (correctIdx === -1) correctIdx = q.correct_index;
 
         if (isGraded) {
-          if (oIdx === q.correct_index) {
+          if (oIdx === correctIdx) {
             btnCls += ' correct';
           } else if (oIdx === chosen) {
             btnCls += ' wrong';
@@ -1716,7 +1811,7 @@ const App = (() => {
         return `
           <button class="${btnCls}" data-q="${i}" data-choice="${oIdx}" ${disabledAttr}>
             <span class="story-option-letter">${optionLetter}.</span>
-            <span class="story-option-text">${esc(opt)}</span>
+            <span class="story-option-text">${esc(optText)}</span>
           </button>
         `;
       }).join('');
@@ -1724,7 +1819,7 @@ const App = (() => {
       // Explanation & Evidence block after grading
       let explanationHtml = '';
       if (isGraded) {
-        const quoteText = q.quote_evidence || q.evidence || '';
+        const quoteText = q.evidence_quote || q.quote_evidence || q.evidence || '';
         const quoteSection = quoteText ? `
           <div class="story-evidence-box">
             <span class="story-box-icon">📌</span>
@@ -1754,20 +1849,25 @@ const App = (() => {
       }
 
       let qStatusBadge = '';
+      let correctIdx = q.options.findIndex(o => typeof o === 'object' ? o.is_correct : false);
+      if (correctIdx === -1) correctIdx = q.correct_index;
+
       if (isGraded) {
         if (chosen === undefined) {
           qStatusBadge = `<span class="q-badge unselected">Chưa làm</span>`;
-        } else if (chosen === q.correct_index) {
+        } else if (chosen === correctIdx) {
           qStatusBadge = `<span class="q-badge correct">✓ Đúng</span>`;
         } else {
           qStatusBadge = `<span class="q-badge wrong">✕ Sai</span>`;
         }
       }
 
+      const typeBadge = q.type ? `<span class="q-type-badge">${esc(q.type)}</span>` : '';
+
       return `
-        <div class="story-question-card ${isGraded ? (chosen === q.correct_index ? 'correct-border' : 'wrong-border') : ''}">
+        <div class="story-question-card ${isGraded ? (chosen === correctIdx ? 'correct-border' : 'wrong-border') : ''}">
           <div class="story-q-header">
-            <span class="story-q-number">Câu ${i + 1}/${questions.length}</span>
+            <span class="story-q-number">Câu ${i + 1}/${questions.length} ${typeBadge}</span>
             ${qStatusBadge}
           </div>
           <p class="story-q-text">${esc(q.question)}</p>
@@ -1787,6 +1887,12 @@ const App = (() => {
         <div class="story-result-summary fade-in">
           <div class="story-score-title">🎉 Kết quả bài đọc hiểu</div>
           <div class="story-score-main">${score} / ${questions.length} câu đúng (${accuracyPct}%)</div>
+          ${x.discussion_prompt ? `
+            <div style="margin-top: 14px; text-align: left; padding: 14px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px;">
+              <b>💬 Gợi ý thảo luận/nói:</b>
+              <p style="margin: 6px 0 0 0; font-style: italic; font-size:14px; line-height:1.5;">${esc(x.discussion_prompt)}</p>
+            </div>
+          ` : ''}
           <div class="story-actions">
             <button class="btn primary" id="story-retry-btn">🔄 Làm lại bài này</button>
             <button class="btn btn-outline" id="story-new-btn">⚡ Tạo bài đọc mới</button>
@@ -1842,7 +1948,9 @@ const App = (() => {
 
           let currentScore = 0;
           questions.forEach((q, i) => {
-            if (state.answers[i] === q.correct_index) currentScore++;
+            let correctIdx = q.options.findIndex(o => typeof o === 'object' ? o.is_correct : false);
+            if (correctIdx === -1) correctIdx = q.correct_index;
+            if (state.answers[i] === correctIdx) currentScore++;
           });
 
           if (state.currentHistoryItem) {
@@ -1881,25 +1989,61 @@ const App = (() => {
 
   /* ---- TRANSLATION: 1 sentence, detailed AI grade ---- */
   function renderTranslation(x){
-    const q=x.sentences[0];
-    document.querySelector('#play').innerHTML='<div class="question-card"><p class="q-text">'+esc(q.source_text)+'</p><textarea id="answer" placeholder="'+esc(t('placeholder.translation', 'Nhập bản dịch…'))+'"></textarea><button class="btn" id="grade">'+esc(t('app.grade', 'Chấm điểm'))+'</button><div id="feedback"></div></div>';
+    const isNewSchema = !!x.source_sentence;
+    const sourceText = isNewSchema ? x.source_sentence : (x.sentences && x.sentences[0] ? x.sentences[0].source_text : '');
+    const targetText = isNewSchema ? x.reference_translation : (x.sentences && x.sentences[0] ? x.sentences[0].target_text : '');
+    const keyVocab = isNewSchema ? x.key_vocabulary : (x.sentences && x.sentences[0] ? x.sentences[0].vocabulary : []);
+    const alternativeTranslations = isNewSchema ? x.alternative_translations : [];
+    const commonMistakes = isNewSchema ? x.common_mistakes : [];
+
+    document.querySelector('#play').innerHTML='<div class="question-card"><p class="q-text">'+esc(sourceText)+'</p><textarea id="answer" placeholder="'+esc(t('placeholder.translation', 'Nhập bản dịch…'))+'"></textarea><button class="btn" id="grade">'+esc(t('app.grade', 'Chấm điểm'))+'</button><div id="feedback"></div></div>';
     document.querySelector('#grade').onclick=async()=>{
       const signal = getSignal();
       try{
         setBusy(true, t('app.grading', 'Đang chấm điểm…'));
-        let r=await Bridge.sendAsync('ai_grade',{gamemode:'translation',level:document.querySelector('#level').value,user_answer:document.querySelector('#answer').value,expected:q.target_text,source_text:q.source_text}, { signal });
+        let r=await Bridge.sendAsync('ai_grade',{
+          gamemode:'translation',
+          level:document.querySelector('#level').value,
+          user_answer:document.querySelector('#answer').value,
+          expected:targetText,
+          reference_translation:targetText,
+          source_text:sourceText,
+          source_sentence:sourceText
+        }, { signal });
+        
         if (signal.aborted) return;
         const fb=document.querySelector('#feedback');
         if(!fb)return;
-        let html='<div class="feedback '+(r.correct?'good':'bad')+'"><b>'+(r.correct?esc(t('feedback.exact', 'Chính xác!')):esc(t('feedback.needs_improvement', 'Cần cải thiện')))+'</b><p>'+esc(r.explanation||r.feedback||'')+'</p><p>'+esc(t('feedback.answer_label', 'Đáp án: {0}', q.target_text))+'</p>';
-        if(q.detailed_feedback){
-          const df=q.detailed_feedback;
-          html+='<hr>';
-          if(df.word_by_word){html+='<p><b>'+esc(t('feedback.word_analysis', 'Phân tích từ:'))+'</b></p>'+df.word_by_word.map(w=>'<p>• <b>'+esc(w.word)+'</b>: '+esc(w.translation)+(w.notes?' — '+esc(w.notes):'')+'</p>').join('')}
-          if(df.common_mistakes&&df.common_mistakes.length){html+='<p><b>'+esc(t('feedback.common_errors', 'Lỗi thường gặp:'))+'</b></p><ul>'+df.common_mistakes.map(m=>'<li>'+esc(m)+'</li>').join('')+'</ul>'}
-          if(df.alternative_translations&&df.alternative_translations.length){html+='<p><b>'+esc(t('feedback.alt_translations', 'Cách dịch khác:'))+'</b></p><ul>'+df.alternative_translations.map(tText=>'<li>'+esc(tText)+'</li>').join('')+'</ul>'}
-          if(df.improvement_tips)html+='<p>'+esc(t('feedback.tips', 'Gợi ý: {0}', df.improvement_tips))+'</p>'
+        
+        let html='<div class="feedback '+(r.correct?'good':'bad')+'"><b>'+(r.correct?esc(t('feedback.exact', 'Chính xác!')):esc(t('feedback.needs_improvement', 'Cần cải thiện')))+'</b><p>'+esc(r.explanation||r.feedback||'')+'</p><p>'+esc(t('feedback.answer_label', 'Đáp án: {0}', targetText))+'</p>';
+        
+        if (keyVocab && keyVocab.length) {
+          html += '<hr><p><b>' + esc(t('feedback.word_analysis', 'Phân tích từ:')) + '</b></p>';
+          keyVocab.forEach(v => {
+            html += `<p>• <b>${esc(v.source || v.word)}</b>: ${esc(v.target || v.meaning_vi || v.meaning)} ${v.note ? ' — ' + esc(v.note) : ''}</p>`;
+          });
         }
+        if (commonMistakes && commonMistakes.length) {
+          html += '<p><b>' + esc(t('feedback.common_errors', 'Lỗi thường gặp:')) + '</b></p><ul>';
+          commonMistakes.forEach(m => {
+            if (typeof m === 'object') {
+              html += `<li>Sai: <span style="color:var(--error); font-weight:600;">${esc(m.wrong)}</span> ➔ Sửa: <span style="color:var(--success); font-weight:600;">${esc(m.correction)}</span> (${esc(m.error_type)})</li>`;
+            } else {
+              html += `<li>${esc(m)}</li>`;
+            }
+          });
+          html += '</ul>';
+        }
+        if (alternativeTranslations && alternativeTranslations.length) {
+          html += '<p><b>' + esc(t('feedback.alt_translations', 'Cách dịch khác:')) + '</b></p><ul>';
+          alternativeTranslations.forEach(a => {
+            const txt = typeof a === 'object' ? a.text : a;
+            const note = typeof a === 'object' ? a.note : '';
+            html += `<li>${esc(txt)} ${note ? `<i>(${esc(note)})</i>` : ''}</li>`;
+          });
+          html += '</ul>';
+        }
+        
         html+='<button class="btn" id="retry-trans">'+esc(t('app.retry', 'Làm lại'))+'</button></div>';
         fb.innerHTML=html;
         const retryBtn=document.querySelector('#retry-trans');
@@ -1916,23 +2060,92 @@ const App = (() => {
   /* ---- SENTENCE TRANSFORM: 1 sentence, focus selector, detailed ---- */
   function renderSentenceTransform(x){
     const q=x.questions[0];
-    document.querySelector('#play').innerHTML='<div class="question-card"><p class="q-text"><b>'+esc(t('feedback.requirement', 'Yêu cầu:'))+'</b> '+esc(q.instruction)+'</p><p class="q-text"><b>'+esc(t('feedback.original_sentence', 'Câu gốc:'))+'</b> '+esc(q.original_sentence)+'</p><textarea id="answer" placeholder="'+esc(t('placeholder.sentence_transform', 'Nhập câu trả lời...'))+'"></textarea><button class="btn primary" id="grade">'+esc(t('app.grade', 'Chấm điểm'))+'</button><div id="feedback"></div></div>';
+    const originalText = q.original || q.original_sentence || '';
+    const instructionText = q.prompt || q.instruction || '';
+    const expectedText = q.expected_answer || '';
+    const normExpected = q.normalized_answer || norm(expectedText);
+
+    document.querySelector('#play').innerHTML='<div class="question-card"><p class="q-text"><b>'+esc(t('feedback.requirement', 'Yêu cầu:'))+'</b> '+esc(instructionText)+'</p><p class="q-text"><b>'+esc(t('feedback.original_sentence', 'Câu gốc:'))+'</b> '+esc(originalText)+'</p><textarea id="answer" placeholder="'+esc(t('placeholder.sentence_transform', 'Nhập câu trả lời...'))+'"></textarea><button class="btn primary" id="grade">'+esc(t('app.grade', 'Chấm điểm'))+'</button><div id="feedback"></div></div>';
     document.querySelector('#grade').onclick=async()=>{
       const signal = getSignal();
       try{
         setBusy(true, t('app.grading', 'Đang chấm điểm…'));
-        let r=await Bridge.sendAsync('ai_grade',{gamemode:'sentence_transform',level:document.querySelector('#level').value,user_answer:document.querySelector('#answer').value,expected:q.expected_answer,instruction:q.instruction,original:q.original_sentence}, { signal });
+        
+        const ansVal = document.querySelector('#answer').value;
+        const userNorm = norm(ansVal);
+        
+        // 1. Local-first check
+        let isCorrect = userNorm === normExpected;
+        
+        if (!isCorrect && q.acceptable_variations) {
+          q.acceptable_variations.forEach(v => {
+            const vText = typeof v === 'object' ? v.text : v;
+            if (norm(vText) === userNorm) {
+              isCorrect = true;
+            }
+          });
+        }
+
+        // Check common errors locally
+        let localFeedback = "";
+        if (!isCorrect && q.common_errors) {
+          q.common_errors.forEach(e => {
+            const errText = typeof e === 'object' ? e.error : e;
+            if (norm(errText) === userNorm) {
+              localFeedback = typeof e === 'object' ? e.feedback : '';
+            }
+          });
+        }
+
+        let r;
+        if (isCorrect) {
+          r = { correct: true, score: 1.0, explanation: 'Chính xác! Câu trả lời của bạn trùng khớp với đáp án chuẩn.' };
+        } else if (localFeedback) {
+          r = { correct: false, score: 0.0, explanation: localFeedback };
+        } else {
+          // Fallback: Grade with AI
+          r=await Bridge.sendAsync('ai_grade',{
+            gamemode:'sentence_transform',
+            level:document.querySelector('#level').value,
+            user_answer:ansVal,
+            expected:expectedText,
+            expected_answer:expectedText,
+            instruction:instructionText,
+            prompt:instructionText,
+            original:originalText
+          }, { signal });
+        }
+
         if (signal.aborted) return;
         const fb=document.querySelector('#feedback');
         if(!fb)return;
-        let html='<div class="feedback '+(r.correct?'good':'bad')+'"><b>'+(r.correct?esc(t('feedback.exact', 'Chính xác!')):esc(t('feedback.needs_improvement', 'Cần cải thiện')))+'</b><p>'+esc(r.explanation||r.feedback||'')+'</p><p>'+esc(t('feedback.answer_label', 'Đáp án: {0}', q.expected_answer))+'</p>';
-        if(q.detailed_explanation){
-          const de=q.detailed_explanation;
-          html+='<hr><p>'+esc(t('feedback.explanation_label', 'Giải thích: {0}', de.rule_description||q.grammar_rule||''))+'</p>';
-          if(de.step_by_step&&de.step_by_step.length)html+='<p><b>'+esc(t('feedback.steps_label', 'Các bước:'))+'</b></p><ol>'+de.step_by_step.map(s=>'<li>'+esc(s)+'</li>').join('')+'</ol>';
-          if(de.common_errors&&de.common_errors.length)html+='<p><b>'+esc(t('feedback.common_errors', 'Lỗi thường gặp:'))+'</b></p><ul>'+de.common_errors.map(eItem=>'<li>'+esc(eItem)+'</li>').join('')+'</ul>';
-          if(de.comparison)html+='<p>'+esc(t('feedback.comparison', 'So sánh: {0}', de.comparison))+'</p>'
+
+        let html='<div class="feedback '+(r.correct?'good':'bad')+'"><b>'+(r.correct?esc(t('feedback.exact', 'Chính xác!')):esc(t('feedback.needs_improvement', 'Cần cải thiện')))+'</b><p>'+esc(r.explanation||r.feedback||'')+'</p><p>'+esc(t('feedback.answer_label', 'Đáp án: {0}', expectedText))+'</p>';
+        
+        if (q.grammar_rule) {
+          html += '<hr><p><b>📌 Quy tắc ngữ pháp:</b> ' + esc(q.grammar_rule) + '</p>';
         }
+
+        if (q.acceptable_variations && q.acceptable_variations.length) {
+          html += '<p>✅ <b>Các biến thể đúng khác:</b></p><ul>';
+          q.acceptable_variations.forEach(v => {
+            const txt = typeof v === 'object' ? v.text : v;
+            const note = typeof v === 'object' ? v.note : '';
+            html += `<li>${esc(txt)} ${note ? `<i>(${esc(note)})</i>` : ''}</li>`;
+          });
+          html += '</ul>';
+        }
+
+        if (q.common_errors && q.common_errors.length) {
+          html += '<p>⚠️ <b>Lỗi thường gặp cần tránh:</b></p><ul>';
+          q.common_errors.forEach(e => {
+            const err = typeof e === 'object' ? e.error : e;
+            const fbText = typeof e === 'object' ? e.feedback : '';
+            html += `<li>Sai: <span style="color:var(--error);">${esc(err)}</span> ${fbText ? `➔ <i>${esc(fbText)}</i>` : ''}</li>`;
+          });
+          html += '</ul>';
+        }
+
         html+='<button class="btn" id="retry-trans">'+esc(t('app.retry', 'Làm lại'))+'</button></div>';
         fb.innerHTML=html;
         const retryBtn=document.querySelector('#retry-trans');
@@ -1950,16 +2163,52 @@ const App = (() => {
   function renderTaboo(x){
     const q=x.rounds[0];
     const langLabel = state.userPrefs.language || 'en';
-    document.querySelector('#play').innerHTML='<div class="question-card taboo-card fade-in"><div class="secret-word">???</div><div class="forbidden">'+q.forbidden_words.map(w=>'<span>🚫 '+esc(w)+'</span>').join('')+'</div><div class="description">'+esc(q.ai_description)+'</div><textarea id="answer" placeholder="'+esc(t('placeholder.taboo', 'Nhập từ bạn đoán bằng {0}...', langLabel))+'"></textarea><button class="btn primary" id="grade">'+esc(t('app.grade', 'Chấm điểm'))+'</button><div id="feedback"></div></div>';
+    const secretWord = q.target_word || q.secret_word || '';
+    const forbidden = q.taboo_words || q.forbidden_words || [];
+    const clueText = q.clue || q.ai_description || '';
+    
+    document.querySelector('#play').innerHTML='<div class="question-card taboo-card fade-in"><div class="secret-word">???</div><div class="forbidden">'+forbidden.map(w=>'<span>🚫 '+esc(w)+'</span>').join('')+'</div><div class="description">'+esc(clueText)+'</div><textarea id="answer" placeholder="'+esc(t('placeholder.taboo', 'Nhập từ bạn đoán bằng {0}...', langLabel))+'"></textarea><button class="btn primary" id="grade">'+esc(t('app.grade', 'Chấm điểm'))+'</button><div id="feedback"></div></div>';
     document.querySelector('#grade').onclick=async()=>{
       const signal = getSignal();
       try{
         setBusy(true, t('app.grading', 'Đang chấm điểm…'));
-        let r=await Bridge.sendAsync('ai_grade',{gamemode:'taboo',level:document.querySelector('#level').value,user_answer:document.querySelector('#answer').value,secret_word:q.secret_word}, { signal });
+        // Try local matching first (case-insensitive guess)
+        const guess = document.querySelector('#answer').value.trim().toLowerCase();
+        const correctWord = secretWord.trim().toLowerCase();
+        const localMatch = guess === correctWord;
+
+        let r;
+        if (localMatch) {
+          r = { correct: true, score: 1.0, explanation: 'Chính xác! Bạn đã đoán đúng từ mục tiêu.' };
+        } else {
+          r=await Bridge.sendAsync('ai_grade',{
+            gamemode:'taboo',
+            level:document.querySelector('#level').value,
+            user_answer:document.querySelector('#answer').value,
+            target_word:secretWord,
+            secret_word:secretWord
+          }, { signal });
+        }
+
         if (signal.aborted) return;
         const fb=document.querySelector('#feedback');
         if(!fb)return;
-        fb.innerHTML='<div class="feedback '+(r.correct?'good':'bad')+'"><b>'+(r.correct?esc(t('feedback.exact', 'Chính xác!')):esc(t('feedback.wrong_short', 'Sai rồi')))+'</b><p>'+esc(r.explanation||r.feedback||'')+'</p><p>'+esc(t('feedback.answer_label', 'Đáp án: {0}', q.secret_word))+'</p><p>📖 '+esc(t('feedback.definition_label', 'Nghĩa: {0}', q.ai_description))+'</p><button class="btn" id="retry-trans">'+esc(t('app.retry', 'Làm lại'))+'</button></div>';
+        
+        let html='<div class="feedback '+(r.correct?'good':'bad')+'"><b>'+(r.correct?esc(t('feedback.exact', 'Chính xác!')):esc(t('feedback.wrong_short', 'Sai rồi')))+'</b><p>'+esc(r.explanation||r.feedback||'')+'</p><p>'+esc(t('feedback.answer_label', 'Đáp án: {0}', secretWord))+'</p>';
+        if (q.meaning_vi) {
+          html += '<p>🇻🇳 Dịch nghĩa: <b>' + esc(q.meaning_vi) + '</b></p>';
+        }
+        html += '<p>📖 '+esc(t('feedback.definition_label', 'Nghĩa: {0}', clueText))+'</p>';
+
+        if (q.sample_acceptable_phrases && q.sample_acceptable_phrases.length) {
+          html += '<p>✅ <b>Cụm từ chấp nhận:</b> ' + q.sample_acceptable_phrases.map(p => `<code>${esc(p)}</code>`).join(', ') + '</p>';
+        }
+        if (q.sample_forbidden_phrases && q.sample_forbidden_phrases.length) {
+          html += '<p>❌ <b>Cụm từ bị cấm:</b> ' + q.sample_forbidden_phrases.map(p => `<code>${esc(p)}</code>`).join(', ') + '</p>';
+        }
+        
+        html += '<button class="btn" id="retry-trans">'+esc(t('app.retry', 'Làm lại'))+'</button></div>';
+        fb.innerHTML=html;
         const retryBtn=document.querySelector('#retry-trans');
         if(retryBtn)retryBtn.onclick=()=>{state.answers={};play(state.route)}
       }catch(e){

@@ -1,7 +1,5 @@
 from typing import Any
-
 from .base import GameModeBase
-
 
 class TabooMode(GameModeBase):
     name = "taboo"
@@ -9,15 +7,17 @@ class TabooMode(GameModeBase):
     icon = "🚫"
 
     def render_ui_data(self, raw_result: dict) -> dict:
-        rounds = raw_result.get("rounds", [])
+        rounds = raw_result.get("rounds", [raw_result])
         return {
             "rounds": [
                 {
-                    "secret_word": r.get("secret_word", ""),
-                    "forbidden_words": r.get("forbidden_words", []),
-                    "ai_description": r.get("ai_description", ""),
-                    "category": r.get("category", ""),
-                    "difficulty": r.get("difficulty", "medium"),
+                    "target_word": r.get("target_word", r.get("secret_word", "")),
+                    "meaning_vi": r.get("meaning_vi", ""),
+                    "taboo_words": r.get("taboo_words", r.get("forbidden_words", [])),
+                    "clue": r.get("clue", r.get("ai_description", "")),
+                    "difficulty_level": r.get("difficulty_level", r.get("difficulty", "medium")),
+                    "sample_acceptable_phrases": r.get("sample_acceptable_phrases", []),
+                    "sample_forbidden_phrases": r.get("sample_forbidden_phrases", []),
                 }
                 for r in rounds
             ]
@@ -54,6 +54,6 @@ class TabooMode(GameModeBase):
         return result or ""
 
     def _format_anki_note(self, data: dict) -> tuple:
-        forbidden = ", ".join(data.get("forbidden_words", []))
-        front = f"Taboo: {data.get('secret_word', '')}\nCannot say: {forbidden}"
-        return (front, data.get("ai_description", ""))
+        taboo = ", ".join(data.get("taboo_words", []))
+        front = f"Taboo: {data.get('target_word', '')}\nCannot say: {taboo}"
+        return (front, data.get("clue", ""))

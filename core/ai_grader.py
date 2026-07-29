@@ -26,15 +26,14 @@ FILL_BLANK_GRADER = """You are a language teacher grading a fill-in-the-blank ex
 
 Learning language: {learn_lang}
 Student's level: {level}
-Sentence: {question_sentence}
-Blank word: {blank_word}
-User selected: option {user_choice_index} = "{user_choice_text}"
+Question: {question}
+Expected answer: {expected}
+Student's answer: {user_answer}
 
 Explain why the correct answer is right or wrong. Include:
 - Semantic meaning of the correct word in context
 - Grammar rule involved
 - Why the other options are incorrect
-- Vocabulary relationships (collocations, synonyms)
 
 Respond in JSON:
 {{
@@ -48,8 +47,8 @@ Respond in JSON:
 
 TRANSLATION_GRADER = """You are a language teacher grading a translation.
 
-Source ({source_lang}): {source_text}
-Expected translation ({target_lang}): {expected_target}
+Source ({source_lang}): {source_sentence}
+Expected translation ({target_lang}): {reference_translation}
 Student's translation: {user_target}
 
 Grade the translation. If wrong, identify specific errors (word choice, grammar, missing parts).
@@ -86,9 +85,9 @@ Respond in JSON:
 
 TRANSFORM_GRADER = """You are a language teacher grading a sentence transformation.
 
-Instruction: {instruction}
+Instruction/Prompt: {prompt}
 Original: {original}
-Expected answer: {expected}
+Expected answer: {expected_answer}
 Student's answer: {user_answer}
 
 If wrong, explain the grammar rule being tested and how to fix it.
@@ -106,8 +105,8 @@ Respond in JSON:
 
 TABOO_GRADER = """You are judging a Taboo word-guessing game.
 
-Secret word: {secret_word}
-Student's guess: {user_guess}
+Secret target word: {target_word}
+Student's guess: {user_input}
 
 Determine if the guess matches or is semantically close enough.
 Consider synonyms, common learner associations.

@@ -1,16 +1,20 @@
-用 {language} 生成 1 个猜词回合。
-级别：{level_instruction}
-主题：{topic}
+生成一个禁忌词（Taboo）游戏卡片。
+目标概念：{topic}
+难度：{level_instruction}
 
-对于该回合提供：
-- secret_word：适合该水平的词
-- forbidden_words：4-5 个描述该词时不能使用的相关词
-- ai_description：用 {language} 对 secret_word 的描述，不能使用任何禁词。描述清楚地解释概念。
-- category：词的类别
-- difficulty：easy、medium 或 hard
+要求：
+- 定义目标单词和 5 个高度相关的禁忌词（禁止在描述中使用的关联词汇）。
+- 用英语提供线索描述，要求在描述时绝对不能使用目标词和禁忌词。
+- 越南语意思写在 `meaning_vi` 中。
+- 包含可接受的和被禁止的短语示例，用作 AI 评分的指导依据。
 
-描述应清晰地解释概念，让学习者能猜出 secret_word。
-学习者阅读描述后用 {language} 回答 secret_word。
-
-输出符合此架构的有效 JSON：
-{{ "rounds": [{{ "secret_word": "...", "forbidden_words": ["A","B","C","D"], "ai_description": "...", "category": "...", "difficulty": "medium" }}] }}
+仅返回符合此结构的原始 JSON：
+{
+  "target_word": "Internet",
+  "meaning_vi": "Mạng internet",
+  "taboo_words": ["Web", "Online", "Computer", "Network", "Wifi"],
+  "clue": "A global system that connects millions of devices...",
+  "difficulty_level": "Medium",
+  "sample_acceptable_phrases": ["Hệ thống toàn cầu", "Kết nối không dây"],
+  "sample_forbidden_phrases": ["Mạng máy tính", "Lướt web"]
+}

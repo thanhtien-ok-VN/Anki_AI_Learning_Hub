@@ -85,168 +85,196 @@ const SCHEMAS: Record<string, any> = {
         items: {
           type: "object",
           properties: {
-            sentence_with_blank: { type: "string", description: "Natural sentence in target language containing '_____'." },
-            full_sentence: { type: "string", description: "Complete correct sentence in target language." },
-            blank_word: { type: "string", description: "The exact word missing in target language." },
+            sentence: { type: "string", description: "The sentence with _____ blank." },
             options: {
-              type: "array",
-              items: { type: "string" },
-              description: "Exactly 4 distinct choices in target language."
-            },
-            correct_index: { type: "integer", description: "Index 0-3 of the correct option." },
-            options_vietnamese: {
-              type: "array",
-              items: { type: "string" },
-              description: "BẮT BUỘC: 4 bản dịch TIẾNG VIỆT tương ứng 1-1 với 4 options."
-            },
-            options_details: {
               type: "array",
               items: {
                 type: "object",
                 properties: {
-                  text: { type: "string", description: "Option word/phrase in target language." },
-                  translation: { type: "string", description: "Vietnamese translation of this option." },
-                  is_correct: { type: "boolean", description: "True if this option is correct." },
-                  reason: { type: "string", description: "Detailed explanation in Vietnamese explaining WHY this option is correct or incorrect." }
+                  word: { type: "string" },
+                  is_correct: { type: "boolean" },
+                  type: { type: "string" },
+                  reason: { type: "string" }
                 },
-                required: ["text", "translation", "is_correct", "reason"]
-              },
-              description: "BẮT BUỘC: Phân tích chi tiết từng lựa chọn (từ, nghĩa tiếng Việt, lý do đúng/sai)."
+                required: ["word", "is_correct", "type", "reason"]
+              }
             },
-            sentence_vietnamese: {
-              type: "string",
-              description: "BẮT BUỘC: Bản dịch full_sentence sang TIẾNG VIỆT tự nhiên."
-            },
-            explanation_vietnamese: {
-              type: "string",
-              description: "BẮT BUỘC: Giải thích lý do chọn đáp án đúng bằng TIẾNG VIỆT chi tiết (ngữ pháp, từ vựng, ngữ cảnh)."
-            },
-            grammar_note_vietnamese: {
-              type: "string",
-              description: "Ghi chú ngữ pháp hoặc collocation ngắn gọn bằng TIẾNG VIỆT."
-            }
+            meaning_vi: { type: "string" },
+            explanation_vi: { type: "string" },
+            grammar_note: { type: "string" }
           },
-          required: [
-            "sentence_with_blank",
-            "full_sentence",
-            "blank_word",
-            "options",
-            "correct_index",
-            "options_vietnamese",
-            "sentence_vietnamese",
-            "explanation_vietnamese"
-          ],
-        },
-      },
+          required: ["sentence", "options", "meaning_vi", "explanation_vi"]
+        }
+      }
     },
-    required: ["questions"],
+    required: ["questions"]
   },
   cloze: {
     type: "object",
     properties: {
-      paragraph_with_blanks: { type: "string", description: "Text in target language containing placeholders [1], [2]..." },
-      paragraph_full: { type: "string", description: "Complete passage in target language with correct words filled in." },
-      sentence_meaning_vietnamese: { type: "string", description: "BẮT BUỘC: Dịch toàn bộ đoạn văn sang TIẾNG VIỆT tự nhiên." },
+      paragraph: { type: "string" },
+      full_solution_text: { type: "string" },
+      story_translation: { type: "string" },
       blanks: {
         type: "array",
         items: {
           type: "object",
           properties: {
             blank_id: { type: "integer" },
-            correct_word: { type: "string", description: "Target word in target language." },
+            answer: { type: "string" },
             options: {
-              type: "array",
-              items: { type: "string" },
-              description: "4 choices in target language."
-            },
-            correct_index: { type: "integer" },
-            meaning_vietnamese: { type: "string", description: "BẮT BUỘC: Nghĩa TIẾNG VIỆT ngắn gọn của correct_word." },
-            explanation_vietnamese: { type: "string", description: "BẮT BUỘC: Giải thích lý do chọn từ này bằng TIẾNG VIỆT." }
-          },
-          required: ["blank_id", "correct_word", "options", "correct_index", "meaning_vietnamese", "explanation_vietnamese"],
-        },
-      },
-    },
-    required: ["paragraph_with_blanks", "paragraph_full", "sentence_meaning_vietnamese", "blanks"],
-  },
-  translation: {
-    type: "object",
-    properties: {
-      sentences: {
-        type: "array",
-        items: {
-          type: "object",
-          properties: {
-            source_text: { type: "string", description: "Sentence in target language." },
-            target_text_vietnamese: { type: "string", description: "BẮT BUỘC: Bản dịch TIẾNG VIỆT chính xác, tự nhiên." },
-            grammar_notes_vietnamese: { type: "string", description: "BẮT BUỘC: Ghi chú ngữ pháp hoặc cấu trúc bằng TIẾNG VIỆT." }
-          },
-          required: ["source_text", "target_text_vietnamese", "grammar_notes_vietnamese"],
-        },
-      },
-    },
-    required: ["sentences"],
-  },
-  unscramble: {
-    type: "object",
-    properties: {
-      sentences: {
-        type: "array",
-        items: {
-          type: "object",
-          properties: {
-            correct_sentence: { type: "string", description: "Complete natural sentence in target language." },
-            hint_vietnamese: { type: "string", description: "BẮT BUỘC: Gợi ý bằng TIẾNG VIỆT để giúp ghép câu." },
-            translation_vietnamese: { type: "string", description: "BẮT BUỘC: Bản dịch TIẾNG VIỆT của correct_sentence." },
-            sentence_meaning_vietnamese: { type: "string", description: "BẮT BUỘC: Ý nghĩa câu bằng TIẾNG VIỆT." },
-            key_vocab: {
               type: "array",
               items: {
                 type: "object",
                 properties: {
-                  word: { type: "string", description: "Vocabulary word in target language." },
-                  meaning_vietnamese: { type: "string", description: "BẮT BUỘC: Nghĩa từ bằng TIẾNG VIỆT." }
+                  word: { type: "string" },
+                  is_correct: { type: "boolean" },
+                  type: { type: "string" },
+                  reason: { type: "string" }
                 },
-                required: ["word", "meaning_vietnamese"]
-              },
+                required: ["word", "is_correct", "type", "reason"]
+              }
             },
+            meaning_vi: { type: "string" },
+            explanation_vi: { type: "string" }
           },
-          required: ["correct_sentence", "hint_vietnamese", "translation_vietnamese", "sentence_meaning_vietnamese"],
-        },
-      },
+          required: ["blank_id", "answer", "options", "meaning_vi", "explanation_vi"]
+        }
+      }
     },
-    required: ["sentences"],
+    required: ["paragraph", "full_solution_text", "story_translation", "blanks"]
   },
-  story: {
+  translation: {
     type: "object",
     properties: {
-      story: { type: "string", description: "Reading passage in target language." },
-      passage_vietnamese: { type: "string", description: "BẮT BUỘC: Bản dịch toàn bài đọc sang TIẾNG VIỆT tự nhiên." },
-      comprehension_questions: {
+      source_sentence: { type: "string" },
+      reference_translation: { type: "string" },
+      alternative_translations: {
         type: "array",
         items: {
           type: "object",
           properties: {
-            question: { type: "string", description: "Clear question in target language." },
+            text: { type: "string" },
+            note: { type: "string" }
+          },
+          required: ["text", "note"]
+        }
+      },
+      key_vocabulary: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            word: { type: "string" },
+            meaning_vi: { type: "string" },
+            note: { type: "string" }
+          },
+          required: ["word", "meaning_vi", "note"]
+        }
+      },
+      common_mistakes: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            wrong: { type: "string" },
+            correction: { type: "string" },
+            error_type: { type: "string" },
+            feedback: { type: "string" }
+          },
+          required: ["wrong", "correction", "error_type", "feedback"]
+        }
+      },
+      grading_rubric: { type: "string" }
+    },
+    required: ["source_sentence", "reference_translation", "alternative_translations", "key_vocabulary", "common_mistakes", "grading_rubric"]
+  },
+  unscramble: {
+    type: "object",
+    properties: {
+      questions: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            correct_sentence: { type: "string" },
+            shuffled_words: {
+              type: "array",
+              items: { type: "string" }
+            },
+            hint: { type: "string" },
+            meaning_vi: { type: "string" },
+            difficulty_reason: { type: "string" },
+            grammar_note: { type: "string" },
+            key_vocabulary: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  word: { type: "string" },
+                  meaning_vi: { type: "string" }
+                },
+                required: ["word", "meaning_vi"]
+              }
+            }
+          },
+          required: ["correct_sentence", "shuffled_words", "hint", "meaning_vi", "difficulty_reason", "grammar_note", "key_vocabulary"]
+        }
+      }
+    },
+    required: ["questions"]
+  },
+  story: {
+    type: "object",
+    properties: {
+      story: {
+        type: "object",
+        properties: {
+          title: { type: "string" },
+          content: { type: "string" },
+          highlighted_vocab: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                word: { type: "string" },
+                meaning_vi: { type: "string" },
+                context_meaning: { type: "string" }
+              },
+              required: ["word", "meaning_vi", "context_meaning"]
+            }
+          },
+          full_translation: { type: "string" }
+        },
+        required: ["title", "content", "highlighted_vocab", "full_translation"]
+      },
+      questions: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            question: { type: "string" },
             options: {
               type: "array",
-              items: { type: "string" },
-              description: "Exactly 4 choice options in target language."
+              items: {
+                type: "object",
+                properties: {
+                  text: { type: "string" },
+                  is_correct: { type: "boolean" }
+                },
+                required: ["text", "is_correct"]
+              }
             },
-            options_vietnamese: {
-              type: "array",
-              items: { type: "string" },
-              description: "BẮT BUỘC: 4 bản dịch TIẾNG VIỆT tương ứng với 4 options."
-            },
-            correct_index: { type: "integer" },
-            explanation_vietnamese: { type: "string", description: "BẮT BUỘC: Giải thích lý do chọn bằng TIẾNG VIỆT chi tiết." },
-            quote_evidence: { type: "string", description: "Exact verbatim quote/sentence from story in target language providing evidence." }
+            explanation: { type: "string" },
+            evidence_quote: { type: "string" },
+            type: { type: "string" }
           },
-          required: ["question", "options", "options_vietnamese", "correct_index", "explanation_vietnamese", "quote_evidence"],
-        },
+          required: ["question", "options", "explanation", "evidence_quote", "type"]
+        }
       },
+      discussion_prompt: { type: "string" }
     },
-    required: ["story", "passage_vietnamese", "comprehension_questions"],
+    required: ["story", "questions", "discussion_prompt"]
   },
   sentence_transform: {
     type: "object",
@@ -256,17 +284,39 @@ const SCHEMAS: Record<string, any> = {
         items: {
           type: "object",
           properties: {
-            original_sentence: { type: "string", description: "Starting sentence in target language." },
-            instruction_vietnamese: { type: "string", description: "BẮT BUỘC: Yêu cầu bài tập bằng TIẾNG VIỆT (vd: 'Viết lại câu sử dụng từ gợi ý...')." },
-            hint_word: { type: "string", description: "Key word or structure in target language to incorporate." },
-            expected_answer: { type: "string", description: "Correct transformed sentence in target language." },
-            grammar_rule_vietnamese: { type: "string", description: "BẮT BUỘC: Giải thích cấu trúc ngữ pháp đã dùng bằng TIẾNG VIỆT." }
+            original: { type: "string" },
+            prompt: { type: "string" },
+            expected_answer: { type: "string" },
+            normalized_answer: { type: "string" },
+            grammar_rule: { type: "string" },
+            acceptable_variations: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  text: { type: "string" },
+                  note: { type: "string" }
+                },
+                required: ["text", "note"]
+              }
+            },
+            common_errors: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  error: { type: "string" },
+                  feedback: { type: "string" }
+                },
+                required: ["error", "feedback"]
+              }
+            }
           },
-          required: ["original_sentence", "instruction_vietnamese", "hint_word", "expected_answer", "grammar_rule_vietnamese"],
-        },
-      },
+          required: ["original", "prompt", "expected_answer", "normalized_answer", "grammar_rule", "acceptable_variations", "common_errors"]
+        }
+      }
     },
-    required: ["questions"],
+    required: ["questions"]
   },
   taboo: {
     type: "object",
@@ -276,22 +326,28 @@ const SCHEMAS: Record<string, any> = {
         items: {
           type: "object",
           properties: {
-            secret_word: { type: "string", description: "Target secret word to guess in target language." },
-            forbidden_words: {
+            target_word: { type: "string" },
+            taboo_words: {
               type: "array",
-              items: { type: "string" },
-              description: "Exactly 4 forbidden related words in target language."
+              items: { type: "string" }
             },
-            ai_description: { type: "string", description: "Helpful description/clue in target language WITHOUT using secret_word or forbidden_words." },
-            word_meaning_vietnamese: { type: "string", description: "BẮT BUỘC: Dịch nghĩa secret_word sang TIẾNG VIỆT." },
-            category: { type: "string", description: "Word topic or category." }
+            clue: { type: "string" },
+            meaning_vi: { type: "string" },
+            sample_acceptable_phrases: {
+              type: "array",
+              items: { type: "string" }
+            },
+            sample_forbidden_phrases: {
+              type: "array",
+              items: { type: "string" }
+            }
           },
-          required: ["secret_word", "forbidden_words", "ai_description", "word_meaning_vietnamese", "category"],
-        },
-      },
+          required: ["target_word", "taboo_words", "clue", "meaning_vi", "sample_acceptable_phrases", "sample_forbidden_phrases"]
+        }
+      }
     },
-    required: ["rounds"],
-  },
+    required: ["rounds"]
+  }
 };
 
 // Helper function: Fisher-Yates mathematical random shuffle algorithm
@@ -350,10 +406,14 @@ function getFallbackExercise(gamemode: string, data: any) {
           "Không phù hợp: 'verbose' có nghĩa là dùng quá nhiều từ ngữ không cần thiết (dài dòng)."
         ];
         return {
+          sentence: `Smartphones have become _____ in modern daily life.`,
           sentence_with_blank: `Smartphones have become _____ in modern daily life.`,
-          full_sentence: `Smartphones have become ${item.term} in modern daily life.`,
-          blank_word: item.term,
-          options: optWords,
+          options: optWords.map((w, idx) => ({
+            word: w,
+            is_correct: idx === 0,
+            type: idx === 0 ? "correct" : "distractor",
+            reason: optReasons[idx]
+          })),
           options_translations: optTrans,
           options_details: optWords.map((w, idx) => ({
             text: w,
@@ -362,7 +422,9 @@ function getFallbackExercise(gamemode: string, data: any) {
             reason: optReasons[idx]
           })),
           correct_index: 0,
+          explanation_vi: `Chọn '${item.term}' vì ngữ cảnh mô tả điện thoại thông minh xuất hiện ở khắp mọi nơi trong đời sống hiện đại.`,
           explanation_short: `Chọn '${item.term}' vì ngữ cảnh mô tả điện thoại thông minh xuất hiện ở khắp mọi nơi trong đời sống hiện đại.`,
+          meaning_vi: `Điện thoại thông minh đã trở nên phổ biến khắp nơi trong cuộc sống hiện đại.`,
           sentence_translation: `Điện thoại thông minh đã trở nên phổ biến khắp nơi trong cuộc sống hiện đại.`,
           grammar_note: "Cấu trúc ngữ pháp: 'become + adjective' (trở nên như thế nào)."
         };
@@ -372,33 +434,60 @@ function getFallbackExercise(gamemode: string, data: any) {
 
   if (gamemode === "cloze") {
     return {
+      paragraph: "In today's fast-paced world, clear communication is essential. Being [1] allows professionals to express complex ideas effectively. When teams face difficult challenges, reaching a [2] ensures everyone works toward the same goal. Having a [3] approach helps resolve conflicts quickly.",
       paragraph_with_blanks: "In today's fast-paced world, clear communication is essential. Being [1] allows professionals to express complex ideas effectively. When teams face difficult challenges, reaching a [2] ensures everyone works toward the same goal. Having a [3] approach helps resolve conflicts quickly.",
+      full_solution_text: "In today's fast-paced world, clear communication is essential. Being articulate allows professionals to express complex ideas effectively. When teams face difficult challenges, reaching a consensus ensures everyone works toward the same goal. Having a pragmatic approach helps resolve conflicts quickly.",
       paragraph_full: "In today's fast-paced world, clear communication is essential. Being articulate allows professionals to express complex ideas effectively. When teams face difficult challenges, reaching a consensus ensures everyone works toward the same goal. Having a pragmatic approach helps resolve conflicts quickly.",
+      story_translation: "Trong thế giới hiện đại, giao tiếp rõ ràng là rất quan trọng. Khả năng diễn đạt lưu loát giúp làm việc hiệu quả.",
       sentence_meaning: "Trong thế giới hiện đại, giao tiếp rõ ràng là rất quan trọng. Khả năng diễn đạt lưu loát giúp làm việc hiệu quả.",
       blanks: [
         {
           blank_id: 1,
+          answer: "articulate",
           correct_word: "articulate",
-          options: ["articulate", "verbose", "ephemeral", "ambiguous"],
+          options: [
+            { word: "articulate", is_correct: true, type: "correct", reason: "Chính xác! 'articulate' có nghĩa là diễn đạt rõ ràng." },
+            { word: "verbose", is_correct: false, type: "distractor", reason: "verbose có nghĩa là dài dòng." },
+            { word: "ephemeral", is_correct: false, type: "distractor", reason: "ephemeral có nghĩa là ngắn hạn." },
+            { word: "ambiguous", is_correct: false, type: "distractor", reason: "ambiguous có nghĩa là mơ hồ." }
+          ],
           correct_index: 0,
-          explanation_short: "articulate: diễn đạt rõ ràng, lưu loát",
-          meaning_in_vietnamese: "diễn đạt lưu loát"
+          meaning_vi: "diễn đạt lưu loát",
+          meaning_in_vietnamese: "diễn đạt lưu loát",
+          explanation_vi: "Dùng để mô tả một người có tài hùng biện hoặc diễn đạt ý kiến một cách trôi chảy, rõ ràng.",
+          explanation_short: "Dùng để mô tả một người có tài hùng biện hoặc diễn đạt ý kiến một cách trôi chảy, rõ ràng."
         },
         {
           blank_id: 2,
+          answer: "consensus",
           correct_word: "consensus",
-          options: ["consensus", "scrutiny", "hypothesis", "paradigm"],
+          options: [
+            { word: "consensus", is_correct: true, type: "correct", reason: "Chính xác! 'consensus' có nghĩa là sự đồng thuận." },
+            { word: "scrutiny", is_correct: false, type: "distractor", reason: "scrutiny có nghĩa là sự xem xét kĩ lưỡng." },
+            { word: "hypothesis", is_correct: false, type: "distractor", reason: "hypothesis có nghĩa là giả thuyết." },
+            { word: "paradigm", is_correct: false, type: "distractor", reason: "paradigm có nghĩa là mô hình mẫu." }
+          ],
           correct_index: 0,
-          explanation_short: "consensus: sự đồng thuận",
-          meaning_in_vietnamese: "sự thống nhất"
+          meaning_vi: "sự thống nhất",
+          meaning_in_vietnamese: "sự thống nhất",
+          explanation_vi: "consensus là sự đồng thuận hoặc nhất trí giữa các thành viên.",
+          explanation_short: "consensus là sự đồng thuận hoặc nhất trí giữa các thành viên."
         },
         {
           blank_id: 3,
+          answer: "pragmatic",
           correct_word: "pragmatic",
-          options: ["pragmatic", "ambiguous", "verbose", "inevitable"],
+          options: [
+            { word: "pragmatic", is_correct: true, type: "correct", reason: "Chính xác! 'pragmatic' có nghĩa là thực tế." },
+            { word: "ambiguous", is_correct: false, type: "distractor", reason: "ambiguous có nghĩa là mơ hồ." },
+            { word: "verbose", is_correct: false, type: "distractor", reason: "verbose có nghĩa là dài dòng." },
+            { word: "inevitable", is_correct: false, type: "distractor", reason: "inevitable có nghĩa là không thể tránh khỏi." }
+          ],
           correct_index: 0,
-          explanation_short: "pragmatic: thực tế",
-          meaning_in_vietnamese: "thực tiễn"
+          meaning_vi: "thực tiễn",
+          meaning_in_vietnamese: "thực tiễn",
+          explanation_vi: "pragmatic là một cách tiếp cận mang tính thực tế để giải quyết các vấn đề.",
+          explanation_short: "pragmatic là một cách tiếp cận mang tính thực tế để giải quyết các vấn đề."
         }
       ]
     };
@@ -406,20 +495,24 @@ function getFallbackExercise(gamemode: string, data: any) {
 
   if (gamemode === "translation") {
     return {
+      source_sentence: "Việc sử dụng công nghệ một cách thực tế giúp cải thiện hiệu suất công việc.",
+      reference_translation: "Using technology pragmatically helps improve work performance.",
+      alternative_translations: [
+        { text: "Applying technology in a practical way enhances productivity.", note: "Trang trọng hơn" }
+      ],
+      key_vocabulary: [
+        { word: "pragmatically", meaning_vi: "một cách thực tế, thực tiễn", note: "Trạng từ" },
+        { word: "performance", meaning_vi: "hiệu suất công việc", note: "Danh từ" }
+      ],
+      common_mistakes: [
+        { wrong: "use technology pragmatic", correction: "use technology pragmatically", error_type: "Grammar", feedback: "Cần dùng trạng từ để bổ nghĩa cho động từ." }
+      ],
+      grading_rubric: "Đánh giá dựa trên độ chính xác ngữ pháp (trạng từ đứng trước động từ) và sự tự nhiên.",
       sentences: [
         {
           source_text: "Việc sử dụng công nghệ một cách thực tế giúp cải thiện hiệu suất công việc.",
           target_text: "Using technology pragmatically helps improve work performance.",
-          grammar_notes: "Adv + Verb construction: 'pragmatically helps improve'",
-          detailed_feedback: {
-            word_by_word: [
-              { word: "pragmatically", translation: "thực tế", notes: "Trạng từ" },
-              { word: "performance", translation: "hiệu suất", notes: "Danh từ" }
-            ],
-            common_mistakes: ["Quên dùng trạng từ bổ nghĩa cho động từ"],
-            alternative_translations: ["Applying technology in a practical way enhances productivity."],
-            improvement_tips: "Sử dụng trạng từ đứng trước động từ chính để tăng tính tự nhiên."
-          }
+          grammar_notes: "Adv + Verb construction: 'pragmatically helps improve'"
         }
       ]
     };
@@ -427,24 +520,48 @@ function getFallbackExercise(gamemode: string, data: any) {
 
   if (gamemode === "unscramble") {
     const sList = [
-      { correct_sentence: "Technology plays an important role in modern education.", hint: "Role of tech", translation: "Công nghệ đóng vai trò quan trọng trong giáo dục hiện đại.", sentence_meaning: "Công nghệ giúp việc học trở nên thuận tiện hơn.", key_vocab: [{ word: "education", meaning: "giáo dục" }] },
-      { correct_sentence: "Clear communication helps teams reach a quick consensus.", hint: "Teamwork", translation: "Giao tiếp rõ ràng giúp nhóm nhanh chóng đạt đồng thuận.", sentence_meaning: "Thống nhất ý kiến trong làm việc nhóm.", key_vocab: [{ word: "consensus", meaning: "sự đồng thuận" }] }
+      { correct_sentence: "Technology plays an important role in modern education.", hint: "Role of tech", translation: "Công nghệ đóng vai trò quan trọng trong giáo dục hiện đại.", sentence_meaning: "Công nghệ giúp việc học trở nên thuận tiện hơn.", key_vocab: [{ word: "education", meaning: "giáo dục" }] }
     ];
-    const chosen = sList.slice(0, count);
     return {
-      questions: chosen.map(s => ({
+      questions: sList.map(s => ({
         correct_sentence: s.correct_sentence,
         shuffled_words: s.correct_sentence.split(" ").sort(() => Math.random() - 0.5),
         hint: s.hint,
+        meaning_vi: s.translation,
         translation: s.translation,
-        word_count: s.correct_sentence.split(" ").length
+        word_count: s.correct_sentence.split(" ").length,
+        difficulty_reason: "Cấu trúc S-V-O cơ bản với cụm giới từ.",
+        grammar_note: "Sử dụng cụm danh từ 'modern education' đứng sau giới từ 'in'.",
+        key_vocabulary: s.key_vocab.map(k => ({ word: k.word, meaning_vi: k.meaning }))
       }))
     };
   }
 
   if (gamemode === "story") {
     return {
-      story: "Alex was known for his articulate presentation style. During the annual conference, he presented a comprehensive plan to mitigate operational risks. Despite initial skepticism from the board, his persuasive arguments helped the team reach a unanimous consensus on the new strategic paradigm.",
+      story: {
+        title: "Alex's Persuasive Speech",
+        content: "Alex was known for his articulate presentation style. During the annual conference, he presented a comprehensive plan to mitigate operational risks. Despite initial skepticism from the board, his persuasive arguments helped the team reach a unanimous consensus on the new strategic paradigm.",
+        highlighted_vocab: [
+          { word: "articulate", meaning_vi: "diễn đạt trôi chảy, rõ ràng", context_meaning: "Cách nói rõ ràng và thu hút người nghe" }
+        ],
+        full_translation: "Alex nổi tiếng với phong cách thuyết trình diễn đạt lưu loát và rõ ràng."
+      },
+      questions: [
+        {
+          question: "What was Alex known for during presentations?",
+          options: [
+            { text: "His articulate style", is_correct: true },
+            { text: "His verbose explanations", is_correct: false },
+            { text: "His ambiguous slides", is_correct: false },
+            { text: "His hesitant tone", is_correct: false }
+          ],
+          explanation: "Alex nổi tiếng với phong cách thuyết trình diễn đạt lưu loát và rõ ràng (articulate presentation style).",
+          evidence_quote: "Alex was known for his articulate presentation style.",
+          type: "Detail"
+        }
+      ],
+      discussion_prompt: "Thảo luận về tầm quan trọng của việc thuyết trình rõ ràng trong công việc.",
       comprehension_questions: [
         {
           question: "What was Alex known for during presentations?",
@@ -452,20 +569,6 @@ function getFallbackExercise(gamemode: string, data: any) {
           correct_index: 0,
           explanation: "Alex nổi tiếng với phong cách thuyết trình diễn đạt lưu loát và rõ ràng (articulate presentation style).",
           quote_evidence: "Alex was known for his articulate presentation style."
-        },
-        {
-          question: "What did Alex's plan aim to achieve?",
-          options: ["Mitigate operational risks", "Increase expenses", "Delay the conference", "Ignore board opinions"],
-          correct_index: 0,
-          explanation: "Kế hoạch của Alex nhằm mục đích giảm thiểu các rủi ro trong quá trình vận hành (mitigate operational risks).",
-          quote_evidence: "During the annual conference, he presented a comprehensive plan to mitigate operational risks."
-        },
-        {
-          question: "How did the board react to Alex's presentation in the end?",
-          options: ["Reached a unanimous consensus", "Rejected the whole proposal", "Postponed the strategic meeting", "Fired the entire risk team"],
-          correct_index: 0,
-          explanation: "Dù ban đầu hoài nghi, lập luận thuyết phục của Alex đã giúp ban giám đốc đi đến sự đồng thuận nhất trí.",
-          quote_evidence: "his persuasive arguments helped the team reach a unanimous consensus on the new strategic paradigm."
         }
       ]
     };
@@ -475,21 +578,19 @@ function getFallbackExercise(gamemode: string, data: any) {
     return {
       questions: [
         {
+          original: "They built the new bridge in less than six months.",
           original_sentence: "They built the new bridge in less than six months.",
+          prompt: "Rewrite using the passive voice (start with 'The new bridge...').",
           instruction: "Rewrite using the passive voice (start with 'The new bridge...').",
-          hint_word: "built",
           expected_answer: "The new bridge was built in less than six months.",
+          normalized_answer: "the new bridge was built in less than six months",
           grammar_rule: "Passive voice in Simple Past: Subject + was/were + Past Participle",
-          detailed_explanation: {
-            rule_description: "To form passive in simple past, move the object to the subject position and use was/were + V3.",
-            step_by_step: [
-              "1. Identify the object: 'the new bridge'",
-              "2. Change verb 'built' to past passive: 'was built'",
-              "3. Add remaining context"
-            ],
-            common_errors: ["Using 'is built' instead of 'was built'"],
-            comparison: "Active: They built... -> Passive: The new bridge was built..."
-          }
+          acceptable_variations: [
+            { text: "The new bridge was built in under six months.", note: "Sử dụng under thay cho less than" }
+          ],
+          common_errors: [
+            { error: "The new bridge is built in less than six months.", feedback: "Sai thì: câu gốc dùng 'built' ở quá khứ đơn, nên câu bị động phải dùng 'was built'." }
+          ]
         }
       ]
     };
@@ -499,10 +600,15 @@ function getFallbackExercise(gamemode: string, data: any) {
     return {
       rounds: [
         {
+          target_word: "UBIQUITOUS",
           secret_word: "UBIQUITOUS",
+          taboo_words: ["EVERYWHERE", "COMMON", "FOUND", "PRESENT", "ALWAYS"],
           forbidden_words: ["EVERYWHERE", "COMMON", "FOUND", "PRESENT", "ALWAYS"],
+          clue: "Describing something that seems to exist in all places at the same time, like modern technology or mobile phones.",
           ai_description: "Describing something that seems to exist in all places at the same time, like modern technology or mobile phones.",
-          category: "Adjectives"
+          meaning_vi: "Phổ biến khắp nơi",
+          sample_acceptable_phrases: ["present in all places", "found everywhere"],
+          sample_forbidden_phrases: ["always common everywhere"]
         }
       ]
     };

@@ -1,8 +1,7 @@
 import random
+import uuid
 from typing import Any, Optional
-
 from .base import GameModeBase
-
 
 class WordMatchingMode(GameModeBase):
     name = "matching"
@@ -52,16 +51,37 @@ class WordMatchingMode(GameModeBase):
             pairs = self.BUILTIN_PAIRS[:]
 
         selected = random.sample(pairs, min(count, len(pairs)))
-        left = [p[0] for p in selected]
-        right = [p[1] for p in selected]
-        random.shuffle(left)
-        random.shuffle(right)
-
+        game_id = str(uuid.uuid4())
+        
+        items = []
+        for i, (term, definition) in enumerate(selected):
+            pair_id = f"pair_{i+1}"
+            items.append({
+                "id": f"item_{i*2}",
+                "content": term,
+                "type": "term",
+                "pair_id": pair_id
+            })
+            items.append({
+                "id": f"item_{i*2+1}",
+                "content": definition,
+                "type": "definition",
+                "pair_id": pair_id
+            })
+            
+        random.shuffle(items)
+        
         return {
-            "error": False,
-            "pairs": [{"term": p[0], "definition": p[1]} for p in selected],
-            "left_column": left,
-            "right_column": right,
+            "game_id": game_id,
+            "items": items,
+            "config": {
+                "total_pairs": len(selected),
+                "time_limit_sec": 60
+            },
+            "metadata": {
+                "topic": kwargs.get("topic", ""),
+                "level": kwargs.get("level", "")
+            }
         }
 
     def _extract_from_deck(self, deck_name: str, count: int) -> list:
@@ -85,12 +105,15 @@ class WordMatchingMode(GameModeBase):
         return raw_result
 
     def check_answer(self, user_input: Any, correct: Any) -> dict:
+        selected_pair = user_input.get("pair_id", "") if isinstance(user_input, dict) else ""
+        target_pair = correct.get("pair_id", "") if isinstance(correct, dict) else ""
+        is_match = selected_pair == target_pair and selected_pair != ""
         return {
-            "correct": str(user_input) == str(correct),
-            "selected": user_input,
-            "expected": correct,
-            "points": 1 if str(user_input) == str(correct) else 0,
+            "correct": is_match,
+            "user_pair": selected_pair,
+            "expected_pair": target_pair,
+            "points": 1 if is_match else 0,
         }
 
     def _format_anki_note(self, data: dict) -> tuple:
-        return (data.get("term", ""), data.get("definition", ""))
+        return (data.get("content", ""), "")

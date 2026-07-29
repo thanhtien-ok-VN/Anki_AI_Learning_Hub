@@ -1,31 +1,24 @@
-生成 1 个翻译练习。
-源语言：{source_lang}（越南语）
-目标语言：{target_lang}
-级别：{level_instruction}
-主题：{topic}
+提供一个越南语到英语的翻译练习。
+句子复杂度：{level_instruction}
 
-对于练习：
-- source_text：用越南语（source_lang）写的自然句子，适合该水平
-- target_text：用 {target_lang} 的准确翻译
-- vocabulary_highlight：句子中的关键词及其翻译和用法说明
-- grammar_notes：越南语和 {target_lang} 之间重要语法差异的解释
-- detailed_feedback：一个包含以下内容的对象：
-  - "word_by_word"：[{word: "...", translation: "...", notes: "..."}] — 分析每个重要的词
-  - "common_mistakes"：["...", "..."] — 学习者对此句子的常见错误
-  - "alternative_translations"：["...", "..."] — 其他有效的翻译方式
-  - "improvement_tips"："..." — 给学习者的总体建议
+要求：
+- 重点关注越南学习者常犯的错误（时态、复数、冠词）。
+- 提供参考翻译和其他正确的备选版本。
+- 用越南语详细分析重点词汇和常见错误（附带修改建议）。
 
-重要提示：source_lang 是越南语，不是英语。写自然的越南语句子。
-输出有效 JSON：
-{{ "sentences": [
-  {{ "source_text": "Câu tiếng Việt...", "target_text": "translation...",
-     "vocabulary_highlight": [{{"word":"...","translation":"...","notes":"..."}}],
-     "grammar_notes": "...",
-     "detailed_feedback": {{
-       "word_by_word": [{{"word":"...","translation":"...","notes":"..."}}],
-       "common_mistakes": ["...","..."],
-       "alternative_translations": ["...","..."],
-       "improvement_tips": "..."
-     }}
-  }}
-] }}
+仅返回符合此结构的原始 JSON：
+{
+  "source_sentence": "Tôi đã định đi chơi nhưng trời mưa.",
+  "target_language": "en",
+  "reference_translation": "I intended to go out, but it rained.",
+  "alternative_translations": [
+    {"text": "I planned to go out, but it was raining.", "note": "..."}
+  ],
+  "key_vocabulary": [
+    {"source": "định", "target": "intend/plan", "note": "..."}
+  ],
+  "common_mistakes": [
+    {"wrong": "I want to go out but rain.", "error_type": "Tense & Structure", "correction": "..."}
+  ],
+  "grading_rubric": "..."
+}

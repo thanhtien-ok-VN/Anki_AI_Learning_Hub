@@ -1,15 +1,29 @@
-Generate {count} unscramble exercises in {language}.
-Level: {level_instruction}
+Generate {count} sentence unscramble puzzles for a Vietnamese learner.
+Difficulty: {level_instruction}
 Topic: {topic}
 
-For each exercise:
-- correct_sentence: a grammatically correct sentence at the given level
-- hint: a short hint about the sentence meaning (in Vietnamese)
-- translation: the Vietnamese translation of the sentence
-- sentence_meaning: detailed explanation of the sentence meaning in Vietnamese
-- key_vocab: [{word: "...", meaning: "..."}] — key vocabulary from the sentence with Vietnamese meaning
+Requirements:
+- Generate {count} grammatically correct English sentences.
+- Each sentence must have 6-12 words with clear structure.
+- Provide a Vietnamese hint and full translation.
+- Highlight key vocabulary with Vietnamese meanings.
+- Explain why this sentence has the difficulty level it has.
+- Include a grammar note about the sentence structure.
 
-Output valid JSON:
-{{ "sentences": [
-  {{ "correct_sentence": "...", "hint": "...", "translation": "...", "sentence_meaning": "...", "key_vocab": [{{"word":"...","meaning":"..."}}] }}
-] }}
+Return ONLY raw JSON matching this structure:
+{
+  "sentences": [
+    {
+      "correct_sentence": "The quick brown fox jumps over the lazy dog.",
+      "meaning_vi": "Con cáo nâu nhanh nhẹn nhảy qua con chó lười biếng.",
+      "hint": "Câu này nói về một con vật nhanh nhẹn.",
+      "key_vocabulary": [
+        {"word": "quick", "meaning_vi": "nhanh nhẹn"},
+        {"word": "jumps", "meaning_vi": "nhảy"},
+        {"word": "lazy", "meaning_vi": "lười biếng"}
+      ],
+      "difficulty_reason": "Câu sử dụng 3 tính từ và 1 động từ bất quy tắc.",
+      "grammar_note": "Cấu trúc: Subject + Verb + Object. 'Over' là giới từ chỉ hướng."
+    }
+  ]
+}

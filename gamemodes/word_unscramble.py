@@ -1,8 +1,6 @@
 import random
 from typing import Any
-
 from .base import GameModeBase
-
 
 class WordUnscrambleMode(GameModeBase):
     name = "unscramble"
@@ -26,7 +24,10 @@ class WordUnscrambleMode(GameModeBase):
                         s.get("correct_sentence", "").split()
                     ),
                     "hint": s.get("hint", ""),
-                    "translation": s.get("translation", ""),
+                    "meaning_vi": s.get("meaning_vi", ""),
+                    "key_vocabulary": s.get("key_vocabulary", []),
+                    "difficulty_reason": s.get("difficulty_reason", ""),
+                    "grammar_note": s.get("grammar_note", ""),
                     "word_count": len(s.get("correct_sentence", "").split()),
                 }
                 for s in sentences

@@ -1,7 +1,5 @@
 from typing import Any
-
 from .base import GameModeBase
-
 
 class StoryGeneratorMode(GameModeBase):
     name = "story"
@@ -9,20 +7,54 @@ class StoryGeneratorMode(GameModeBase):
     icon = "📚"
 
     def render_ui_data(self, raw_result: dict) -> dict:
+        story_data = raw_result.get("story", {})
+        if isinstance(story_data, str):
+            story_data = {
+                "title": "",
+                "content": story_data,
+                "word_count": 0,
+                "highlighted_vocab": [],
+                "full_translation": ""
+            }
         return {
-            "story": raw_result.get("story", ""),
-            "target_word_usage": raw_result.get("target_word_usage", []),
-            "comprehension_questions": raw_result.get("comprehension_questions", []),
+            "story": {
+                "title": story_data.get("title", ""),
+                "content": story_data.get("content", ""),
+                "word_count": story_data.get("word_count", 0),
+                "highlighted_vocab": story_data.get("highlighted_vocab", []),
+                "full_translation": story_data.get("full_translation", ""),
+            },
+            "questions": [
+                {
+                    "id": q.get("id", i + 1),
+                    "type": q.get("type", "detail"),
+                    "question": q.get("question", ""),
+                    "options": q.get("options", []),
+                    "explanation": q.get("explanation", ""),
+                    "evidence_quote": q.get("evidence_quote", ""),
+                }
+                for i, q in enumerate(raw_result.get("questions", []))
+            ],
+            "discussion_prompt": raw_result.get("discussion_prompt", ""),
         }
 
     def check_answer(self, user_input: Any, correct: Any) -> dict:
         selected = int(user_input) if user_input is not None else -1
-        correct_idx = int(correct)
+        correct_idx = -1
+        options = correct if isinstance(correct, list) else []
+        for i, o in enumerate(options):
+            if isinstance(o, dict) and o.get("is_correct"):
+                correct_idx = i
+                break
+            elif isinstance(o, int):
+                correct_idx = int(correct)
+                break
+        is_correct = selected == correct_idx
         return {
-            "correct": selected == correct_idx,
+            "correct": is_correct,
             "selected": selected,
             "correct_index": correct_idx,
-            "points": 1 if selected == correct_idx else 0,
+            "points": 1 if is_correct else 0,
         }
 
     def check_all_answers(self, answers: list[dict]) -> dict:
@@ -30,7 +62,7 @@ class StoryGeneratorMode(GameModeBase):
         correct = 0
         details = []
         for ans in answers:
-            result = self.check_answer(ans.get("selected"), ans.get("correct_index"))
+            result = self.check_answer(ans.get("selected"), ans.get("options", ans.get("correct_index")))
             if result["correct"]:
                 correct += 1
             details.append(result)
@@ -42,5 +74,7 @@ class StoryGeneratorMode(GameModeBase):
         }
 
     def _format_anki_note(self, data: dict) -> tuple:
-        front = (data.get("story", "") or "Story")[:80] + "..."
-        return (front, data.get("story", ""))
+        story = data.get("story", {})
+        content = story.get("content", "") if isinstance(story, dict) else str(story)
+        front = (content or "Story")[:80] + "..."
+        return (front, content)

@@ -1,53 +1,29 @@
-用 {language} 生成 {count} 个填空句子。
-级别：{level_instruction}
+为越南学习者生成一个英语填空练习。
+难度：{level_instruction}
 主题：{topic}
 
-每个句子必须：
-- 恰好有一个空白处标记为 _____
-- 提供 4 个选项：1 个正确 + 3 个干扰项
-- 必须提供 4 个选项的详细分析（字段：options_details），包括每个选项的越南语翻译、是否正确、以及详细的原因解释
-- 提供完整句子的越南语翻译（字段：sentence_translation）
-- 提供简短的语法/搭配说明（字段：grammar_note）
+要求：
+- 创建一个有意义的句子，其中有一个缺失的单词（_____）。
+- 提供恰好 4 个选项：
+  + 1 个正确单词。
+  + 1 个反义词（trái nghĩa）。
+  + 1 个语法错误（sai từ loại/ngữ pháp）。
+  + 1 个词义接近但语境错误的词（nghĩa gần giống nhưng sai ngữ cảnh）。
+- 详细解释为什么正确答案合适，以及为什么干扰项是错误的。
+- 所有解释必须使用越南语（Tiếng Việt）。
 
-输出有效 JSON：
+仅返回符合此结构的原始 JSON：
 {
-  "questions": [
-    {
-      "sentence_with_blank": "...",
-      "full_sentence": "...",
-      "blank_word": "...",
-      "options": ["A","B","C","D"],
-      "correct_index": 0,
-      "options_translations": ["Nghĩa A", "Nghĩa B", "Nghĩa C", "Nghĩa D"],
-      "options_details": [
-        {
-          "text": "A",
-          "translation": "Nghĩa tiếng Việt A",
-          "is_correct": true,
-          "reason": "Lý do đúng chi tiết bằng tiếng Việt"
-        },
-        {
-          "text": "B",
-          "translation": "Nghĩa tiếng Việt B",
-          "is_correct": false,
-          "reason": "Lý do sai chi tiết bằng tiếng Việt"
-        },
-        {
-          "text": "C",
-          "translation": "Nghĩa tiếng Việt C",
-          "is_correct": false,
-          "reason": "Lý do sai"
-        },
-        {
-          "text": "D",
-          "translation": "Nghĩa tiếng Việt D",
-          "is_correct": false,
-          "reason": "Lý do sai"
-        }
-      ],
-      "sentence_translation": "Dịch toàn bộ câu sang tiếng Việt",
-      "explanation_short": "Lý do chọn đáp án đúng",
-      "grammar_note": "Ghi chú ngữ pháp/collocation"
-    }
-  ]
+  "sentence": "The project was ______ due to lack of funding.",
+  "target_word": "abandoned",
+  "meaning_vi": "bị bỏ rơi",
+  "full_translation": "Dự án đã bị bỏ rơi do thiếu kinh phí.",
+  "options": [
+    {"word": "abandoned", "is_correct": true, "type": "correct", "reason": "..."},
+    {"word": "continued", "is_correct": false, "type": "antonym", "reason": "..."},
+    {"word": "abandonedly", "is_correct": false, "type": "grammar_error", "reason": "..."},
+    {"word": "lost", "is_correct": false, "type": "semantic_close", "reason": "..."}
+  ],
+  "explanation": "...",
+  "grammar_note": "..."
 }

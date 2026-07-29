@@ -9,6 +9,23 @@ from aqt.utils import tooltip
 
 from core.logger import log
 
+import re
+
+def clean_json_response(raw_text: str) -> str:
+    """Strip markdown code blocks and extra text, return pure JSON."""
+    cleaned = re.sub(r"```(?:json)?", "", raw_text)
+    start = cleaned.find("{")
+    end = cleaned.rfind("}")
+    if start != -1 and end != -1:
+        return cleaned[start:end+1]
+    return cleaned.strip()
+
+def normalize_answer(text: str) -> str:
+    """Normalize answer for comparison (used by sentence_transform + translation)."""
+    if not text:
+        return ""
+    return re.sub(r"\s+", " ", text.lower().strip()).rstrip(".,!?;:")
+
 ADDON_PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SETTINGS_PATH = os.path.join(ADDON_PATH, "user_files", "settings.json")
 
@@ -358,6 +375,23 @@ class AIEngine:
             key_used = result.get("_key_used", "?")
             model_used = result.get("_model_used", "?")
             log.info(f"Generate OK: {key_used} / {model_used}")
+            
+            # Pydantic model validation
+            from core.schema_registry import get_pydantic_model
+            pydantic_cls = get_pydantic_model(gamemode)
+            if pydantic_cls:
+                try:
+                    err_code = result.get("error_code")
+                    validated = pydantic_cls.model_validate(result)
+                    result = validated.model_dump()
+                    result["_key_used"] = key_used
+                    result["_model_used"] = model_used
+                    if err_code:
+                        result["error_code"] = err_code
+                except Exception as e:
+                    log.warn(f"Pydantic validation failed for {gamemode}: {e}")
+                    # Keep raw result as fallback rather than failing
+                    pass
 
         if not result.get("error"):
             from core.content_validation import validate_game_result
@@ -519,23 +553,23 @@ class AIEngine:
                 **common,
                 "source_lang": "Vietnamese",
                 "target_lang": learn_lang,
-                "source_text": data.get("source_text", ""),
-                "expected_target": data.get("expected", ""),
+                "source_sentence": data.get("source_sentence", data.get("source_text", "")),
+                "reference_translation": data.get("reference_translation", data.get("expected", "")),
                 "user_target": data.get("user_answer", ""),
             }
         elif gamemode == "sentence_transform":
             prompt_data = {
                 **common,
-                "instruction": data.get("instruction", ""),
+                "prompt": data.get("instruction", ""),
                 "original": data.get("original", ""),
-                "expected": data.get("expected", ""),
+                "expected_answer": data.get("expected_answer", data.get("expected", "")),
                 "user_answer": data.get("user_answer", ""),
             }
         elif gamemode == "taboo":
             prompt_data = {
                 **common,
-                "secret_word": data.get("secret_word", ""),
-                "user_guess": data.get("user_answer", ""),
+                "target_word": data.get("target_word", data.get("secret_word", "")),
+                "user_input": data.get("user_answer", ""),
             }
         else:
             prompt_data = {

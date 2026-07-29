@@ -1,55 +1,29 @@
-You are an expert language teacher and lexicographer. Your task is to create high-quality "Fill in the Blank" exercises with detailed linguistic analysis for {level_instruction} level students in {language}.
+Generate a fill-in-the-blank English exercise for a Vietnamese learner.
+Difficulty: {level_instruction}
+Topic: {topic}
 
-Instructions:
-1. Generate {count} natural, contextual sentences using target vocabulary. Replace the target word with "_____".
-2. Generate 3 plausible distractors (wrong answers) that share the same part of speech or similar spelling/meaning to confuse the learner.
-3. CRITICAL: For each option (correct answer and distractors), provide detailed analysis in Vietnamese:
-   - Provide the exact Vietnamese translation for EACH option.
-   - Explain WHY the correct answer fits in this specific context/collocation.
-   - Explain WHY each distractor is wrong in this specific context.
-4. Provide a full Vietnamese translation of the complete sentence (with the correct word filled in).
-5. Provide a concise grammar or collocation note in Vietnamese.
+Requirements:
+- Create ONE meaningful sentence with ONE missing word (_____).
+- Provide exactly 4 options:
+  + 1 correct word.
+  + 1 antonym (trái nghĩa).
+  + 1 grammar error (sai từ loại/ngữ pháp).
+  + 1 semantic close (nghĩa gần giống nhưng sai ngữ cảnh).
+- Explain thoroughly why the correct answer fits and why distractors are wrong.
+- All explanations MUST be in Vietnamese.
 
-Output Format:
-Return ONLY valid JSON adhering strictly to the schema:
+Return ONLY raw JSON matching this structure:
 {
-  "questions": [
-    {
-      "sentence_with_blank": "The sentence with _____.",
-      "full_sentence": "The complete sentence.",
-      "blank_word": "correct_word",
-      "options": ["correct_word", "distractor_1", "distractor_2", "distractor_3"],
-      "correct_index": 0,
-      "options_translations": ["Nghĩa 1", "Nghĩa 2", "Nghĩa 3", "Nghĩa 4"],
-      "options_details": [
-        {
-          "text": "correct_word",
-          "translation": "Nghĩa tiếng Việt",
-          "is_correct": true,
-          "reason": "Giải thích chi tiết tại sao từ này đúng trong ngữ cảnh này."
-        },
-        {
-          "text": "distractor_1",
-          "translation": "Nghĩa tiếng Việt",
-          "is_correct": false,
-          "reason": "Giải thích tại sao từ này sai."
-        },
-        {
-          "text": "distractor_2",
-          "translation": "Nghĩa tiếng Việt",
-          "is_correct": false,
-          "reason": "Lý do sai."
-        },
-        {
-          "text": "distractor_3",
-          "translation": "Nghĩa tiếng Việt",
-          "is_correct": false,
-          "reason": "Lý do sai."
-        }
-      ],
-      "sentence_translation": "Dịch toàn bộ câu hoàn chỉnh sang tiếng Việt.",
-      "explanation_short": "Tóm tắt lý do chọn đáp án đúng bằng tiếng Việt.",
-      "grammar_note": "Ghi chú ngữ pháp ngắn gọn (collocation, phrasal verb)."
-    }
-  ]
+  "sentence": "The project was ______ due to lack of funding.",
+  "target_word": "abandoned",
+  "meaning_vi": "bị bỏ rơi",
+  "full_translation": "Dự án đã bị bỏ rơi do thiếu kinh phí.",
+  "options": [
+    {"word": "abandoned", "is_correct": true, "type": "correct", "reason": "..."},
+    {"word": "continued", "is_correct": false, "type": "antonym", "reason": "..."},
+    {"word": "abandonedly", "is_correct": false, "type": "grammar_error", "reason": "..."},
+    {"word": "lost", "is_correct": false, "type": "semantic_close", "reason": "..."}
+  ],
+  "explanation": "...",
+  "grammar_note": "..."
 }

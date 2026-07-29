@@ -1,7 +1,5 @@
 from typing import Any
-
 from .base import GameModeBase
-
 
 class TranslationMode(GameModeBase):
     name = "translation"
@@ -9,27 +7,24 @@ class TranslationMode(GameModeBase):
     icon = "🌐"
 
     def render_ui_data(self, raw_result: dict) -> dict:
-        sentences = raw_result.get("sentences", [])
         return {
-            "sentences": [
-                {
-                    "source_text": s.get("source_text", ""),
-                    "target_text": s.get("target_text", ""),
-                    "vocabulary": s.get("vocabulary_highlight", []),
-                    "grammar_notes": s.get("grammar_notes", ""),
-                }
-                for s in sentences
-            ]
+            "source_sentence": raw_result.get("source_sentence", ""),
+            "reference_translation": raw_result.get("reference_translation", ""),
+            "alternative_translations": raw_result.get("alternative_translations", []),
+            "key_vocabulary": raw_result.get("key_vocabulary", []),
+            "common_mistakes": raw_result.get("common_mistakes", []),
+            "grading_rubric": raw_result.get("grading_rubric", ""),
         }
 
     def check_answer(self, user_input: Any, correct: Any) -> dict:
-        user_text = str(user_input).strip() if user_input else ""
-        target_text = str(correct).strip() if correct else ""
+        from core.engine import normalize_answer
+        user_norm = normalize_answer(str(user_input or ""))
+        target_norm = normalize_answer(str(correct or ""))
         return {
-            "correct": user_text.lower() == target_text.lower(),
-            "user_answer": user_text,
-            "expected": target_text,
-            "points": 1 if user_text.lower() == target_text.lower() else 0,
+            "correct": user_norm == target_norm,
+            "user_answer": str(user_input or ""),
+            "expected": str(correct or ""),
+            "points": 1 if user_norm == target_norm else 0,
         }
 
     def grade_with_ai(
@@ -63,4 +58,4 @@ class TranslationMode(GameModeBase):
         return {"correct": False, "score": 0, "explanation": "AI grading unavailable"}
 
     def _format_anki_note(self, data: dict) -> tuple:
-        return (data.get("source_text", ""), data.get("target_text", ""))
+        return (data.get("source_sentence", ""), data.get("reference_translation", ""))

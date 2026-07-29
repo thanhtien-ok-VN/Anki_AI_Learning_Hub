@@ -1,27 +1,25 @@
-Generate 1 sentence transformation exercise in {language}.
-Focus: {focus} (voice, conditional, reported speech, or comparative structures)
-Level: {level_instruction}
+Generate a sentence transformation exercise.
+Grammar focus: {focus}
+Difficulty: {level_instruction}
 
-For the exercise provide:
-- original_sentence: a grammatically correct sentence
-- instruction: clear transformation instruction (e.g., "Rewrite in passive voice")
-- hint_word: a word that must be used in the answer
-- expected_answer: the correct transformed sentence
-- grammar_rule: brief explanation of the rule being tested
-- detailed_explanation: an object with:
-  - "rule_description": "detailed explanation of the grammar rule in Vietnamese"
-  - "step_by_step": ["step 1", "step 2", ...] — how to transform
-  - "common_errors": ["error 1", "error 2", ...]
-  - "comparison": "comparison with original structure"
+Requirements:
+- Provide an original sentence and a prompt/hint.
+- `normalized_answer`: MUST be fully lowercase with NO punctuation (except apostrophes).
+- List common errors students make with this structure.
+- List forbidden words that must NOT appear in the answer.
 
-Output valid JSON matching this schema:
-{{ "questions": [{{
-  "original_sentence": "...", "instruction": "...", "hint_word": "...",
-  "expected_answer": "...", "grammar_rule": "...", "focus": "voice|conditional|reported|comparative",
-  "detailed_explanation": {{
-    "rule_description": "...",
-    "step_by_step": ["...","..."],
-    "common_errors": ["...","..."],
-    "comparison": "..."
-  }}
-}}] }}
+Return ONLY raw JSON matching this structure:
+{
+  "original": "She is too young to drive.",
+  "prompt": "Viết lại câu dùng 'so... that'",
+  "expected_answer": "She is so young that she cannot drive.",
+  "normalized_answer": "she is so young that she cannot drive",
+  "acceptable_variations": [
+    {"text": "She's so young that she can't drive.", "note": "Contraction OK"}
+  ],
+  "forbidden_words": ["too"],
+  "grammar_rule": "so + adj + that + clause...",
+  "common_errors": [
+    {"error": "She is so young that she can drive.", "feedback": "Missing negation..."}
+  ]
+}

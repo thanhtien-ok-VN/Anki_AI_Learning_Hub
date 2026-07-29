@@ -1,7 +1,6 @@
+import random
 from typing import Any
-
 from .base import GameModeBase
-
 
 class ClozeMode(GameModeBase):
     name = "cloze"
@@ -9,21 +8,29 @@ class ClozeMode(GameModeBase):
     icon = "📖"
 
     def render_ui_data(self, raw_result: dict) -> dict:
-        blanks = raw_result.get("blanks", [])
+        blanks = []
+        for i, b in enumerate(raw_result.get("blanks", [])):
+            options = [b.get("answer", "")] + b.get("distractors", [])[:3]
+            # Shuffle options, track correct index
+            indices = list(range(len(options)))
+            random.shuffle(indices)
+            shuffled = [options[j] for j in indices]
+            correct_idx = indices.index(0)
+            blanks.append({
+                "id": b.get("id", f"BLANK_{i+1}"),
+                "answer": b.get("answer", ""),
+                "meaning_vi": b.get("meaning_vi", ""),
+                "hint": b.get("hint", ""),
+                "options": shuffled,
+                "correct_index": correct_idx,
+                "explanation": b.get("explanation", ""),
+            })
         return {
-            "paragraph_with_blanks": raw_result.get("paragraph_with_blanks", ""),
-            "paragraph_full": raw_result.get("paragraph_full", ""),
-            "blanks": [
-                {
-                    "blank_id": b.get("blank_id", i),
-                    "correct_word": b.get("correct_word", ""),
-                    "options": b.get("options", []),
-                    "correct_index": b.get("correct_index", 0),
-                    "explanation_short": b.get("explanation_short", ""),
-                    "explanation": b.get("explanation", ""),
-                }
-                for i, b in enumerate(blanks)
-            ],
+            "paragraph": raw_result.get("paragraph", ""),
+            "blanks": blanks,
+            "full_solution_text": raw_result.get("full_solution_text", ""),
+            "story_translation": raw_result.get("story_translation", ""),
+            "context_summary": raw_result.get("context_summary", ""),
         }
 
     def check_answer(self, user_input: Any, correct: Any) -> dict:
@@ -37,8 +44,5 @@ class ClozeMode(GameModeBase):
         }
 
     def _format_anki_note(self, data: dict) -> tuple:
-        paragraph = data.get("paragraph_full", "") or data.get(
-            "paragraph_with_blanks", ""
-        )
-        front = (data.get("paragraph_with_blanks", "") or "Cloze")[:80] + "..."
-        return (front, paragraph)
+        front = (data.get("paragraph", "") or "Cloze")[:80] + "..."
+        return (front, data.get("full_solution_text", ""))

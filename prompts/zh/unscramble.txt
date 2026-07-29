@@ -1,15 +1,29 @@
-用 {language} 生成 {count} 个组词成句练习。
-级别：{level_instruction}
+为越南学习者生成 {count} 个句子组装/连词成句谜题。
+难度：{level_instruction}
 主题：{topic}
 
-对于每个练习：
-- correct_sentence：符合该水平的语法正确的句子
-- hint：关于句子含义的简短提示（用越南语）
-- translation：句子的越南语翻译
-- sentence_meaning：句子含义的详细越南语说明
-- key_vocab：[{word: "...", meaning: "..."}] — 句子中的关键词汇及其越南语含义
+要求：
+- 生成 {count} 个语法正确的英语句子。
+- 每个句子必须包含 6-12 个单词，且结构清晰。
+- 提供越南语提示和完整翻译。
+- 用越南语标出重点词汇及其含义。
+- 解释该句子达到此难度级别的合理原因。
+- 包含关于句子结构的语法注释。
 
-输出有效 JSON：
-{{ "sentences": [
-  {{ "correct_sentence": "...", "hint": "...", "translation": "...", "sentence_meaning": "...", "key_vocab": [{{"word":"...","meaning":"..."}}] }}
-] }}
+仅返回符合此结构的原始 JSON：
+{
+  "sentences": [
+    {
+      "correct_sentence": "The quick brown fox jumps over the lazy dog.",
+      "meaning_vi": "Con cáo nâu nhanh nhẹn nhảy qua con chó lười biếng.",
+      "hint": "Câu này nói về một con vật nhanh nhẹn.",
+      "key_vocabulary": [
+        {"word": "quick", "meaning_vi": "nhanh nhẹn"},
+        {"word": "jumps", "meaning_vi": "nhảy"},
+        {"word": "lazy", "meaning_vi": "lười biếng"}
+      ],
+      "difficulty_reason": "Câu sử dụng 3 tính từ và 1 động từ bất quy tắc.",
+      "grammar_note": "Cấu trúc: Subject + Verb + Object. 'Over' là giới từ chỉ hướng."
+    }
+  ]
+}

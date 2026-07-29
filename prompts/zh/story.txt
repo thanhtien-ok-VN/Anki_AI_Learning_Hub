@@ -1,17 +1,41 @@
-用 {language} 写一个短篇故事（{word_count} 词），自然地融入以下所有目标词汇：
-{target_words}
-
-级别：{level_instruction}
+生成一篇简短的阅读理解故事和问题。
+难度：{level_instruction}
+主题：{topic}
+长度：~{word_count}个单词。
+目标词汇：{target_words}
 
 要求：
-- 每个目标词必须至少出现一次
-- 词汇必须在正确的语境中使用
-- 故事必须连贯且引人入胜
-- 记录每个目标词出现在哪个句子中
+- 故事必须包含标题。
+- 在语境中突出显示 1-3 个目标词汇。
+- 生成 {question_count} 个问题。问题类型："detail", "inference", "vocabulary"。
+- 每个正确答案必须包含直接提取自故事中的原文引用（"evidence_quote"）。
+- 提供故事的完整越南语翻译。
 
-然后生成 {question_count} 个关于故事的理解问题。
-每个问题必须有恰好 4 个选项（1 个正确，3 个干扰项）。每个问题必须提供恰好 4 个选项。
-为每个正确答案提供解释。
-
-输出符合此架构的有效 JSON：
-{{ "story": "...", "target_word_usage": [{{ "word": "...", "sentence_used_in": "..." }}], "comprehension_questions": [{{ "question": "...", "options": ["A","B","C","D"], "correct_index": 0, "explanation": "..." }}] }}
+仅返回符合此结构的原始 JSON：
+{
+  "story": {
+    "title": "The Last Train",
+    "content": "...",
+    "word_count": 150,
+    "highlighted_vocab": [
+      {"word": "desperate", "meaning_vi": "tuyệt vọng", "context_meaning": "..."}
+    ],
+    "full_translation": "..."
+  },
+  "questions": [
+    {
+      "id": 1,
+      "type": "detail",
+      "question": "Why did Sarah feel desperate?",
+      "options": [
+        {"text": "She missed the last train.", "is_correct": true},
+        {"text": "She lost her wallet.", "is_correct": false},
+        {"text": "She was late for work.", "is_correct": false},
+        {"text": "She forgot her phone.", "is_correct": false}
+      ],
+      "explanation": "...",
+      "evidence_quote": "Sarah stood alone on the empty platform..."
+    }
+  ],
+  "discussion_prompt": "..."
+}
