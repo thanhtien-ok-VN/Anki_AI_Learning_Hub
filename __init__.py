@@ -201,17 +201,33 @@ def open_settings():
                 status_label.setText("")
             showWarning("Enter an API key first.")
             return
-        from core.api_client import GeminiClient
-        client = GeminiClient([key], "auto")
-        res = client.test_key(key)
-        if res.get("ok"):
-            status_label.setText("OK")
-            status_label.setStyleSheet("color: green; font-weight: bold;")
-            log.info(f"Key test OK: {GeminiClient.detect_key_type(key)} -> {res.get('model')}")
-        else:
-            status_label.setText("Fail")
-            status_label.setStyleSheet("color: red; font-weight: bold;")
-            log.warn(f"Key test FAIL: {res.get('error')}")
+        
+        if status_label:
+            status_label.setText("...")
+            status_label.setStyleSheet("color: gray; font-weight: bold;")
+
+        def run_test():
+            from core.api_client import GeminiClient
+            client = GeminiClient([key], "auto")
+            return client.test_key(key)
+
+        def on_done(future):
+            try:
+                res = future.result()
+                if res.get("ok"):
+                    status_label.setText("OK")
+                    status_label.setStyleSheet("color: green; font-weight: bold;")
+                    log.info(f"Key test OK: {res.get('model')}")
+                else:
+                    status_label.setText("Fail")
+                    status_label.setStyleSheet("color: red; font-weight: bold;")
+                    log.warn(f"Key test FAIL: {res.get('error')}")
+            except Exception as e:
+                status_label.setText("Error")
+                status_label.setStyleSheet("color: red; font-weight: bold;")
+                log.error(f"Key test exception: {e}")
+
+        mw.taskman.run_in_background(run_test, on_done)
 
     # ===== Accept =====
     def on_accept():
