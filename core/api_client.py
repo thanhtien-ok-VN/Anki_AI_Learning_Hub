@@ -5,6 +5,7 @@ from typing import Optional
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
 
+from .constants import KEY_CHAIN_MAP, MODEL_CHAINS, DEFAULT_CHAIN, RETRY_CONFIG
 from .logger import log
 
 API_BASE = "https://generativelanguage.googleapis.com/v1beta/models"
@@ -29,14 +30,6 @@ class GeminiClient:
     
     _last_request_time = 0.0
     _min_interval = 1.5
-    _rate_limit_base = 2.0
-
-    MODEL_MAP = {
-        "AQ.": "gemini-3.5-flash",
-        "AIzaSy": "gemini-1.5-flash",
-    }
-
-    FALLBACK_MODELS = ["gemini-3.5-flash-lite", "gemini-1.5-flash"]
 
     def __init__(self, api_keys: list[str], model_name: str = "auto"):
         self.keys = [k.strip() for k in api_keys if k.strip()]
@@ -60,13 +53,17 @@ class GeminiClient:
         return "unknown"
 
     @staticmethod
-    def resolve_model(preferred: str, api_key: str) -> str:
-        if preferred and preferred != "auto":
-            return preferred
-        for prefix, model in GeminiClient.MODEL_MAP.items():
+    def resolve_model_chain(api_key: str) -> list:
+        for prefix, chain_name in KEY_CHAIN_MAP.items():
             if api_key.startswith(prefix):
-                return model
-        return "gemini-1.5-flash"
+                return MODEL_CHAINS[chain_name]
+        return MODEL_CHAINS[DEFAULT_CHAIN]
+
+    def _models_for_call(self, api_key: str) -> list:
+        preferred = self.model_name
+        if preferred and preferred != "auto":
+            return [preferred]
+        return self.resolve_model_chain(api_key)
 
     def _err(self, code: str, msg: str, extra: dict = None) -> dict:
         result = {"error": True, "error_code": code, "message": msg}
@@ -105,12 +102,13 @@ class GeminiClient:
         cls._last_request_time = time.time()
 
     @staticmethod
-    def _retry_delay(attempt: int, base: float = 2.0) -> float:
-        return base * (2 ** attempt) + random.uniform(0, 0.5)
+    def _retry_delay(attempt: int, base: float = None) -> float:
+        b = base if base is not None else RETRY_CONFIG["rate_limit_base"]
+        return b * (2 ** attempt) + random.uniform(0, RETRY_CONFIG["jitter_max"])
 
     @staticmethod
     def _should_retry(code: int) -> bool:
-        return code in (429, 503)
+        return code in RETRY_CONFIG["retry_codes"]
 
     def _call_api(self, payload: dict, key: str, model: str) -> dict:
         self._throttle()
@@ -203,11 +201,12 @@ class GeminiClient:
             if position > 0:
                 time.sleep(0.25)
 
-            models_for_key = [self.resolve_model(self.model_name, key)]
-            if self.model_name == "auto" or self.model_name == self.resolve_model(self.model_name, key):
-                models_for_key.extend(self.FALLBACK_MODELS)
+            models_for_key = self._models_for_call(key)
 
+            skip_key = False
             for model in models_for_key:
+                if skip_key:
+                    break
                 for attempt in range(max_retries):
                     try:
                         log.debug(f"Trying {key_label} attempt {attempt+1}/{max_retries}", {"model": model})
@@ -219,7 +218,7 @@ class GeminiClient:
                         return result
                     except RateLimitError:
                         if attempt < max_retries - 1:
-                            delay = self._retry_delay(attempt, self._rate_limit_base)
+                            delay = self._retry_delay(attempt)
                             log.warn(f"{key_label} {model} rate limited, retry in {delay:.1f}s")
                             time.sleep(delay)
                             continue
@@ -255,8 +254,13 @@ class GeminiClient:
                         break
                     except ApiError as e:
                         last_error = f"{key_label}: {e}"
-                        delay = 3600 if "invalid" in str(e).lower() or "authoriz" in str(e).lower() else 20
+                        is_auth_error = "invalid" in str(e).lower() or "authoriz" in str(e).lower()
+                        delay = 3600 if is_auth_error else 20
                         self._unhealthy_until[idx] = time.monotonic() + delay
+                        if is_auth_error:
+                            log.warn(f"Auth error on {key_label}. Skipping this key entirely.")
+                            skip_key = True
+                            break
                         if attempt < max_retries - 1:
                             log.warn(f"{last_error}, retry in {base_delay}s")
                             time.sleep(base_delay)
@@ -297,7 +301,8 @@ class GeminiClient:
 
     def test_key(self, key: str) -> dict:
         self._throttle()
-        model = self.resolve_model("auto", key)
+        models = self._models_for_call(key)
+        model = models[0] if models else "gemini-1.5-flash"
         key_type = self.detect_key_type(key)
         log.info(f"test_key: type={key_type} model={model}")
         payload = {

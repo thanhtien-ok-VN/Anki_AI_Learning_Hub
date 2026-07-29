@@ -134,7 +134,7 @@ def open_settings():
     i18n_widgets.append((model_lbl, "settings.model"))
 
     model_cb = QComboBox()
-    model_cb.addItems(["auto", "gemini-3.6-flash", "gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-1.5-flash", "gemini-1.5-pro"])
+    model_cb.addItems(["auto", "gemini-3.6-flash", "gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-3-flash-preview", "gemini-1.5-pro"])
     idx = model_cb.findText(s.get("model", "auto"))
     if idx >= 0:
         model_cb.setCurrentIndex(idx)

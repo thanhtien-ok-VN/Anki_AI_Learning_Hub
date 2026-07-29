@@ -83,27 +83,6 @@ if HAS_PYDANTIC:
     class UnscrambleSchema(BaseModel):
         questions: List[UnscrambleSentence]
 
-    # ===================== 5. WORD MATCHING =====================
-    class MatchItem(BaseModel):
-        id: str
-        content: str
-        type: str
-        pair_id: str
-
-    class MatchConfig(BaseModel):
-        total_pairs: int
-        time_limit_sec: int
-
-    class MatchMetadata(BaseModel):
-        topic: str
-        level: str
-
-    class WordMatchingSchema(BaseModel):
-        game_id: str
-        items: List[MatchItem]
-        config: MatchConfig
-        metadata: MatchMetadata
-
     # ===================== 6. STORY =====================
     class HighlightedVocab(BaseModel):
         word: str
@@ -174,7 +153,6 @@ if HAS_PYDANTIC:
         "cloze": ClozeSchema,
         "translation": TranslationSchema,
         "unscramble": UnscrambleSchema,
-        "matching": WordMatchingSchema,
         "story": StorySchema,
         "sentence_transform": SentenceTransformSchema,
         "taboo": TabooSchema,

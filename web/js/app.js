@@ -169,28 +169,39 @@ const App = (() => {
 
   const toastQueue = [];
   let toastActive = false;
-  const toast = m => {
-    toastQueue.push(m);
+  const toast = (m, opts = {}) => {
+    toastQueue.push({ message: typeof m === 'string' ? m : m.message, ...(typeof m === 'object' ? m : opts) });
     processToastQueue();
   };
   const processToastQueue = () => {
     if (toastActive || toastQueue.length === 0) return;
     toastActive = true;
-    const m = toastQueue.shift();
+    const item = toastQueue.shift();
     const e = document.createElement('div');
     e.className = 'toast';
-    e.textContent = m;
+    if (item.retry) e.classList.add('toast-error');
+    if (item.retry) {
+      const msgSpan = document.createElement('span');
+      msgSpan.textContent = item.message;
+      e.append(msgSpan);
+      const btn = document.createElement('button');
+      btn.className = 'toast-retry-btn';
+      btn.textContent = item.retryLabel || t('app.retry', 'Thử lại');
+      btn.onclick = () => { clearTimeout(e._timer); e.remove(); toastActive = false; processToastQueue(); item.retry(); };
+      e.append(btn);
+    } else {
+      e.textContent = item.message;
+    }
     document.body.append(e);
-    // Trigger animation
     setTimeout(() => { e.classList.add('show'); }, 10);
-    setSafeTimeout(() => {
+    e._timer = setSafeTimeout(() => {
       e.classList.remove('show');
       setSafeTimeout(() => {
         e.remove();
         toastActive = false;
         processToastQueue();
       }, 300);
-    }, 3000);
+    }, item.retry ? 8000 : 3000);
   };
 
   const getWeakWords = () => {
@@ -854,7 +865,7 @@ const App = (() => {
       }
     } catch (e) {
       if (e.name === 'AbortError' || e.error_code === 'E_ABORTED') return;
-      toast(e.message);
+      toast({ message: e.message, retry: bindSource, retryLabel: t('app.retry_gen', 'Thử lại') });
     }
 
     const deckSearch = document.querySelector('#deck-search');
@@ -926,7 +937,7 @@ const App = (() => {
       }
     } catch (e) {
       if (e.name === 'AbortError' || e.error_code === 'E_ABORTED') return;
-      toast(e.message);
+      toast({ message: e.message, retry: loadModels, retryLabel: t('app.retry_gen', 'Thử lại') });
     }
   }
 
@@ -952,7 +963,7 @@ const App = (() => {
       }
     } catch (e) {
       if (e.name === 'AbortError' || e.error_code === 'E_ABORTED') return;
-      toast(e.message);
+      toast({ message: e.message, retry: loadFields, retryLabel: t('app.retry_gen', 'Thử lại') });
     }
   }
 
@@ -986,7 +997,7 @@ const App = (() => {
       return !!state.pairs.length;
     } catch (e) {
       if (e.name === 'AbortError' || e.error_code === 'E_ABORTED') return false;
-      toast(e.message);
+      toast({ message: e.message, retry: sample, retryLabel: t('app.retry_gen', 'Thử lại') });
       return false;
     }
   }
@@ -1068,7 +1079,7 @@ const App = (() => {
       clearPendingGen();
     } catch(e) {
       if (e.name === 'AbortError' || e.error_code === 'E_ABORTED') return;
-      toast(e.message);
+      toast({ message: e.message, retry: () => generate(id, optsOverride), retryLabel: t('app.retry_gen', 'Thử lại') });
     } finally {
       if (!signal.aborted) setBusy(false);
     }
@@ -1931,7 +1942,7 @@ const App = (() => {
     state.answers = {};
     state.isGraded = false;
     state.index = 0;
-    delete state.currentHistoryItem;
+    state.currentHistoryItem = null;
     state.hintedQuestions = new Set();
     if (gameId && state.activeSessions && state.activeSessions[gameId]) {
       delete state.activeSessions[gameId];
@@ -2235,7 +2246,7 @@ const App = (() => {
 
   /* ---- TRANSLATION: 1 sentence, detailed AI grade ---- */
   function renderTranslation(x){
-    if (!x) { const d=document.querySelector('#play'); if(d)d.innerHTML='<div class="empty-state"><p>Không có dữ liệu bài tập.</p></div>'; return; }
+    if (!x || (!x.source_sentence && (!x.sentences || !x.sentences.length))) { const d=document.querySelector('#play'); if(d)d.innerHTML='<div class="empty-state"><p>Không có dữ liệu bài tập.</p></div>'; return; }
     const isNewSchema = !!x.source_sentence;
     const sourceText = isNewSchema ? x.source_sentence : (x.sentences && x.sentences[0] ? x.sentences[0].source_text : '');
     const targetText = isNewSchema ? x.reference_translation : (x.sentences && x.sentences[0] ? x.sentences[0].target_text : '');
@@ -2297,7 +2308,7 @@ const App = (() => {
         if(retryBtn)retryBtn.onclick=()=>{state.answers={};play(state.route)}
       }catch(e){
         if(e.name==='AbortError'||e.error_code==='E_ABORTED')return;
-        toast(e.message)
+        toast({ message: e.message, retry: () => document.querySelector('#grade')?.click(), retryLabel: t('app.retry_gen', 'Thử lại') });
       }finally{
         if(!signal.aborted)setBusy(false)
       }
@@ -2427,7 +2438,7 @@ const App = (() => {
         if(retryBtn)retryBtn.onclick=()=>{state.answers={};play(state.route)}
       }catch(e){
         if(e.name==='AbortError'||e.error_code==='E_ABORTED')return;
-        toast(e.message)
+        toast({ message: e.message, retry: () => document.querySelector('#grade')?.click(), retryLabel: t('app.retry_gen', 'Thử lại') });
       }finally{
         if(!signal.aborted)setBusy(false)
       }
@@ -2515,7 +2526,7 @@ const App = (() => {
         if(retryBtn)retryBtn.onclick=()=>{state.answers={};play(state.route)}
       }catch(e){
         if(e.name==='AbortError'||e.error_code==='E_ABORTED')return;
-        toast(e.message)
+        toast({ message: e.message, retry: () => document.querySelector('#grade')?.click(), retryLabel: t('app.retry_gen', 'Thử lại') });
       }finally{
         if(!signal.aborted)setBusy(false)
       }
