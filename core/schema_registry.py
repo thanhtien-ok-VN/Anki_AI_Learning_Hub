@@ -15,7 +15,7 @@ if HAS_PYDANTIC:
         type: str          # "correct"|"antonym"|"grammar_error"|"semantic_close"
         reason: Optional[str] = None
 
-    class FillBlankSchema(BaseModel):
+    class FillBlankQuestion(BaseModel):
         sentence: str
         target_word: str
         meaning_vi: str
@@ -23,6 +23,9 @@ if HAS_PYDANTIC:
         options: List[FillBlankOption]  # exactly 4
         explanation: str
         grammar_note: Optional[str] = None
+
+    class FillBlankSchema(BaseModel):
+        questions: List[FillBlankQuestion]
 
     # ===================== 2. CLOZE =====================
     class ClozeBlank(BaseModel):
@@ -140,7 +143,7 @@ if HAS_PYDANTIC:
         error: str
         feedback: str
 
-    class SentenceTransformSchema(BaseModel):
+    class SentenceTransformQuestion(BaseModel):
         original: str
         prompt: str
         expected_answer: str
@@ -150,8 +153,11 @@ if HAS_PYDANTIC:
         grammar_rule: str
         common_errors: List[CommonError]
 
+    class SentenceTransformSchema(BaseModel):
+        questions: List[SentenceTransformQuestion]
+
     # ===================== 8. TABOO =====================
-    class TabooSchema(BaseModel):
+    class TabooRound(BaseModel):
         target_word: str
         meaning_vi: str
         taboo_words: List[str]
@@ -159,6 +165,9 @@ if HAS_PYDANTIC:
         difficulty_level: str
         sample_acceptable_phrases: List[str]
         sample_forbidden_phrases: List[str]
+
+    class TabooSchema(BaseModel):
+        rounds: List[TabooRound]
 
     REGISTRY = {
         "fill_blank": FillBlankSchema,
@@ -188,27 +197,36 @@ RAW_DICT_SCHEMAS = {
     "fill_blank": {
         "type": "OBJECT",
         "properties": {
-            "sentence": {"type": "STRING"},
-            "target_word": {"type": "STRING"},
-            "meaning_vi": {"type": "STRING"},
-            "full_translation": {"type": "STRING"},
-            "options": {
+            "questions": {
                 "type": "ARRAY",
                 "items": {
                     "type": "OBJECT",
                     "properties": {
-                        "word": {"type": "STRING"},
-                        "is_correct": {"type": "BOOLEAN"},
-                        "type": {"type": "STRING"},
-                        "reason": {"type": "STRING"}
+                        "sentence": {"type": "STRING"},
+                        "target_word": {"type": "STRING"},
+                        "meaning_vi": {"type": "STRING"},
+                        "full_translation": {"type": "STRING"},
+                        "options": {
+                            "type": "ARRAY",
+                            "items": {
+                                "type": "OBJECT",
+                                "properties": {
+                                    "word": {"type": "STRING"},
+                                    "is_correct": {"type": "BOOLEAN"},
+                                    "type": {"type": "STRING"},
+                                    "reason": {"type": "STRING"}
+                                },
+                                "required": ["word", "is_correct", "type"]
+                            }
+                        },
+                        "explanation": {"type": "STRING"},
+                        "grammar_note": {"type": "STRING"}
                     },
-                    "required": ["word", "is_correct", "type"]
+                    "required": ["sentence", "target_word", "meaning_vi", "full_translation", "options", "explanation"]
                 }
-            },
-            "explanation": {"type": "STRING"},
-            "grammar_note": {"type": "STRING"}
+            }
         },
-        "required": ["sentence", "target_word", "meaning_vi", "full_translation", "options", "explanation"]
+        "required": ["questions"]
     },
     "cloze": {
         "type": "OBJECT",
@@ -368,49 +386,67 @@ RAW_DICT_SCHEMAS = {
     "sentence_transform": {
         "type": "OBJECT",
         "properties": {
-            "original": {"type": "STRING"},
-            "prompt": {"type": "STRING"},
-            "expected_answer": {"type": "STRING"},
-            "normalized_answer": {"type": "STRING"},
-            "acceptable_variations": {
+            "questions": {
                 "type": "ARRAY",
                 "items": {
                     "type": "OBJECT",
                     "properties": {
-                        "text": {"type": "STRING"},
-                        "note": {"type": "STRING"}
+                        "original": {"type": "STRING"},
+                        "prompt": {"type": "STRING"},
+                        "expected_answer": {"type": "STRING"},
+                        "normalized_answer": {"type": "STRING"},
+                        "acceptable_variations": {
+                            "type": "ARRAY",
+                            "items": {
+                                "type": "OBJECT",
+                                "properties": {
+                                    "text": {"type": "STRING"},
+                                    "note": {"type": "STRING"}
+                                },
+                                "required": ["text", "note"]
+                            }
+                        },
+                        "forbidden_words": {"type": "ARRAY", "items": {"type": "STRING"}},
+                        "grammar_rule": {"type": "STRING"},
+                        "common_errors": {
+                            "type": "ARRAY",
+                            "items": {
+                                "type": "OBJECT",
+                                "properties": {
+                                    "error": {"type": "STRING"},
+                                    "feedback": {"type": "STRING"}
+                                },
+                                "required": ["error", "feedback"]
+                            }
+                        }
                     },
-                    "required": ["text", "note"]
-                }
-            },
-            "forbidden_words": {"type": "ARRAY", "items": {"type": "STRING"}},
-            "grammar_rule": {"type": "STRING"},
-            "common_errors": {
-                "type": "ARRAY",
-                "items": {
-                    "type": "OBJECT",
-                    "properties": {
-                        "error": {"type": "STRING"},
-                        "feedback": {"type": "STRING"}
-                    },
-                    "required": ["error", "feedback"]
+                    "required": ["original", "prompt", "expected_answer", "normalized_answer", "acceptable_variations", "forbidden_words", "grammar_rule", "common_errors"]
                 }
             }
         },
-        "required": ["original", "prompt", "expected_answer", "normalized_answer", "acceptable_variations", "forbidden_words", "grammar_rule", "common_errors"]
+        "required": ["questions"]
     },
     "taboo": {
         "type": "OBJECT",
         "properties": {
-            "target_word": {"type": "STRING"},
-            "meaning_vi": {"type": "STRING"},
-            "taboo_words": {"type": "ARRAY", "items": {"type": "STRING"}},
-            "clue": {"type": "STRING"},
-            "difficulty_level": {"type": "STRING"},
-            "sample_acceptable_phrases": {"type": "ARRAY", "items": {"type": "STRING"}},
-            "sample_forbidden_phrases": {"type": "ARRAY", "items": {"type": "STRING"}}
+            "rounds": {
+                "type": "ARRAY",
+                "items": {
+                    "type": "OBJECT",
+                    "properties": {
+                        "target_word": {"type": "STRING"},
+                        "meaning_vi": {"type": "STRING"},
+                        "taboo_words": {"type": "ARRAY", "items": {"type": "STRING"}},
+                        "clue": {"type": "STRING"},
+                        "difficulty_level": {"type": "STRING"},
+                        "sample_acceptable_phrases": {"type": "ARRAY", "items": {"type": "STRING"}},
+                        "sample_forbidden_phrases": {"type": "ARRAY", "items": {"type": "STRING"}}
+                    },
+                    "required": ["target_word", "meaning_vi", "taboo_words", "clue", "difficulty_level", "sample_acceptable_phrases", "sample_forbidden_phrases"]
+                }
+            }
         },
-        "required": ["target_word", "meaning_vi", "taboo_words", "clue", "difficulty_level", "sample_acceptable_phrases", "sample_forbidden_phrases"]
+        "required": ["rounds"]
     }
 }
 

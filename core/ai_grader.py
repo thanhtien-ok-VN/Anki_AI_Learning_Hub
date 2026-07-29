@@ -26,6 +26,8 @@ FILL_BLANK_GRADER = """You are a language teacher grading a fill-in-the-blank ex
 
 Learning language: {learn_lang}
 Student's level: {level}
+Target word: {target_word}
+Meaning: {meaning_vi}
 Question: {question}
 Expected answer: {expected}
 Student's answer: {user_answer}
@@ -33,7 +35,7 @@ Student's answer: {user_answer}
 Explain why the correct answer is right or wrong. Include:
 - Semantic meaning of the correct word in context
 - Grammar rule involved
-- Why the other options are incorrect
+- Why the other options are incorrect (consider option types: correct/antonym/grammar_error/semantic_close)
 
 Respond in JSON:
 {{
@@ -50,6 +52,8 @@ TRANSLATION_GRADER = """You are a language teacher grading a translation.
 Source ({source_lang}): {source_sentence}
 Expected translation ({target_lang}): {reference_translation}
 Student's translation: {user_target}
+
+Common mistakes to check: {common_mistakes}
 
 Grade the translation. If wrong, identify specific errors (word choice, grammar, missing parts).
 If different but acceptable, explain why both work.
@@ -88,6 +92,9 @@ TRANSFORM_GRADER = """You are a language teacher grading a sentence transformati
 Instruction/Prompt: {prompt}
 Original: {original}
 Expected answer: {expected_answer}
+Normalized answer: {normalized_answer}
+Forbidden words: {forbidden_words}
+Acceptable variations: {acceptable_variations}
 Student's answer: {user_answer}
 
 If wrong, explain the grammar rule being tested and how to fix it.
@@ -105,7 +112,10 @@ Respond in JSON:
 
 TABOO_GRADER = """You are judging a Taboo word-guessing game.
 
-Secret target word: {target_word}
+Target word: {target_word}
+Taboo words: {taboo_words}
+Sample acceptable phrases: {sample_acceptable_phrases}
+Sample forbidden phrases: {sample_forbidden_phrases}
 Student's guess: {user_input}
 
 Determine if the guess matches or is semantically close enough.

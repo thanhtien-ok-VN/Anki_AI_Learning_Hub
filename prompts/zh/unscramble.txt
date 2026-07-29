@@ -12,7 +12,7 @@
 
 仅返回符合此结构的原始 JSON：
 {
-  "sentences": [
+  "questions": [
     {
       "correct_sentence": "The quick brown fox jumps over the lazy dog.",
       "meaning_vi": "Con cáo nâu nhanh nhẹn nhảy qua con chó lười biếng.",

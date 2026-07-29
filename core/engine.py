@@ -599,7 +599,16 @@ class AIEngine:
         from core.ai_grader import get_grader_prompt
 
         common = {"learn_lang": learn_lang, "level": level}
-        if gamemode == "translation":
+        if gamemode == "fill_blank":
+            prompt_data = {
+                **common,
+                "target_word": data.get("target_word", ""),
+                "meaning_vi": data.get("meaning_vi", ""),
+                "question": data.get("question", ""),
+                "expected": data.get("expected", data.get("target_word", "")),
+                "user_answer": data.get("user_answer", ""),
+            }
+        elif gamemode == "translation":
             prompt_data = {
                 **common,
                 "source_lang": "Vietnamese",
@@ -607,19 +616,26 @@ class AIEngine:
                 "source_sentence": data.get("source_sentence", data.get("source_text", "")),
                 "reference_translation": data.get("reference_translation", data.get("expected", "")),
                 "user_target": data.get("user_answer", ""),
+                "common_mistakes": data.get("common_mistakes", "None provided"),
             }
         elif gamemode == "sentence_transform":
             prompt_data = {
                 **common,
-                "prompt": data.get("instruction", ""),
+                "prompt": data.get("prompt", data.get("instruction", "")),
                 "original": data.get("original", ""),
                 "expected_answer": data.get("expected_answer", data.get("expected", "")),
+                "normalized_answer": data.get("normalized_answer", ""),
+                "forbidden_words": data.get("forbidden_words", "None"),
+                "acceptable_variations": data.get("acceptable_variations", "None"),
                 "user_answer": data.get("user_answer", ""),
             }
         elif gamemode == "taboo":
             prompt_data = {
                 **common,
                 "target_word": data.get("target_word", data.get("secret_word", "")),
+                "taboo_words": data.get("taboo_words", "None"),
+                "sample_acceptable_phrases": data.get("sample_acceptable_phrases", "None"),
+                "sample_forbidden_phrases": data.get("sample_forbidden_phrases", "None"),
                 "user_input": data.get("user_answer", ""),
             }
         else:
@@ -657,12 +673,8 @@ class AIEngine:
         deck_name = data.get("deck", "AI Learning")
         gm = self.get_gamemode(gamemode)
         if gm and hasattr(gm, "save_to_anki"):
-            if isinstance(content, list):
-                count = 0
-                for item in content:
-                    count += gm.save_to_anki(item, deck_name)
-            else:
-                count = gm.save_to_anki(content, deck_name)
+            items = content if isinstance(content, list) else [content]
+            count = gm.save_to_anki(items, deck_name)
             log.info(f"Saved {count} cards to deck '{deck_name}' from {gamemode}")
             return {"success": True, "count": count}
         log.warn(f"No save handler for {gamemode}")

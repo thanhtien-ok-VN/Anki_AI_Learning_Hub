@@ -136,16 +136,9 @@ const App = (() => {
       .replace(/[.,!?;:]$/, '')
       .replace(/\s+/g, ' ');
   };
+  const normalizeAnswer = s => normalizeText(s).trim().toLowerCase();
   const norm = normalizeText;
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  const sanitizeHtml = htmlContent => {
-    if (!htmlContent || typeof htmlContent !== 'string') return htmlContent || '';
-    return htmlContent
-      .replace(/<(script|iframe|object|embed|style|link|form|input|button)\b[^<]*(?:(?!<\/\1>)<[^<]*)*<\/\1>/gi, '')
-      .replace(/<(script|iframe|object|embed|style|link|form|input|button)\b[^>]*\/?>/gi, '')
-      .replace(/\s*on\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, '')
-      .replace(/(href|src|action)\s*=\s*["']?\s*javascript:[^"'>]*["']?/gi, '');
-  };
   const timers = [];
   const activeIntervals = [];
 
@@ -675,8 +668,9 @@ const App = (() => {
           <ul style="list-style:none; padding:0; margin:0;">${pairsHtml}</ul>
         </div>
       `;
-    } else if (gameId === 'unscramble' && item.data?.questions) {
-      detailContent = item.data.questions.map((q, qIdx) => `
+    } else if (gameId === 'unscramble' && (item.data?.questions || item.data?.sentences)) {
+      const qs = item.data.questions || item.data.sentences || [];
+      detailContent = qs.map((q, qIdx) => `
         <div class="question-card" style="margin-bottom:12px;">
           <p><b>Câu ${qIdx + 1}:</b> ${esc(q.hint || '')}</p>
           <p style="color:var(--success); font-weight:600;">➔ ${esc(q.correct_sentence)}</p>
@@ -742,10 +736,9 @@ const App = (() => {
         </div>
       `;
     } else if (gameId === 'taboo' && (item.data?.rounds || item.data?.target_word)) {
-      const isNewTaboo = !item.data.rounds;
-      const target = isNewTaboo ? item.data.target_word : item.data.rounds[0].secret_word;
-      const forbidden = isNewTaboo ? item.data.taboo_words : item.data.rounds[0].forbidden_words;
-      const clue = isNewTaboo ? item.data.clue : item.data.rounds[0].ai_description;
+      const target = item.data.target_word || item.data.rounds?.[0]?.target_word || '';
+      const forbidden = item.data.taboo_words || item.data.rounds?.[0]?.taboo_words || [];
+      const clue = item.data.clue || item.data.rounds?.[0]?.clue || '';
       detailContent = `
         <div class="question-card">
           <p><b>Từ bí mật:</b> <b style="color:var(--primary); font-size:16px;">${esc(target)}</b></p>
@@ -1045,9 +1038,19 @@ const App = (() => {
   const buttons=(opts,name,chosen)=>opts.map((o,i)=>`<button class="option-btn ${chosen===i?'selected':''}" data-choice="${i}">${String.fromCharCode(65+i)}. ${esc(o)}</button>`).join('');
 
   /* ---- PLAY: route to renderers ---- */
+  function normalizeExercise(id, x) {
+    if (!x) return x;
+    if (id === 'unscramble' && x.sentences && !x.questions) {
+      x.questions = x.sentences;
+      delete x.sentences;
+    }
+    return x;
+  }
   function play(id) {
-    const d = document.querySelector('#play'), x = state.exercise;
+    const d = document.querySelector('#play');
+    let x = state.exercise;
     if (!x) return;
+    x = normalizeExercise(id, x);
     if (!state.answers) state.answers = {};
     if (id === 'fill_blank') renderFillBlank(x);
     else if (id === 'cloze') renderCloze(x);
@@ -1746,7 +1749,7 @@ const App = (() => {
 
       resetGameState('matching');
       const restartBtn = d.querySelector('#restart-matching-btn');
-      if (restartBtn) restartBtn.onclick = () => renderMatching(data);
+      if (restartBtn) restartBtn.onclick = () => renderMatching(x);
       const newBtn = d.querySelector('#new-matching-btn');
       if (newBtn) newBtn.onclick = () => nav('home');
     }
@@ -1851,6 +1854,7 @@ const App = (() => {
     state.answers = {};
     state.isGraded = false;
     state.index = 0;
+    delete state.currentHistoryItem;
     state.hintedQuestions = new Set();
     if (gameId && state.activeSessions && state.activeSessions[gameId]) {
       delete state.activeSessions[gameId];
@@ -2355,9 +2359,9 @@ const App = (() => {
   function renderTaboo(x){
     const q=x.rounds[0];
     const langLabel = state.userPrefs.language || 'en';
-    const secretWord = q.target_word || q.secret_word || '';
-    const forbidden = q.taboo_words || q.forbidden_words || [];
-    const clueText = q.clue || q.ai_description || '';
+    const secretWord = q.target_word || '';
+    const forbidden = q.taboo_words || [];
+    const clueText = q.clue || '';
     
     document.querySelector('#play').innerHTML='<div class="question-card taboo-card fade-in"><div class="secret-word">???</div><div class="forbidden">'+forbidden.map(w=>'<span>🚫 '+esc(w)+'</span>').join('')+'</div><div class="description">'+esc(clueText)+'</div><textarea id="answer" placeholder="'+esc(t('placeholder.taboo', 'Nhập từ bạn đoán bằng {0}...', langLabel))+'"></textarea><div style="display:flex; gap:12px; margin-top:12px;"><button class="btn primary" id="grade">'+esc(t('app.grade', 'Chấm điểm'))+'</button><button class="btn btn-outline" id="hint-taboo" style="border-color: #eab308; color: #ca8a04;">💡 Gợi ý</button></div><div class="hint-text-box" id="hint-text-taboo" style="font-size: 13px; color: var(--text-secondary); margin-top: 10px; display: none; background: rgba(234, 179, 8, 0.05); padding: 8px 12px; border-radius: 6px; border-left: 3px solid #eab308;"></div><div id="feedback"></div></div>';
     
@@ -2401,8 +2405,7 @@ const App = (() => {
             gamemode:'taboo',
             level:document.querySelector('#level').value,
             user_answer:document.querySelector('#answer').value,
-            target_word:secretWord,
-            secret_word:secretWord
+            target_word:secretWord
           }, { signal });
         }
 

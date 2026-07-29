@@ -75,7 +75,7 @@ function getAiClient() {
   return new GoogleGenAI({ apiKey });
 }
 
-// Schemas for Gemini Structured Output
+// Schemas for Gemini Structured Output (v2 — matches Pydantic models in schema_registry.py)
 const SCHEMAS: Record<string, any> = {
   fill_blank: {
     type: "object",
@@ -85,7 +85,10 @@ const SCHEMAS: Record<string, any> = {
         items: {
           type: "object",
           properties: {
-            sentence: { type: "string", description: "The sentence with _____ blank." },
+            sentence: { type: "string" },
+            target_word: { type: "string" },
+            meaning_vi: { type: "string" },
+            full_translation: { type: "string" },
             options: {
               type: "array",
               items: {
@@ -99,11 +102,10 @@ const SCHEMAS: Record<string, any> = {
                 required: ["word", "is_correct", "type", "reason"]
               }
             },
-            meaning_vi: { type: "string" },
-            explanation_vi: { type: "string" },
+            explanation: { type: "string" },
             grammar_note: { type: "string" }
           },
-          required: ["sentence", "options", "meaning_vi", "explanation_vi"]
+          required: ["sentence", "target_word", "meaning_vi", "full_translation", "options", "explanation"]
         }
       }
     },
@@ -115,39 +117,33 @@ const SCHEMAS: Record<string, any> = {
       paragraph: { type: "string" },
       full_solution_text: { type: "string" },
       story_translation: { type: "string" },
+      context_summary: { type: "string" },
       blanks: {
         type: "array",
         items: {
           type: "object",
           properties: {
-            blank_id: { type: "integer" },
+            id: { type: "string" },
             answer: { type: "string" },
-            options: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  word: { type: "string" },
-                  is_correct: { type: "boolean" },
-                  type: { type: "string" },
-                  reason: { type: "string" }
-                },
-                required: ["word", "is_correct", "type", "reason"]
-              }
-            },
             meaning_vi: { type: "string" },
-            explanation_vi: { type: "string" }
+            hint: { type: "string" },
+            distractors: {
+              type: "array",
+              items: { type: "string" }
+            },
+            explanation: { type: "string" }
           },
-          required: ["blank_id", "answer", "options", "meaning_vi", "explanation_vi"]
+          required: ["id", "answer", "meaning_vi", "hint", "distractors", "explanation"]
         }
       }
     },
-    required: ["paragraph", "full_solution_text", "story_translation", "blanks"]
+    required: ["paragraph", "full_solution_text", "story_translation", "context_summary", "blanks"]
   },
   translation: {
     type: "object",
     properties: {
       source_sentence: { type: "string" },
+      target_language: { type: "string" },
       reference_translation: { type: "string" },
       alternative_translations: {
         type: "array",
@@ -165,11 +161,11 @@ const SCHEMAS: Record<string, any> = {
         items: {
           type: "object",
           properties: {
-            word: { type: "string" },
-            meaning_vi: { type: "string" },
+            source: { type: "string" },
+            target: { type: "string" },
             note: { type: "string" }
           },
-          required: ["word", "meaning_vi", "note"]
+          required: ["source", "target", "note"]
         }
       },
       common_mistakes: {
@@ -178,16 +174,15 @@ const SCHEMAS: Record<string, any> = {
           type: "object",
           properties: {
             wrong: { type: "string" },
-            correction: { type: "string" },
             error_type: { type: "string" },
-            feedback: { type: "string" }
+            correction: { type: "string" }
           },
-          required: ["wrong", "correction", "error_type", "feedback"]
+          required: ["wrong", "error_type", "correction"]
         }
       },
       grading_rubric: { type: "string" }
     },
-    required: ["source_sentence", "reference_translation", "alternative_translations", "key_vocabulary", "common_mistakes", "grading_rubric"]
+    required: ["source_sentence", "target_language", "reference_translation", "alternative_translations", "key_vocabulary", "common_mistakes", "grading_rubric"]
   },
   unscramble: {
     type: "object",
@@ -198,14 +193,8 @@ const SCHEMAS: Record<string, any> = {
           type: "object",
           properties: {
             correct_sentence: { type: "string" },
-            shuffled_words: {
-              type: "array",
-              items: { type: "string" }
-            },
-            hint: { type: "string" },
             meaning_vi: { type: "string" },
-            difficulty_reason: { type: "string" },
-            grammar_note: { type: "string" },
+            hint: { type: "string" },
             key_vocabulary: {
               type: "array",
               items: {
@@ -216,9 +205,11 @@ const SCHEMAS: Record<string, any> = {
                 },
                 required: ["word", "meaning_vi"]
               }
-            }
+            },
+            difficulty_reason: { type: "string" },
+            grammar_note: { type: "string" }
           },
-          required: ["correct_sentence", "shuffled_words", "hint", "meaning_vi", "difficulty_reason", "grammar_note", "key_vocabulary"]
+          required: ["correct_sentence", "meaning_vi", "hint", "key_vocabulary", "difficulty_reason", "grammar_note"]
         }
       }
     },
@@ -232,6 +223,7 @@ const SCHEMAS: Record<string, any> = {
         properties: {
           title: { type: "string" },
           content: { type: "string" },
+          word_count: { type: "integer" },
           highlighted_vocab: {
             type: "array",
             items: {
@@ -246,13 +238,15 @@ const SCHEMAS: Record<string, any> = {
           },
           full_translation: { type: "string" }
         },
-        required: ["title", "content", "highlighted_vocab", "full_translation"]
+        required: ["title", "content", "word_count", "highlighted_vocab", "full_translation"]
       },
       questions: {
         type: "array",
         items: {
           type: "object",
           properties: {
+            id: { type: "integer" },
+            type: { type: "string" },
             question: { type: "string" },
             options: {
               type: "array",
@@ -266,10 +260,9 @@ const SCHEMAS: Record<string, any> = {
               }
             },
             explanation: { type: "string" },
-            evidence_quote: { type: "string" },
-            type: { type: "string" }
+            evidence_quote: { type: "string" }
           },
-          required: ["question", "options", "explanation", "evidence_quote", "type"]
+          required: ["id", "type", "question", "options", "explanation", "evidence_quote"]
         }
       },
       discussion_prompt: { type: "string" }
@@ -288,7 +281,6 @@ const SCHEMAS: Record<string, any> = {
             prompt: { type: "string" },
             expected_answer: { type: "string" },
             normalized_answer: { type: "string" },
-            grammar_rule: { type: "string" },
             acceptable_variations: {
               type: "array",
               items: {
@@ -300,6 +292,11 @@ const SCHEMAS: Record<string, any> = {
                 required: ["text", "note"]
               }
             },
+            forbidden_words: {
+              type: "array",
+              items: { type: "string" }
+            },
+            grammar_rule: { type: "string" },
             common_errors: {
               type: "array",
               items: {
@@ -312,7 +309,7 @@ const SCHEMAS: Record<string, any> = {
               }
             }
           },
-          required: ["original", "prompt", "expected_answer", "normalized_answer", "grammar_rule", "acceptable_variations", "common_errors"]
+          required: ["original", "prompt", "expected_answer", "normalized_answer", "acceptable_variations", "forbidden_words", "grammar_rule", "common_errors"]
         }
       }
     },
@@ -327,12 +324,13 @@ const SCHEMAS: Record<string, any> = {
           type: "object",
           properties: {
             target_word: { type: "string" },
+            meaning_vi: { type: "string" },
             taboo_words: {
               type: "array",
               items: { type: "string" }
             },
             clue: { type: "string" },
-            meaning_vi: { type: "string" },
+            difficulty_level: { type: "string" },
             sample_acceptable_phrases: {
               type: "array",
               items: { type: "string" }
@@ -342,7 +340,7 @@ const SCHEMAS: Record<string, any> = {
               items: { type: "string" }
             }
           },
-          required: ["target_word", "taboo_words", "clue", "meaning_vi", "sample_acceptable_phrases", "sample_forbidden_phrases"]
+          required: ["target_word", "meaning_vi", "taboo_words", "clue", "difficulty_level", "sample_acceptable_phrases", "sample_forbidden_phrases"]
         }
       }
     },
@@ -388,106 +386,66 @@ function sanitizeAiOutput<T>(data: T): T {
   return data;
 }
 
-// Fallback Generators when API Key is not configured or fails
+function normalizeAnswer(text: string): string {
+  if (!text) return "";
+  return text.trim().toLowerCase().normalize("NFKD")
+    .replace(/[.,!?;:]+$/g, "")
+    .replace(/\s+/g, " ");
+}
+
+// Fallback Generators when API Key is not configured or fails (v2 format)
 function getFallbackExercise(gamemode: string, data: any) {
   const count = data.count || 3;
-  const vocab = data.vocab_pairs || VOCAB_POOLS[1];
-  
+
   if (gamemode === "fill_blank") {
     return {
-      questions: Array.from({ length: count }, (_, i) => {
-        const item = vocab[i % vocab.length] || { term: "ubiquitous", definition: "present everywhere" };
-        const optWords = [item.term, "ephemeral", "pragmatic", "verbose"];
-        const optTrans = ["phổ biến khắp nơi", "ngắn hạn, tạm thời", "thực tế, thực tiễn", "dài dòng"];
-        const optReasons = [
-          `Chính xác! '${item.term}' có nghĩa là phổ biến khắp nơi, hoàn toàn phù hợp với ngữ cảnh mô tả sự xuất hiện rộng rãi của điện thoại thông minh.`,
-          "Không phù hợp: 'ephemeral' có nghĩa là chỉ kéo dài trong thời gian ngắn hoặc tạm thời, trái ngược với xu hướng dài lâu.",
-          "Không phù hợp: 'pragmatic' có nghĩa là thực tế, thiết thực trong việc giải quyết vấn đề, không mô tả tính phổ biến.",
-          "Không phù hợp: 'verbose' có nghĩa là dùng quá nhiều từ ngữ không cần thiết (dài dòng)."
-        ];
-        return {
-          sentence: `Smartphones have become _____ in modern daily life.`,
-          sentence_with_blank: `Smartphones have become _____ in modern daily life.`,
-          options: optWords.map((w, idx) => ({
-            word: w,
-            is_correct: idx === 0,
-            type: idx === 0 ? "correct" : "distractor",
-            reason: optReasons[idx]
-          })),
-          options_translations: optTrans,
-          options_details: optWords.map((w, idx) => ({
-            text: w,
-            translation: optTrans[idx],
-            is_correct: idx === 0,
-            reason: optReasons[idx]
-          })),
-          correct_index: 0,
-          explanation_vi: `Chọn '${item.term}' vì ngữ cảnh mô tả điện thoại thông minh xuất hiện ở khắp mọi nơi trong đời sống hiện đại.`,
-          explanation_short: `Chọn '${item.term}' vì ngữ cảnh mô tả điện thoại thông minh xuất hiện ở khắp mọi nơi trong đời sống hiện đại.`,
-          meaning_vi: `Điện thoại thông minh đã trở nên phổ biến khắp nơi trong cuộc sống hiện đại.`,
-          sentence_translation: `Điện thoại thông minh đã trở nên phổ biến khắp nơi trong cuộc sống hiện đại.`,
-          grammar_note: "Cấu trúc ngữ pháp: 'become + adjective' (trở nên như thế nào)."
-        };
-      })
+      questions: Array.from({ length: count }, (_, i) => ({
+        sentence: "Smartphones have become _____ in modern daily life.",
+        target_word: "ubiquitous",
+        meaning_vi: "phổ biến khắp nơi",
+        full_translation: "Điện thoại thông minh đã trở nên phổ biến khắp nơi trong cuộc sống hiện đại.",
+        options: [
+          { word: "ubiquitous", is_correct: true, type: "correct", reason: "Chính xác! 'ubiquitous' có nghĩa là phổ biến khắp nơi." },
+          { word: "ephemeral", is_correct: false, type: "antonym", reason: "Không phù hợp: 'ephemeral' có nghĩa là ngắn ngủi, tạm thời." },
+          { word: "pragmatic", is_correct: false, type: "semantic_close", reason: "Không phù hợp: 'pragmatic' có nghĩa là thực tế, thiết thực." },
+          { word: "verbose", is_correct: false, type: "grammar_error", reason: "Không phù hợp: 'verbose' có nghĩa là dài dòng." }
+        ],
+        explanation: "Chọn 'ubiquitous' vì ngữ cảnh mô tả điện thoại thông minh xuất hiện ở khắp mọi nơi.",
+        grammar_note: "Cấu trúc: 'become + adjective' (trở nên như thế nào)."
+      }))
     };
   }
 
   if (gamemode === "cloze") {
     return {
-      paragraph: "In today's fast-paced world, clear communication is essential. Being [1] allows professionals to express complex ideas effectively. When teams face difficult challenges, reaching a [2] ensures everyone works toward the same goal. Having a [3] approach helps resolve conflicts quickly.",
-      paragraph_with_blanks: "In today's fast-paced world, clear communication is essential. Being [1] allows professionals to express complex ideas effectively. When teams face difficult challenges, reaching a [2] ensures everyone works toward the same goal. Having a [3] approach helps resolve conflicts quickly.",
+      paragraph: "In today's fast-paced world, clear communication is essential. Being [BLANK_1] allows professionals to express complex ideas effectively. When teams face difficult challenges, reaching a [BLANK_2] ensures everyone works toward the same goal. Having a [BLANK_3] approach helps resolve conflicts quickly.",
       full_solution_text: "In today's fast-paced world, clear communication is essential. Being articulate allows professionals to express complex ideas effectively. When teams face difficult challenges, reaching a consensus ensures everyone works toward the same goal. Having a pragmatic approach helps resolve conflicts quickly.",
-      paragraph_full: "In today's fast-paced world, clear communication is essential. Being articulate allows professionals to express complex ideas effectively. When teams face difficult challenges, reaching a consensus ensures everyone works toward the same goal. Having a pragmatic approach helps resolve conflicts quickly.",
-      story_translation: "Trong thế giới hiện đại, giao tiếp rõ ràng là rất quan trọng. Khả năng diễn đạt lưu loát giúp làm việc hiệu quả.",
-      sentence_meaning: "Trong thế giới hiện đại, giao tiếp rõ ràng là rất quan trọng. Khả năng diễn đạt lưu loát giúp làm việc hiệu quả.",
+      story_translation: "Trong thế giới hiện đại, giao tiếp rõ ràng là rất quan trọng.",
+      context_summary: "Đoạn văn nói về tầm quan trọng của giao tiếp rõ ràng trong công việc.",
       blanks: [
         {
-          blank_id: 1,
+          id: "BLANK_1",
           answer: "articulate",
-          correct_word: "articulate",
-          options: [
-            { word: "articulate", is_correct: true, type: "correct", reason: "Chính xác! 'articulate' có nghĩa là diễn đạt rõ ràng." },
-            { word: "verbose", is_correct: false, type: "distractor", reason: "verbose có nghĩa là dài dòng." },
-            { word: "ephemeral", is_correct: false, type: "distractor", reason: "ephemeral có nghĩa là ngắn hạn." },
-            { word: "ambiguous", is_correct: false, type: "distractor", reason: "ambiguous có nghĩa là mơ hồ." }
-          ],
-          correct_index: 0,
           meaning_vi: "diễn đạt lưu loát",
-          meaning_in_vietnamese: "diễn đạt lưu loát",
-          explanation_vi: "Dùng để mô tả một người có tài hùng biện hoặc diễn đạt ý kiến một cách trôi chảy, rõ ràng.",
-          explanation_short: "Dùng để mô tả một người có tài hùng biện hoặc diễn đạt ý kiến một cách trôi chảy, rõ ràng."
+          hint: "Khả năng nói hoặc viết một cách rõ ràng và dễ hiểu",
+          distractors: ["verbose", "ambiguous", "ephemeral"],
+          explanation: "'articulate' có nghĩa là diễn đạt rõ ràng, phù hợp với ngữ cảnh giao tiếp chuyên nghiệp."
         },
         {
-          blank_id: 2,
+          id: "BLANK_2",
           answer: "consensus",
-          correct_word: "consensus",
-          options: [
-            { word: "consensus", is_correct: true, type: "correct", reason: "Chính xác! 'consensus' có nghĩa là sự đồng thuận." },
-            { word: "scrutiny", is_correct: false, type: "distractor", reason: "scrutiny có nghĩa là sự xem xét kĩ lưỡng." },
-            { word: "hypothesis", is_correct: false, type: "distractor", reason: "hypothesis có nghĩa là giả thuyết." },
-            { word: "paradigm", is_correct: false, type: "distractor", reason: "paradigm có nghĩa là mô hình mẫu." }
-          ],
-          correct_index: 0,
-          meaning_vi: "sự thống nhất",
-          meaning_in_vietnamese: "sự thống nhất",
-          explanation_vi: "consensus là sự đồng thuận hoặc nhất trí giữa các thành viên.",
-          explanation_short: "consensus là sự đồng thuận hoặc nhất trí giữa các thành viên."
+          meaning_vi: "sự đồng thuận",
+          hint: "Sự nhất trí chung của một nhóm người",
+          distractors: ["scrutiny", "hypothesis", "paradigm"],
+          explanation: "'consensus' là sự đồng thuận giữa các thành viên trong nhóm."
         },
         {
-          blank_id: 3,
+          id: "BLANK_3",
           answer: "pragmatic",
-          correct_word: "pragmatic",
-          options: [
-            { word: "pragmatic", is_correct: true, type: "correct", reason: "Chính xác! 'pragmatic' có nghĩa là thực tế." },
-            { word: "ambiguous", is_correct: false, type: "distractor", reason: "ambiguous có nghĩa là mơ hồ." },
-            { word: "verbose", is_correct: false, type: "distractor", reason: "verbose có nghĩa là dài dòng." },
-            { word: "inevitable", is_correct: false, type: "distractor", reason: "inevitable có nghĩa là không thể tránh khỏi." }
-          ],
-          correct_index: 0,
-          meaning_vi: "thực tiễn",
-          meaning_in_vietnamese: "thực tiễn",
-          explanation_vi: "pragmatic là một cách tiếp cận mang tính thực tế để giải quyết các vấn đề.",
-          explanation_short: "pragmatic là một cách tiếp cận mang tính thực tế để giải quyết các vấn đề."
+          meaning_vi: "thực tế",
+          hint: "Cách tiếp cận dựa trên thực tiễn",
+          distractors: ["ambiguous", "verbose", "inevitable"],
+          explanation: "'pragmatic' là cách tiếp cận thực tế để giải quyết vấn đề."
         }
       ]
     };
@@ -496,52 +454,47 @@ function getFallbackExercise(gamemode: string, data: any) {
   if (gamemode === "translation") {
     return {
       source_sentence: "Việc sử dụng công nghệ một cách thực tế giúp cải thiện hiệu suất công việc.",
+      target_language: "en",
       reference_translation: "Using technology pragmatically helps improve work performance.",
       alternative_translations: [
         { text: "Applying technology in a practical way enhances productivity.", note: "Trang trọng hơn" }
       ],
       key_vocabulary: [
-        { word: "pragmatically", meaning_vi: "một cách thực tế, thực tiễn", note: "Trạng từ" },
-        { word: "performance", meaning_vi: "hiệu suất công việc", note: "Danh từ" }
+        { source: "sử dụng công nghệ", target: "use technology", note: "Cụm động từ" },
+        { source: "hiệu suất công việc", target: "work performance", note: "Danh từ ghép" }
       ],
       common_mistakes: [
-        { wrong: "use technology pragmatic", correction: "use technology pragmatically", error_type: "Grammar", feedback: "Cần dùng trạng từ để bổ nghĩa cho động từ." }
+        { wrong: "use technology pragmatic", error_type: "Grammar", correction: "Cần dùng trạng từ 'pragmatically' để bổ nghĩa cho động từ 'use'." }
       ],
-      grading_rubric: "Đánh giá dựa trên độ chính xác ngữ pháp (trạng từ đứng trước động từ) và sự tự nhiên.",
-      sentences: [
+      grading_rubric: "Đánh giá dựa trên độ chính xác ngữ pháp và sự tự nhiên của bản dịch."
+    };
+  }
+
+  if (gamemode === "unscramble") {
+    return {
+      questions: [
         {
-          source_text: "Việc sử dụng công nghệ một cách thực tế giúp cải thiện hiệu suất công việc.",
-          target_text: "Using technology pragmatically helps improve work performance.",
-          grammar_notes: "Adv + Verb construction: 'pragmatically helps improve'"
+          correct_sentence: "Technology plays an important role in modern education.",
+          meaning_vi: "Công nghệ đóng vai trò quan trọng trong giáo dục hiện đại.",
+          hint: "Vai trò của công nghệ",
+          key_vocabulary: [
+            { word: "education", meaning_vi: "giáo dục" },
+            { word: "important role", meaning_vi: "vai trò quan trọng" }
+          ],
+          difficulty_reason: "Cấu trúc S-V-O cơ bản với cụm giới từ.",
+          grammar_note: "Sử dụng cụm danh từ 'modern education' đứng sau giới từ 'in'."
         }
       ]
     };
   }
 
-  if (gamemode === "unscramble") {
-    const sList = [
-      { correct_sentence: "Technology plays an important role in modern education.", hint: "Role of tech", translation: "Công nghệ đóng vai trò quan trọng trong giáo dục hiện đại.", sentence_meaning: "Công nghệ giúp việc học trở nên thuận tiện hơn.", key_vocab: [{ word: "education", meaning: "giáo dục" }] }
-    ];
-    return {
-      questions: sList.map(s => ({
-        correct_sentence: s.correct_sentence,
-        shuffled_words: s.correct_sentence.split(" ").sort(() => Math.random() - 0.5),
-        hint: s.hint,
-        meaning_vi: s.translation,
-        translation: s.translation,
-        word_count: s.correct_sentence.split(" ").length,
-        difficulty_reason: "Cấu trúc S-V-O cơ bản với cụm giới từ.",
-        grammar_note: "Sử dụng cụm danh từ 'modern education' đứng sau giới từ 'in'.",
-        key_vocabulary: s.key_vocab.map(k => ({ word: k.word, meaning_vi: k.meaning }))
-      }))
-    };
-  }
-
   if (gamemode === "story") {
+    const content = "Alex was known for his articulate presentation style. During the annual conference, he presented a comprehensive plan to mitigate operational risks. Despite initial skepticism from the board, his persuasive arguments helped the team reach a unanimous consensus on the new strategic paradigm.";
     return {
       story: {
         title: "Alex's Persuasive Speech",
-        content: "Alex was known for his articulate presentation style. During the annual conference, he presented a comprehensive plan to mitigate operational risks. Despite initial skepticism from the board, his persuasive arguments helped the team reach a unanimous consensus on the new strategic paradigm.",
+        content,
+        word_count: content.split(" ").length,
         highlighted_vocab: [
           { word: "articulate", meaning_vi: "diễn đạt trôi chảy, rõ ràng", context_meaning: "Cách nói rõ ràng và thu hút người nghe" }
         ],
@@ -549,6 +502,8 @@ function getFallbackExercise(gamemode: string, data: any) {
       },
       questions: [
         {
+          id: 1,
+          type: "detail",
           question: "What was Alex known for during presentations?",
           options: [
             { text: "His articulate style", is_correct: true },
@@ -557,20 +512,10 @@ function getFallbackExercise(gamemode: string, data: any) {
             { text: "His hesitant tone", is_correct: false }
           ],
           explanation: "Alex nổi tiếng với phong cách thuyết trình diễn đạt lưu loát và rõ ràng (articulate presentation style).",
-          evidence_quote: "Alex was known for his articulate presentation style.",
-          type: "Detail"
+          evidence_quote: "Alex was known for his articulate presentation style."
         }
       ],
-      discussion_prompt: "Thảo luận về tầm quan trọng của việc thuyết trình rõ ràng trong công việc.",
-      comprehension_questions: [
-        {
-          question: "What was Alex known for during presentations?",
-          options: ["His articulate style", "His verbose explanations", "His ambiguous slides", "His hesitant tone"],
-          correct_index: 0,
-          explanation: "Alex nổi tiếng với phong cách thuyết trình diễn đạt lưu loát và rõ ràng (articulate presentation style).",
-          quote_evidence: "Alex was known for his articulate presentation style."
-        }
-      ]
+      discussion_prompt: "Thảo luận về tầm quan trọng của việc thuyết trình rõ ràng trong công việc."
     };
   }
 
@@ -579,15 +524,14 @@ function getFallbackExercise(gamemode: string, data: any) {
       questions: [
         {
           original: "They built the new bridge in less than six months.",
-          original_sentence: "They built the new bridge in less than six months.",
           prompt: "Rewrite using the passive voice (start with 'The new bridge...').",
-          instruction: "Rewrite using the passive voice (start with 'The new bridge...').",
           expected_answer: "The new bridge was built in less than six months.",
           normalized_answer: "the new bridge was built in less than six months",
-          grammar_rule: "Passive voice in Simple Past: Subject + was/were + Past Participle",
           acceptable_variations: [
-            { text: "The new bridge was built in under six months.", note: "Sử dụng under thay cho less than" }
+            { text: "The new bridge was built in under six months.", note: "Sử dụng 'under' thay cho 'less than'" }
           ],
+          forbidden_words: ["they"],
+          grammar_rule: "Passive voice in Simple Past: Subject + was/were + Past Participle",
           common_errors: [
             { error: "The new bridge is built in less than six months.", feedback: "Sai thì: câu gốc dùng 'built' ở quá khứ đơn, nên câu bị động phải dùng 'was built'." }
           ]
@@ -601,12 +545,10 @@ function getFallbackExercise(gamemode: string, data: any) {
       rounds: [
         {
           target_word: "UBIQUITOUS",
-          secret_word: "UBIQUITOUS",
+          meaning_vi: "phổ biến khắp nơi",
           taboo_words: ["EVERYWHERE", "COMMON", "FOUND", "PRESENT", "ALWAYS"],
-          forbidden_words: ["EVERYWHERE", "COMMON", "FOUND", "PRESENT", "ALWAYS"],
           clue: "Describing something that seems to exist in all places at the same time, like modern technology or mobile phones.",
-          ai_description: "Describing something that seems to exist in all places at the same time, like modern technology or mobile phones.",
-          meaning_vi: "Phổ biến khắp nơi",
+          difficulty_level: "Medium",
           sample_acceptable_phrases: ["present in all places", "found everywhere"],
           sample_forbidden_phrases: ["always common everywhere"]
         }
@@ -791,17 +733,23 @@ app.post("/api/bridge", async (req, res) => {
           ? vocabPairs.map((p: any) => ({ term: p.term || p.word || "", definition: p.definition || p.meaning || "" }))
           : VOCAB_POOLS[1].slice(0, count).map(p => ({ term: p.term, definition: p.definition }));
         
-        const pairs = rawPairs.map((p: any, idx: number) => ({
-          id: `p_${Math.random().toString(36).substring(2, 9)}_${idx}`,
-          term: p.term,
-          definition: p.definition
-        }));
+        const count_pairs = Math.min(count, rawPairs.length);
+        const selected = shuffleArray(rawPairs).slice(0, count_pairs);
+        const gameId = `match_${Math.random().toString(36).substring(2, 9)}`;
+        const items: Array<{id: string, content: string, type: string, pair_id: string}> = [];
+        selected.forEach((p: any, idx: number) => {
+          const pid = `pair_${idx + 1}`;
+          items.push({ id: `t${idx}`, content: p.term, type: "term", pair_id: pid });
+          items.push({ id: `d${idx}`, content: p.definition, type: "definition", pair_id: pid });
+        });
 
         return res.json({
           success: true,
           data: {
-            error: false,
-            pairs
+            game_id: gameId,
+            items: shuffleArray(items),
+            config: { total_pairs: count_pairs, time_limit_sec: 120 },
+            metadata: { topic: data.topic || "vocabulary", level: data.level || "intermediate" }
           }
         });
       }
@@ -810,18 +758,7 @@ app.post("/api/bridge", async (req, res) => {
       const ai = getAiClient();
       if (!ai) {
         console.warn(`[Server] GEMINI_API_KEY missing - returning rich fallback exercise for ${gamemode}`);
-        let fallback = getFallbackExercise(gamemode, data);
-        if (gamemode === "unscramble" && fallback.sentences) {
-          fallback = {
-            questions: fallback.sentences.map((s: any) => ({
-              correct_sentence: s.correct_sentence,
-              shuffled_words: s.correct_sentence.split(" ").sort(() => Math.random() - 0.5),
-              hint: s.hint,
-              translation: s.translation,
-              word_count: s.correct_sentence.split(" ").length
-            }))
-          };
-        }
+        const fallback = getFallbackExercise(gamemode, data);
         return res.json({
           success: true,
           data: {
@@ -865,27 +802,14 @@ ${gamemode === "cloze" ? `Blanks Count: ${data.num_blanks || 5}` : ""}
 ${vocabSection}
 </context>
 
-<language_constraints>
-- TARGET LANGUAGE (${language}): Used EXCLUSIVELY for raw exercise content (sentences, reading passages, blank options, secret words).
-- SUPPORT LANGUAGE (Tiếng Việt): Used EXCLUSIVELY for ALL keys ending with '_vietnamese' (explanations, translations, hints). NEVER output ${language} in these fields.
-</language_constraints>
-
-<example_output_format>
-Here is an example of the STRICT bilingual format expected (for fill_blank):
-{
-  "sentence_with_blank": "If you want to see your family, you can make a _____.",
-  "full_sentence": "If you want to see your family, you can make a video call.",
-  "blank_word": "video call",
-  "options": ["video call", "video game", "video clip", "video player"],
-  "options_vietnamese": ["cuộc gọi video", "trò chơi điện tử", "đoạn video ngắn", "đầu phát video"],
-  "correct_index": 0,
-  "sentence_vietnamese": "Nếu bạn muốn gặp gia đình mình, bạn có thể thực hiện một cuộc gọi video.",
-  "explanation_vietnamese": "Chọn 'video call' (cuộc gọi video) vì nó phù hợp nhất với ngữ cảnh muốn liên lạc và nhìn thấy người thân ở xa."
-}
-</example_output_format>
+<language_rule>
+- Fields containing exercise content (sentences, passages, options, target words, clues) MUST be in the TARGET LANGUAGE (${language}).
+- Fields ending with '_vi' (meaning_vi, full_translation, story_translation, explanation) MUST be in Vietnamese (Tiếng Việt).
+- All other fields follow the schema specification.
+</language_rule>
 
 <schema_requirements>
-Generate exactly ${count} items following the exact JSON schema provided in the API configuration. Ensure EVERY single field ending with '_vietnamese' is populated in fluent Vietnamese without leaving any field blank or falling back to ${language}.
+Generate exactly ${count} items following the exact JSON schema provided in the API configuration.
 </schema_requirements>`;
 
         const schema = SCHEMAS[gamemode];
@@ -894,14 +818,14 @@ Generate exactly ${count} items following the exact JSON schema provided in the 
           model: "gemini-3.6-flash",
           contents: prompt,
           config: schema ? {
-            systemInstruction: `You are an elite AI language educator designed for Vietnamese learners. 
-Your primary directive is STRICT BILINGUAL SEPARATION. You must seamlessly switch between the TARGET LANGUAGE (${language}) and the SUPPORT LANGUAGE (Vietnamese).
+            systemInstruction: `You are an elite AI language educator. You output ONLY valid JSON matching the provided schema.
 
-CRITICAL RULES FOR JSON OUTPUT:
-1. THE TARGET LANGUAGE ONLY RULE: Fields containing raw exercise content (sentences, reading passages, blank options, secret words) MUST be 100% in the target language (${language}).
-2. THE VIETNAMESE ONLY RULE: Fields requiring explanation, translation, hints, grammar notes, or word meanings (all keys ending with _vietnamese) MUST be 100% in natural, fluent Vietnamese (Tiếng Việt). NEVER output ${language} or English in _vietnamese fields.
-3. EXPLANATION QUALITY: When explaining "WHY" an option is correct (explanation_vietnamese), clearly cite the grammar rule, vocabulary context, or collocation IN VIETNAMESE.
-4. STRUCTURAL INTEGRITY: Output NOTHING but valid JSON. No markdown backticks (\`\`\`json), no conversational filler.`,
+LANGUAGE RULES:
+1. Content in ${language}: sentences, passages, options, target words, clues, expected answers
+2. Vietnamese (_vi fields): meaning_vi, full_translation, story_translation, explanation, grammar_note, hint, context_summary
+
+STRUCTURAL RULES:
+- Output ONLY raw JSON. No markdown, no backticks, no conversational text.`,
             temperature: 0.2,
             maxOutputTokens: 3000,
             responseMimeType: "application/json",
@@ -916,103 +840,15 @@ CRITICAL RULES FOR JSON OUTPUT:
           parsed = getFallbackExercise(gamemode, data);
         }
 
-        // Sanitize AI Output to prevent XSS script tags and inline handlers
+        // Sanitize AI Output to prevent XSS
         parsed = sanitizeAiOutput(parsed);
 
-        // Post-process & normalize _vietnamese keys for client UI compatibility
-        if (parsed) {
-          if (gamemode === "fill_blank" && parsed.questions) {
-            parsed.questions = parsed.questions.map((q: any) => {
-              const rawOpts = q.options || [];
-              const opts = rawOpts.map((o: any) => typeof o === 'object' ? (o.text || o.word || String(o)) : String(o));
-              const trans = q.options_vietnamese || q.options_translations || [];
-              let details = Array.isArray(q.options_details) ? q.options_details : [];
-
-              if (!details.length && opts.length) {
-                details = opts.map((optText: string, idx: number) => {
-                  const isCorrect = idx === q.correct_index;
-                  const tr = trans[idx] || (typeof rawOpts[idx] === 'object' ? rawOpts[idx].translation : '');
-                  const reason = isCorrect
-                    ? (q.explanation_vietnamese || q.explanation_short || `Từ '${optText}' phù hợp với ngữ cảnh câu.`)
-                    : `Không phù hợp: Từ '${optText}' ${tr ? `(${tr})` : ''} không chính xác trong ngữ cảnh này.`;
-                  return {
-                    text: optText,
-                    translation: tr,
-                    is_correct: isCorrect,
-                    reason: reason
-                  };
-                });
-              }
-
-              return {
-                ...q,
-                options: opts,
-                options_translations: trans,
-                options_details: details,
-                sentence_translation: q.sentence_vietnamese || q.full_sentence_translation || q.sentence_translation || "",
-                explanation_short: q.explanation_vietnamese || q.explanation_short || "",
-                grammar_note: q.grammar_note_vietnamese || q.grammar_note || ""
-              };
-            });
-          } else if (gamemode === "cloze") {
-            if (parsed.sentence_meaning_vietnamese || parsed.sentence_vietnamese) {
-              parsed.sentence_meaning = parsed.sentence_meaning_vietnamese || parsed.sentence_vietnamese || parsed.sentence_meaning || "";
-            }
-            if (parsed.blanks) {
-              parsed.blanks = parsed.blanks.map((b: any) => ({
-                ...b,
-                meaning_in_vietnamese: b.meaning_vietnamese || b.meaning_in_vietnamese || "",
-                explanation_short: b.explanation_vietnamese || b.explanation_short || ""
-              }));
-            }
-          } else if (gamemode === "story") {
-            if (parsed.passage_vietnamese) {
-              parsed.passage_translation = parsed.passage_vietnamese;
-            }
-            if (parsed.comprehension_questions) {
-              parsed.comprehension_questions = parsed.comprehension_questions.map((q: any) => ({
-                ...q,
-                options_translations: q.options_vietnamese || q.options_translations || [],
-                explanation: q.explanation_vietnamese || q.explanation || ""
-              }));
-            }
-          } else if (gamemode === "translation" && parsed.sentences) {
-            parsed.sentences = parsed.sentences.map((s: any) => ({
-              ...s,
-              target_text: s.target_text_vietnamese || s.target_text || "",
-              grammar_notes: s.grammar_notes_vietnamese || s.grammar_notes || ""
-            }));
-          } else if (gamemode === "unscramble" && parsed.sentences) {
-            parsed = {
-              questions: parsed.sentences.map((s: any) => {
-                const hint = s.hint_vietnamese || s.hint || "";
-                const translation = s.translation_vietnamese || s.translation || "";
-                return {
-                  correct_sentence: s.correct_sentence,
-                  shuffled_words: s.correct_sentence.split(" ").sort(() => Math.random() - 0.5),
-                  hint: hint,
-                  translation: translation,
-                  sentence_meaning: s.sentence_meaning_vietnamese || s.sentence_meaning || translation,
-                  key_vocab: (s.key_vocab || []).map((v: any) => ({
-                    word: v.word,
-                    meaning: v.meaning_vietnamese || v.meaning || ""
-                  })),
-                  word_count: s.correct_sentence.split(" ").length
-                };
-              })
-            };
-          } else if (gamemode === "sentence_transform" && parsed.questions) {
-            parsed.questions = parsed.questions.map((q: any) => ({
-              ...q,
-              instruction: q.instruction_vietnamese || q.instruction || "",
-              grammar_rule: q.grammar_rule_vietnamese || q.grammar_rule || ""
-            }));
-          } else if (gamemode === "taboo" && parsed.rounds) {
-            parsed.rounds = parsed.rounds.map((r: any) => ({
-              ...r,
-              word_meaning_vietnamese: r.word_meaning_vietnamese || r.meaning_vietnamese || ""
-            }));
-          }
+        // v2 post-processing: minimal — ensure shuffled_words for unscramble
+        if (gamemode === "unscramble" && parsed.questions) {
+          parsed.questions = parsed.questions.map((q: any) => ({
+            ...q,
+            shuffled_words: q.correct_sentence ? q.correct_sentence.split(" ").sort(() => Math.random() - 0.5) : []
+          }));
         }
 
         return res.json({
@@ -1038,22 +874,11 @@ CRITICAL RULES FOR JSON OUTPUT:
     }
 
     if (action === "ai_grade") {
-      const { gamemode, user_answer, expected, secret_word } = data;
-      const targetAns = expected || secret_word || "";
+      const { gamemode, user_answer, expected_answer, target_word } = data;
+      const targetAns = expected_answer || target_word || "";
 
-      // Normalize text helper: lowercase, NFKD unicode normalization, strip trailing punctuation, strip extra whitespace
-      const normalizeText = (text: string): string => {
-        if (!text) return "";
-        return String(text)
-          .trim()
-          .toLowerCase()
-          .normalize("NFKD")
-          .replace(/[.,!?;:]$/, "")
-          .replace(/\s+/g, " ");
-      };
-
-      const uNorm = normalizeText(user_answer);
-      const tNorm = normalizeText(targetAns);
+      const uNorm = normalizeAnswer(user_answer);
+      const tNorm = normalizeAnswer(targetAns);
       const isExactMatch = uNorm.length > 0 && uNorm === tNorm;
 
       const ai = getAiClient();
@@ -1069,7 +894,7 @@ CRITICAL RULES FOR JSON OUTPUT:
             explanation: isExactMatch
               ? "Xuất sắc! Câu trả lời hoàn toàn chính xác."
               : isCorrect
-                ? `Khá tốt! Đáp án chính xác gợi ý: '${targetAns}'`
+                ? `Khá tốt! Đáp án gợi ý: '${targetAns}'`
                 : `Cần cải thiện. Đáp án chính xác: '${targetAns}'`
           }
         });

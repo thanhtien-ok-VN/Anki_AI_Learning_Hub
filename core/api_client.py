@@ -137,6 +137,7 @@ class GeminiClient:
         return self._parse_response(raw)
 
     def _parse_response(self, raw: dict) -> dict:
+        from core.engine import clean_json_response
         candidates = raw.get("candidates", [])
         if not candidates:
             log.warn("No candidates in response", {"raw": str(raw)[:200]})
@@ -162,26 +163,14 @@ class GeminiClient:
                 return [_clean_dict(item) for item in val]
             return val
 
-        stripped = text.strip()
-        if stripped.startswith("{"):
-            try:
-                parsed = json.loads(stripped)
-                return _clean_dict(parsed)
-            except json.JSONDecodeError as e:
-                raise ApiError(f"JSON parse failed: {e}")
-        if stripped.startswith("```"):
-            for marker in ["```json\n", "```\n", "```"]:
-                if marker in stripped:
-                    stripped = stripped.split(marker, 1)[1]
-                    if stripped.endswith("```"):
-                        stripped = stripped[:-3]
-                    break
-            try:
-                parsed = json.loads(stripped.strip())
-                return _clean_dict(parsed)
-            except json.JSONDecodeError as e:
-                raise ApiError(f"JSON parse (codeblock) failed: {e}")
-        raise ApiError(f"Response is not JSON: {text[:120]}")
+        cleaned = clean_json_response(text)
+        if not cleaned:
+            raise ApiError(f"Empty response after cleaning: {text[:120]}")
+        try:
+            parsed = json.loads(cleaned)
+            return _clean_dict(parsed)
+        except json.JSONDecodeError as e:
+            raise ApiError(f"JSON parse failed after clean_json_response: {e}")
 
     def _try_keys(self, payload: dict, max_retries: int, base_delay: float) -> dict:
         if not self.keys:

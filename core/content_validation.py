@@ -19,19 +19,21 @@ def validate_game_result(gamemode: str, result: dict, requested_count: int = 0) 
 
 
 def _validate_fill_blank(r: dict) -> dict:
-    options = r.get("options", [])
-    if len(options) != 4:
-        return {"error": f"Expected 4 options, got {len(options)}."}
-    correct_count = sum(1 for o in options if o.get("is_correct"))
-    if correct_count != 1:
-        return {"error": f"Expected 1 correct option, found {correct_count}."}
-    types = {o.get("type") for o in options}
-    invalid = types - VALID_OPTION_TYPES
-    if invalid:
-        return {"error": f"Invalid option types: {invalid}"}
-    words = [o.get("word", "").strip().lower() for o in options]
-    if len(set(words)) != 4 or not all(words):
-        return {"error": "Duplicate or empty option words."}
+    questions = r.get("questions", [r])
+    for i, q in enumerate(questions):
+        options = q.get("options", [])
+        if len(options) != 4:
+            return {"error": f"Question {i+1}: expected 4 options, got {len(options)}."}
+        correct_count = sum(1 for o in options if o.get("is_correct"))
+        if correct_count != 1:
+            return {"error": f"Question {i+1}: expected 1 correct option, found {correct_count}."}
+        types = {o.get("type") for o in options}
+        invalid = types - VALID_OPTION_TYPES
+        if invalid:
+            return {"error": f"Question {i+1}: invalid option types: {invalid}"}
+        words = [o.get("word", "").strip().lower() for o in options]
+        if len(set(words)) != 4 or not all(words):
+            return {"error": f"Question {i+1}: duplicate or empty option words."}
     return {}
 
 

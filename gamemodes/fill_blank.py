@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, List
 from .base import GameModeBase
 
 class FillBlankMode(GameModeBase):
@@ -7,22 +7,28 @@ class FillBlankMode(GameModeBase):
     icon = "✍️"
 
     def render_ui_data(self, raw_result: dict) -> dict:
+        questions = raw_result.get("questions", [raw_result])
         return {
-            "sentence": raw_result.get("sentence", ""),
-            "target_word": raw_result.get("target_word", ""),
-            "meaning_vi": raw_result.get("meaning_vi", ""),
-            "full_translation": raw_result.get("full_translation", ""),
-            "options": [
+            "questions": [
                 {
-                    "word": o.get("word", ""),
-                    "is_correct": o.get("is_correct", False),
-                    "type": o.get("type", ""),
-                    "reason": o.get("reason", ""),
+                    "sentence": q.get("sentence", ""),
+                    "target_word": q.get("target_word", ""),
+                    "meaning_vi": q.get("meaning_vi", ""),
+                    "full_translation": q.get("full_translation", ""),
+                    "options": [
+                        {
+                            "word": o.get("word", ""),
+                            "is_correct": o.get("is_correct", False),
+                            "type": o.get("type", ""),
+                            "reason": o.get("reason", ""),
+                        }
+                        for o in q.get("options", [])
+                    ],
+                    "explanation": q.get("explanation", ""),
+                    "grammar_note": q.get("grammar_note", ""),
                 }
-                for o in raw_result.get("options", [])
-            ],
-            "explanation": raw_result.get("explanation", ""),
-            "grammar_note": raw_result.get("grammar_note", ""),
+                for q in questions
+            ]
         }
 
     def check_answer(self, user_input: Any, correct: Any) -> dict:

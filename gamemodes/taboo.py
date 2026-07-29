@@ -11,11 +11,11 @@ class TabooMode(GameModeBase):
         return {
             "rounds": [
                 {
-                    "target_word": r.get("target_word", r.get("secret_word", "")),
+                    "target_word": r.get("target_word", ""),
                     "meaning_vi": r.get("meaning_vi", ""),
-                    "taboo_words": r.get("taboo_words", r.get("forbidden_words", [])),
-                    "clue": r.get("clue", r.get("ai_description", "")),
-                    "difficulty_level": r.get("difficulty_level", r.get("difficulty", "medium")),
+                    "taboo_words": r.get("taboo_words", []),
+                    "clue": r.get("clue", ""),
+                    "difficulty_level": r.get("difficulty_level", "medium"),
                     "sample_acceptable_phrases": r.get("sample_acceptable_phrases", []),
                     "sample_forbidden_phrases": r.get("sample_forbidden_phrases", []),
                 }
@@ -31,7 +31,7 @@ class TabooMode(GameModeBase):
         return {
             "correct": is_correct,
             "guess": user_input,
-            "secret_word": correct,
+            "target_word": correct,
             "feedback": "Correct!" if is_correct else f"The word was: {correct}",
             "points": 1 if is_correct else 0,
         }
