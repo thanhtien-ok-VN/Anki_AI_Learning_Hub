@@ -194,22 +194,34 @@ class GeminiClient:
         if not eligible:
             eligible = [min(range(len(self.keys)), key=lambda i: self._unhealthy_until.get(i, 0))]
 
-        for position, idx in enumerate(eligible):
+        # Vòng lặp ngoài: duyệt qua từng mức ưu tiên của model (step 0, step 1, step 2...)
+        # Xác định số lượng model tối đa của các key
+        max_model_steps = 0
+        for idx in eligible:
             key = self.keys[idx]
-            key_label = f"key{idx+1} ({self.detect_key_type(key)})"
+            max_model_steps = max(max_model_steps, len(self._models_for_call(key)))
 
-            if position > 0:
-                time.sleep(0.25)
+        for step in range(max_model_steps):
+            # Với mỗi model step, duyệt qua các key hợp lệ
+            for position, idx in list(enumerate(eligible)):
+                # Nếu idx đã bị loại bỏ khỏi eligible do lỗi xác thực trước đó, ta bỏ qua
+                if idx not in eligible:
+                    continue
 
-            models_for_key = self._models_for_call(key)
+                key = self.keys[idx]
+                key_label = f"key{idx+1} ({self.detect_key_type(key)})"
 
-            skip_key = False
-            for model in models_for_key:
-                if skip_key:
-                    break
+                models_for_key = self._models_for_call(key)
+                if step >= len(models_for_key):
+                    continue
+                model = models_for_key[step]
+
+                if position > 0:
+                    time.sleep(0.25)
+
                 for attempt in range(max_retries):
                     try:
-                        log.debug(f"Trying {key_label} attempt {attempt+1}/{max_retries}", {"model": model})
+                        log.debug(f"Trying {key_label} step {step} model {model} attempt {attempt+1}/{max_retries}")
                         result = self._call_api(payload, key, model)
                         if isinstance(result, dict) and not result.get("error"):
                             self._active_key_index = idx
@@ -221,9 +233,6 @@ class GeminiClient:
                             delay = self._retry_delay(attempt)
                             log.warn(f"{key_label} {model} rate limited, retry in {delay:.1f}s")
                             time.sleep(delay)
-                            continue
-                        if model != models_for_key[-1]:
-                            log.warn(f"{key_label} {model} exhausted retries, fallback to next model")
                             continue
                         self._unhealthy_until[idx] = time.monotonic() + 60
                         last_error = f"{key_label} {model}: rate limited after {max_retries} retries"
@@ -259,7 +268,8 @@ class GeminiClient:
                         self._unhealthy_until[idx] = time.monotonic() + delay
                         if is_auth_error:
                             log.warn(f"Auth error on {key_label}. Skipping this key entirely.")
-                            skip_key = True
+                            if idx in eligible:
+                                eligible.remove(idx)
                             break
                         if attempt < max_retries - 1:
                             log.warn(f"{last_error}, retry in {base_delay}s")
