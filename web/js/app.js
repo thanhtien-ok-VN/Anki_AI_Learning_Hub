@@ -1718,55 +1718,15 @@ const App = (() => {
       const elapsedSec = Math.max(1, Math.round((Date.now() - startTime) / 1000));
       const mins = Math.floor(elapsedSec / 60);
       const secs = elapsedSec % 60;
-      const timeFormatted = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-      const accuracy = totalAttempts > 0 ? Math.round((matchedCount / totalAttempts) * 100) : (matchedCount > 0 ? 100 : 0);
-
-      // Record result to current history item
-      if (state.currentHistoryItem) {
-        state.currentHistoryItem.score = matchedCount;
-        state.currentHistoryItem.total = totalPairsCount;
-        state.currentHistoryItem.wrongCount = wrongCount;
-        state.currentHistoryItem.accuracy = accuracy;
-        state.currentHistoryItem.timeSec = elapsedSec;
-      }
-
-      if (state.activeSessions && state.activeSessions.matching && state.activeSessions.matching.historyItem) {
-        state.activeSessions.matching.historyItem.score = matchedCount;
-        state.activeSessions.matching.historyItem.total = totalPairsCount;
-        state.activeSessions.matching.historyItem.wrongCount = wrongCount;
-        state.activeSessions.matching.historyItem.accuracy = accuracy;
-        state.activeSessions.matching.historyItem.timeSec = elapsedSec;
-      }
-
-      d.innerHTML = `
-        <div class="question-card" style="text-align: center; padding: 28px 20px;">
-          <h3 style="font-size: 22px; color: var(--success); margin-bottom: 12px;">🎉 Hoàn thành bài ghép từ!</h3>
-          <p style="font-size: 15px; color: var(--text-secondary); margin-bottom: 20px;">
-            Bạn đã nối thành công <b>${matchedCount}/${totalPairsCount}</b> cặp từ vựng.
-          </p>
-
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; margin-bottom: 24px;">
-            <div style="background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px;">
-              <div style="font-size: 12px; color: var(--text-secondary);">Thời gian</div>
-              <div style="font-size: 18px; font-weight: 700; color: var(--primary); margin-top: 4px;">⏱️ ${timeFormatted}</div>
-            </div>
-            <div style="background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px;">
-              <div style="font-size: 12px; color: var(--text-secondary);">Lần chọn sai</div>
-              <div style="font-size: 18px; font-weight: 700; color: ${wrongCount > 0 ? 'var(--error)' : 'var(--success)'}; margin-top: 4px;">❌ ${wrongCount} lần</div>
-            </div>
-            <div style="background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px;">
-      const elapsedSec = Math.max(0, Math.round((Date.now() - startTime) / 1000));
-      const mins = Math.floor(elapsedSec / 60);
-      const secs = elapsedSec % 60;
       const timeStr = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-      const accuracy = totalAttempts > 0 ? Math.round((matchedCount / totalAttempts) * 100) : 100;
+      const accuracy = totalAttempts > 0 ? Math.round((matchedCount / totalAttempts) * 100) : (matchedCount > 0 ? 100 : 0);
 
       const historyItem = state.currentHistoryItem || {};
       historyItem.score = matchedCount;
       historyItem.maxScore = totalPairsCount;
       historyItem.timeTaken = elapsedSec;
       historyItem.accuracy = accuracy;
-      saveHistory();
+      if (typeof saveHistory === 'function') saveHistory();
 
       d.innerHTML = `
         <div class="feedback good" style="text-align:center; padding: 24px;">
@@ -1784,10 +1744,11 @@ const App = (() => {
         </div>
       `;
 
+      resetGameState('matching');
       const restartBtn = d.querySelector('#restart-matching-btn');
-      if (restartBtn) restartBtn.onclick = () => play('matching');
+      if (restartBtn) restartBtn.onclick = () => renderMatching(data);
       const newBtn = d.querySelector('#new-matching-btn');
-      if (newBtn) newBtn.onclick = () => generate('matching');
+      if (newBtn) newBtn.onclick = () => nav('home');
     }
 
     function renderBoard() {
