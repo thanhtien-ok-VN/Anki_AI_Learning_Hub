@@ -13,11 +13,13 @@ import re
 
 def clean_json_response(raw_text: str) -> str:
     """Strip markdown code blocks and extra text, return pure JSON."""
+    if not raw_text or not isinstance(raw_text, str):
+        return raw_text or ""
     cleaned = re.sub(r"```(?:json)?", "", raw_text)
     start = cleaned.find("{")
     end = cleaned.rfind("}")
     if start != -1 and end != -1:
-        return cleaned[start:end+1]
+        cleaned = cleaned[start:end+1]
     return cleaned.strip()
 
 def normalize_answer(text: str) -> str:
@@ -38,41 +40,32 @@ def sanitize_html(text: str) -> str:
         flags=re.IGNORECASE | re.DOTALL
     )
     text = re.sub(
-        r"<(script|iframe|style|link|embed|object|form|input|button)\b[^>]*>",
+        r"<(script|iframe|style|link|embed|object|form|input|button)\b[^>]*/>?",
         "",
         text,
         flags=re.IGNORECASE
     )
-    # 2. Strip standard inline attributes starting with 'on'
-    text = re.sub(
-        r"\s*on\w+\s*=\s*(?:\"[^\"]*\"|'[^']*'|[^\s>]+)",
-        "",
-        text,
-        flags=re.IGNORECASE
-    )
-    # 3. Strip javascript: URLs
-    text = re.sub(
-        r"(href|src|action)\s*=\s*[\"']?\s*javascript:[^\"'>]*[\"']?",
-        "",
-        text,
-        flags=re.IGNORECASE
-    )
-    # 4. Remove other non-whitelisted tags
-    whitelist = {"b", "i", "u", "br", "p", "span", "code", "hr", "/b", "/i", "/u", "/br", "/p", "/span", "/code", "/hr"}
-    
+    # 2. Strip inline event attributes like onclick=...
+    text = re.sub(r"\s*on\w+\s*=\s*(?:\"[^\"]*\"|'[^']*'|[^\s>]+)", "", text, flags=re.IGNORECASE)
+    # 3. Strip javascript: URIs
+    text = re.sub(r"(href|src|action)\s*=\s*[\"']?\s*javascript:[^\"'>]*[\"']?", "", text, flags=re.IGNORECASE)
+    # 4. Strip any tag NOT in the whitelist
+    whitelist = {"b", "i", "u", "br", "p", "span", "code", "hr"}
     def tag_repl(match):
-        full_tag = match.group(0)
         tag_name = match.group(1).lower()
         if tag_name in whitelist:
-            return full_tag
+            return match.group(0)
         return ""
-        
     return re.sub(r"<(/?[a-zA-Z0-9]+)(?:\s+[^>]*)?>", tag_repl, text)
 
 def sanitize_dict(val: Any) -> Any:
-    """Recursively search for strings and run sanitize_html over them."""
+    """Recursively search for strings and run sanitize_html over them, stripping bad newlines/quotes from dict keys."""
     if isinstance(val, dict):
-        return {k: sanitize_dict(v) for k, v in val.items()}
+        cleaned_dict = {}
+        for k, v in val.items():
+            clean_key = k.strip().strip('"').strip("'").strip() if isinstance(k, str) else k
+            cleaned_dict[clean_key] = sanitize_dict(v)
+        return cleaned_dict
     elif isinstance(val, list):
         return [sanitize_dict(item) for item in val]
     elif isinstance(val, str):

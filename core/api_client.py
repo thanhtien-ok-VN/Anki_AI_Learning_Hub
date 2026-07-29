@@ -155,10 +155,18 @@ class GeminiClient:
             log.warn("Empty response text")
             raise ApiError("Empty response text")
 
+        def _clean_dict(val):
+            if isinstance(val, dict):
+                return {k.strip().strip('"').strip("'").strip(): _clean_dict(v) for k, v in val.items() if isinstance(k, str)}
+            elif isinstance(val, list):
+                return [_clean_dict(item) for item in val]
+            return val
+
         stripped = text.strip()
         if stripped.startswith("{"):
             try:
-                return json.loads(stripped)
+                parsed = json.loads(stripped)
+                return _clean_dict(parsed)
             except json.JSONDecodeError as e:
                 raise ApiError(f"JSON parse failed: {e}")
         if stripped.startswith("```"):
@@ -169,7 +177,8 @@ class GeminiClient:
                         stripped = stripped[:-3]
                     break
             try:
-                return json.loads(stripped.strip())
+                parsed = json.loads(stripped.strip())
+                return _clean_dict(parsed)
             except json.JSONDecodeError as e:
                 raise ApiError(f"JSON parse (codeblock) failed: {e}")
         raise ApiError(f"Response is not JSON: {text[:120]}")
