@@ -26,6 +26,59 @@ def normalize_answer(text: str) -> str:
         return ""
     return re.sub(r"\s+", " ", text.lower().strip()).rstrip(".,!?;:")
 
+def sanitize_html(text: str) -> str:
+    """Strips all HTML tags except safe formatting ones: b, i, u, br, p, span, code, hr."""
+    if not text or not isinstance(text, str):
+        return text or ""
+    # 1. Strip dangerous tags completely along with their contents
+    text = re.sub(
+        r"<(script|iframe|style|link|embed|object|form|input|button)\b[^<]*(?:(?!</\1>)<[^<]*)*</\1>",
+        "",
+        text,
+        flags=re.IGNORECASE | re.DOTALL
+    )
+    text = re.sub(
+        r"<(script|iframe|style|link|embed|object|form|input|button)\b[^>]*>",
+        "",
+        text,
+        flags=re.IGNORECASE
+    )
+    # 2. Strip standard inline attributes starting with 'on'
+    text = re.sub(
+        r"\s*on\w+\s*=\s*(?:\"[^\"]*\"|'[^']*'|[^\s>]+)",
+        "",
+        text,
+        flags=re.IGNORECASE
+    )
+    # 3. Strip javascript: URLs
+    text = re.sub(
+        r"(href|src|action)\s*=\s*[\"']?\s*javascript:[^\"'>]*[\"']?",
+        "",
+        text,
+        flags=re.IGNORECASE
+    )
+    # 4. Remove other non-whitelisted tags
+    whitelist = {"b", "i", "u", "br", "p", "span", "code", "hr", "/b", "/i", "/u", "/br", "/p", "/span", "/code", "/hr"}
+    
+    def tag_repl(match):
+        full_tag = match.group(0)
+        tag_name = match.group(1).lower()
+        if tag_name in whitelist:
+            return full_tag
+        return ""
+        
+    return re.sub(r"<(/?[a-zA-Z0-9]+)(?:\s+[^>]*)?>", tag_repl, text)
+
+def sanitize_dict(val: Any) -> Any:
+    """Recursively search for strings and run sanitize_html over them."""
+    if isinstance(val, dict):
+        return {k: sanitize_dict(v) for k, v in val.items()}
+    elif isinstance(val, list):
+        return [sanitize_dict(item) for item in val]
+    elif isinstance(val, str):
+        return sanitize_html(val)
+    return val
+
 ADDON_PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SETTINGS_PATH = os.path.join(ADDON_PATH, "user_files", "settings.json")
 
@@ -421,6 +474,8 @@ class AIEngine:
         )
         log.debug("Context saved", {"gamemode": gamemode})
 
+        # Recursively sanitize all HTML content in result before returning
+        result = sanitize_dict(result)
         return result
 
     def _handle_save_settings(self, data: dict) -> dict:
@@ -519,6 +574,7 @@ class AIEngine:
             definition_field=data.get("definition_field", ""),
             limit=data.get("limit", 50),
             excluded_pair_keys=data.get("excluded_pair_keys", []),
+            weak_words=data.get("weak_words", []),
         )
 
 
@@ -587,7 +643,8 @@ class AIEngine:
         result = client.generate_text(prompt, temperature=0.3)
         if result:
             try:
-                return json.loads(result)
+                parsed = json.loads(result)
+                return sanitize_dict(parsed)
             except Exception:
                 pass
         return {"correct": False, "score": 0, "explanation": "AI grading failed"}

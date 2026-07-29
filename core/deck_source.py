@@ -107,6 +107,7 @@ def list_source_fields(model_id: int) -> dict:
 def sample_vocab_pairs(
     *, deck_id: int | None, model_id: int, term_field: str, definition_field: str,
     limit: int = 50, excluded_pair_keys: list[str] | None = None,
+    weak_words: list[str] | None = None,
 ) -> dict:
     """Sample de-duplicated pairs.  The hard cap is deliberately server-side."""
     col = _collection()
@@ -118,7 +119,52 @@ def sample_vocab_pairs(
         return _error("E_DECK_NOT_FOUND", "The selected deck no longer exists.")
     limit = max(1, min(int(limit or MAX_SAMPLE_SIZE), MAX_SAMPLE_SIZE))
     model = col.models.get(int(model_id))
-    known_fields = {field["name"] for field in (model or {}).get("flds", [])}
+    flds = (model or {}).get("flds", [])
+    known_fields = [field["name"] for field in flds]
+
+    # Dynamic Field Detection: auto-detect term_field (word)
+    if not term_field or term_field not in known_fields:
+        term_keywords = ["front", "word", "term", "voc", "english", "keyword"]
+        found_term = None
+        for f in known_fields:
+            if any(kw in f.lower() for kw in term_keywords):
+                found_term = f
+                break
+        if found_term:
+            term_field = found_term
+        else:
+            note_ids = _note_ids(deck_id=deck_id, model_id=model_id)
+            if note_ids:
+                note = col.get_note(note_ids[0])
+                for f in known_fields:
+                    val = _plain(note[f])
+                    if val and len(val) < 50:
+                        term_field = f
+                        break
+            if (not term_field or term_field not in known_fields) and known_fields:
+                term_field = known_fields[0]
+
+    # Dynamic Field Detection: auto-detect definition_field (meaning)
+    if not definition_field or definition_field not in known_fields or definition_field == term_field:
+        def_keywords = ["back", "meaning", "def", "translation", "vietnamese", "explain"]
+        found_def = None
+        for f in known_fields:
+            if f == term_field:
+                continue
+            if any(kw in f.lower() for kw in def_keywords):
+                found_def = f
+                break
+        if found_def:
+            definition_field = found_def
+        else:
+            if known_fields:
+                for f in known_fields:
+                    if f != term_field:
+                        definition_field = f
+                        break
+            if (not definition_field or definition_field not in known_fields or definition_field == term_field) and len(known_fields) > 1:
+                definition_field = known_fields[1]
+
     if term_field not in known_fields or definition_field not in known_fields:
         return _error("E_FIELD_NOT_FOUND", "Choose two fields from the selected note type.")
     if term_field == definition_field:
@@ -126,20 +172,68 @@ def sample_vocab_pairs(
 
     excluded = set(excluded_pair_keys or [])
     note_ids = _note_ids(deck_id=deck_id, model_id=model_id)
-    random.shuffle(note_ids)
-    pairs: list[dict[str, str]] = []
+
+    weak_words_set = {w.strip().lower() for w in (weak_words or []) if w.strip()}
+    weak_note_ids = []
+    normal_note_ids = []
+
+    if weak_words_set:
+        for nid in note_ids:
+            try:
+                note = col.get_note(nid)
+                term = _plain(note[term_field]).strip().lower()
+                if term in weak_words_set:
+                    weak_note_ids.append(nid)
+                else:
+                    normal_note_ids.append(nid)
+            except Exception:
+                normal_note_ids.append(nid)
+        random.shuffle(weak_note_ids)
+        random.shuffle(normal_note_ids)
+    else:
+        normal_note_ids = list(note_ids)
+        random.shuffle(normal_note_ids)
+
+    pairs: list[dict[str, Any]] = []
     seen: set[tuple[str, str]] = set()
-    for nid in note_ids:
-        note = col.get_note(nid)
-        term, definition = _plain(note[term_field]), _plain(note[definition_field])
-        key = (term.casefold(), definition.casefold())
-        wire_key = f"{key[0]}\0{key[1]}"
-        if not term or not definition or key in seen or wire_key in excluded:
-            continue
-        seen.add(key)
-        pairs.append({"id": nid, "key": wire_key, "term": term, "definition": definition})
-        if len(pairs) == limit:
+
+    # 1. Select weak words first (up to 30% of the limit)
+    weak_limit = max(1, int(limit * 0.3)) if weak_words_set else 0
+    if weak_note_ids and weak_limit > 0:
+        for nid in weak_note_ids:
+            try:
+                note = col.get_note(nid)
+                term, definition = _plain(note[term_field]), _plain(note[definition_field])
+                key = (term.casefold(), definition.casefold())
+                wire_key = f"{key[0]}\0{key[1]}"
+                if not term or not definition or key in seen or wire_key in excluded:
+                    continue
+                seen.add(key)
+                pairs.append({"id": nid, "key": wire_key, "term": term, "definition": definition, "is_weak": True})
+                if len(pairs) == weak_limit:
+                    break
+            except Exception:
+                continue
+
+    # 2. Fill the remaining space with normal notes
+    for nid in normal_note_ids:
+        if len(pairs) >= limit:
             break
+        try:
+            note = col.get_note(nid)
+            term, definition = _plain(note[term_field]), _plain(note[definition_field])
+            key = (term.casefold(), definition.casefold())
+            wire_key = f"{key[0]}\0{key[1]}"
+            if not term or not definition or key in seen or wire_key in excluded:
+                continue
+            seen.add(key)
+            pairs.append({"id": nid, "key": wire_key, "term": term, "definition": definition})
+        except Exception:
+            continue
+
+    # Shuffle the final combined list to distribute weak words randomly
+    random.shuffle(pairs)
+
     return _ok({
         "pairs": pairs, "total": len(pairs), "limit": limit,
         "exhausted": not pairs and bool(excluded),

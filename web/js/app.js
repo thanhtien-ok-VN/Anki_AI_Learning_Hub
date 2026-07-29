@@ -25,6 +25,7 @@ const App = (() => {
         delete state.history['matching'];
         localStorage.setItem(PFX + 'history', JSON.stringify(state.history));
       }
+      clearActiveSession();
     } catch (e) {}
   }
 
@@ -145,9 +146,116 @@ const App = (() => {
       .replace(/\s*on\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, '')
       .replace(/(href|src|action)\s*=\s*["']?\s*javascript:[^"'>]*["']?/gi, '');
   };
-  const toast = m => { const e = document.createElement('div'); e.className = 'toast'; e.textContent = m; document.body.append(e); setTimeout(() => e.remove(), 3500); };
+  const timers = [];
+  const activeIntervals = [];
+
+  const setSafeTimeout = (fn, delay) => {
+    const id = setTimeout(fn, delay);
+    timers.push(id);
+    return id;
+  };
+
+  const setSafeInterval = (fn, delay) => {
+    const id = setInterval(fn, delay);
+    activeIntervals.push(id);
+    return id;
+  };
+
+  const disposeCurrentGame = () => {
+    while (timers.length > 0) {
+      clearTimeout(timers.pop());
+    }
+    while (activeIntervals.length > 0) {
+      clearInterval(activeIntervals.pop());
+    }
+    if (window._activeMatchingTimer) {
+      clearInterval(window._activeMatchingTimer);
+      window._activeMatchingTimer = null;
+    }
+  };
+
+  const toastQueue = [];
+  let toastActive = false;
+  const toast = m => {
+    toastQueue.push(m);
+    processToastQueue();
+  };
+  const processToastQueue = () => {
+    if (toastActive || toastQueue.length === 0) return;
+    toastActive = true;
+    const m = toastQueue.shift();
+    const e = document.createElement('div');
+    e.className = 'toast';
+    e.textContent = m;
+    document.body.append(e);
+    // Trigger animation
+    setTimeout(() => { e.classList.add('show'); }, 10);
+    setSafeTimeout(() => {
+      e.classList.remove('show');
+      setSafeTimeout(() => {
+        e.remove();
+        toastActive = false;
+        processToastQueue();
+      }, 300);
+    }, 3000);
+  };
+
+  const getWeakWords = () => {
+    try {
+      const data = localStorage.getItem('ai_learning_hub_weak_words');
+      return data ? JSON.parse(data) : [];
+    } catch (_) {}
+    return [];
+  };
+
+  const addWeakWord = word => {
+    try {
+      if (!word) return;
+      const list = getWeakWords();
+      if (!list.includes(word)) {
+        list.push(word);
+        if (list.length > 100) list.shift();
+        localStorage.setItem('ai_learning_hub_weak_words', JSON.stringify(list));
+      }
+    } catch (_) {}
+  };
+
+  const saveActiveSession = () => {
+    try {
+      if (!state.exercise) {
+        localStorage.removeItem('ai_learning_hub_active_session');
+        return;
+      }
+      const session = {
+        route: state.route,
+        exercise: state.exercise,
+        answers: state.answers,
+        index: state.index,
+        isGraded: state.isGraded,
+        hintedQuestions: state.hintedQuestions ? Array.from(state.hintedQuestions) : []
+      };
+      localStorage.setItem('ai_learning_hub_active_session', JSON.stringify(session));
+    } catch (_) {}
+  };
+
+  const loadActiveSession = () => {
+    try {
+      const data = localStorage.getItem('ai_learning_hub_active_session');
+      if (data) {
+        return JSON.parse(data);
+      }
+    } catch (_) {}
+    return null;
+  };
+
+  const clearActiveSession = () => {
+    try {
+      localStorage.removeItem('ai_learning_hub_active_session');
+    } catch (_) {}
+  };
+
   const nav = r => {
-    if (window._activeMatchingTimer) { clearInterval(window._activeMatchingTimer); window._activeMatchingTimer = null; }
+    disposeCurrentGame();
     abortActiveRequests();
     state.route = r;
     location.hash = r === 'home' ? '' : r;
@@ -183,10 +291,51 @@ const App = (() => {
   }
 
   function home() {
-    shell('<main class="container"><div class="header" style="padding-top:50px"><h1>' + esc(t('app.title', 'AI Learning Hub')) + '</h1><p>' + esc(t('app.home_subtitle', 'Chọn một game để học từ bộ thẻ Anki')) + '</p><div class="api-check"><button class="btn btn-outline" id="test-keys">' + esc(t('app.test_api', 'Kiểm tra API')) + '</button><span id="api-result" aria-live="polite"></span></div></div><div class="game-grid">' + games.map(g => '<button class="game-card" data-game="' + g[0] + '"><div class="icon">' + g[1] + '</div><h3>' + esc(t(g[0] + '.title', g[2])) + '</h3><p>' + esc(getGameDesc(g[0])) + '</p></button>').join('') + '</div></main>');
+    const saved = loadActiveSession();
+    let resumeBanner = '';
+    if (saved && saved.exercise) {
+      resumeBanner = `
+        <div class="resume-banner" style="background: rgba(234, 179, 8, 0.08); border: 1px solid #eab308; border-radius: 8px; padding: 16px; margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between; gap: 12px; animation: slideDown 0.3s ease;">
+          <div style="font-size: 14.5px; color: var(--text-primary); text-align: left;">
+            💡 <b>Bài học dang dở:</b> Bạn có một phiên học chưa hoàn thành ở game <b>${esc(t(saved.route + '.title', saved.route))}</b>.
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <button class="btn btn-outline" id="resume-btn" style="padding: 8px 16px; border-color: #ca8a04; color: #ca8a04; background: white; font-weight: 600; cursor: pointer;">Tiếp tục</button>
+            <button class="btn btn-outline" id="discard-resume-btn" style="padding: 8px 16px; border-color: #ef4444; color: #ef4444; background: white; font-weight: 600; cursor: pointer;">Bỏ qua</button>
+          </div>
+        </div>
+      `;
+    }
+
+    shell('<main class="container"><div class="header" style="padding-top:50px">' + resumeBanner + '<h1>' + esc(t('app.title', 'AI Learning Hub')) + '</h1><p>' + esc(t('app.home_subtitle', 'Chọn một game để học từ bộ thẻ Anki')) + '</p><div class="api-check"><button class="btn btn-outline" id="test-keys">' + esc(t('app.test_api', 'Kiểm tra API')) + '</button><span id="api-result" aria-live="polite"></span></div></div><div class="game-grid">' + games.map(g => '<button class="game-card" data-game="' + g[0] + '"><div class="icon">' + g[1] + '</div><h3>' + esc(t(g[0] + '.title', g[2])) + '</h3><p>' + esc(getGameDesc(g[0])) + '</p></button>').join('') + '</div></main>');
     bindCommon();
     document.querySelectorAll('[data-game]').forEach(e => e.onclick = () => nav(e.dataset.game));
     document.querySelector('#test-keys').onclick = testKeys;
+
+    if (saved) {
+      const resumeBtn = document.querySelector('#resume-btn');
+      if (resumeBtn) {
+        resumeBtn.onclick = () => {
+          state.route = saved.route;
+          state.exercise = saved.exercise;
+          state.answers = saved.answers || {};
+          state.index = saved.index || 0;
+          state.isGraded = !!saved.isGraded;
+          state.hintedQuestions = new Set(saved.hintedQuestions || []);
+          
+          location.hash = saved.route;
+          shell('<main class="container fade-in"><div class="header"><h1>' + esc(t(saved.route + '.title', saved.route)) + '</h1></div><div id="play"></div></main>');
+          play(saved.route);
+        };
+      }
+      const discardBtn = document.querySelector('#discard-resume-btn');
+      if (discardBtn) {
+        discardBtn.onclick = () => {
+          clearActiveSession();
+          home();
+        };
+      }
+    }
   }
 
   function getGameDesc(id) {
@@ -783,7 +932,7 @@ const App = (() => {
     const term_field = document.querySelector('#term').value;
     const definition_field = document.querySelector('#definition').value;
     if (!deck_id || !model_id || !term_field || !definition_field) throw Error('Hãy chọn deck, note type và hai trường.');
-    return { deck_id, model_id, term_field, definition_field, limit: +document.querySelector('#sample-limit').value || 20, excluded_pair_keys: [...state.seen] };
+    return { deck_id, model_id, term_field, definition_field, limit: +document.querySelector('#sample-limit').value || 20, excluded_pair_keys: [...state.seen], weak_words: getWeakWords() };
   }
 
   function preview() {
@@ -855,6 +1004,7 @@ const App = (() => {
         isGraded: false,
         historyItem: historyItem
       };
+      saveActiveSession();
 
       play(id);
     } catch(e) {
@@ -1000,6 +1150,14 @@ const App = (() => {
           <div class="options-grid" id="choices-${i}">
             ${optsHtml}
           </div>
+          ${!isGraded ? `
+            <div style="margin-top: 10px; text-align: right;">
+              <button class="btn btn-outline hint-btn" data-hint-q="${i}" style="padding: 4px 10px; font-size: 12.5px; border-color: #eab308; color: #ca8a04;">
+                💡 Gợi ý
+              </button>
+              <div class="hint-text-box" id="hint-text-${i}" style="font-size: 13px; color: var(--text-secondary); margin-top: 6px; text-align: left; display: none; background: rgba(234, 179, 8, 0.05); padding: 8px 12px; border-radius: 6px; border-left: 3px solid #eab308;"></div>
+            </div>
+          ` : ''}
           <div id="feedback-${i}">${feedbackHtml}</div>
         </div>
       `;
@@ -1039,6 +1197,43 @@ const App = (() => {
         };
       });
 
+      d.querySelectorAll('[data-hint-q]').forEach(btn => {
+        let hintLevel = 0;
+        btn.onclick = () => {
+          const qIdx = +btn.dataset.hintQ;
+          const q = x.questions[qIdx];
+          const textEl = document.querySelector(`#hint-text-${qIdx}`);
+          if (!textEl) return;
+          textEl.style.display = 'block';
+
+          let correctIdx = q.options.findIndex(o => typeof o === 'object' ? o.is_correct : false);
+          if (correctIdx === -1) correctIdx = q.correct_index;
+          const correctOpt = q.options[correctIdx];
+          const word = typeof correctOpt === 'object' ? correctOpt.word : correctOpt;
+          const translation = typeof correctOpt === 'object' ? correctOpt.translation : (q.options_translations ? q.options_translations[correctIdx] : '');
+
+          hintLevel++;
+          if (hintLevel === 1) {
+            textEl.innerHTML = `⭐ <b>Gợi ý 1:</b> Chữ cái đầu là: <code style="font-size:14px; font-weight:700;">${word.charAt(0)}</code>`;
+          } else if (hintLevel === 2) {
+            textEl.innerHTML = `⭐ <b>Gợi ý 1:</b> Chữ cái đầu là: <code>${word.charAt(0)}</code><br>⭐ <b>Gợi ý 2:</b> Nghĩa: <i>${translation || 'Không có'}</i>`;
+          } else if (hintLevel === 3) {
+            textEl.innerHTML = `⭐ <b>Đáp án là:</b> <code>${word}</code> (Đã tự động điền & tính sai câu này)`;
+            state.answers[qIdx] = correctIdx;
+            if (!state.hintedQuestions) state.hintedQuestions = new Set();
+            state.hintedQuestions.add(qIdx);
+
+            const choices = document.querySelectorAll(`#choices-${qIdx} [data-choice]`);
+            choices.forEach(btn => btn.classList.remove('selected'));
+            const correctBtn = document.querySelector(`#choices-${qIdx} [data-choice="${correctIdx}"]`);
+            if (correctBtn) correctBtn.classList.add('selected');
+
+            btn.disabled = true;
+            btn.style.opacity = '0.5';
+          }
+        };
+      });
+
       const gradeBtn = document.querySelector('#grade-fill-blank');
       if (gradeBtn) {
         gradeBtn.onclick = () => {
@@ -1051,7 +1246,15 @@ const App = (() => {
           x.questions.forEach((q, i) => {
             let correctIdx = q.options.findIndex(o => typeof o === 'object' ? o.is_correct : false);
             if (correctIdx === -1) correctIdx = q.correct_index;
-            if (state.answers[i] === correctIdx) score++;
+            const wasHinted = state.hintedQuestions && state.hintedQuestions.has(i);
+            const isCorrect = state.answers[i] === correctIdx && !wasHinted;
+            if (isCorrect) {
+              score++;
+            } else {
+              const correctOpt = q.options[correctIdx];
+              const termWord = typeof correctOpt === 'object' ? correctOpt.word : correctOpt;
+              addWeakWord(termWord);
+            }
           });
 
           if (state.currentHistoryItem) {
@@ -1442,7 +1645,7 @@ const App = (() => {
         const emptyL = selectedWordIdx;
         const emptyR = selectedMeaningIdx;
 
-        setTimeout(() => {
+        setSafeTimeout(() => {
           activeWords[emptyL] = null;
           activeMeanings[emptyR] = null;
           selectedWordIdx = null;
@@ -1472,7 +1675,7 @@ const App = (() => {
           rightBtn.classList.add('wrong');
         }
 
-        setTimeout(() => {
+        setSafeTimeout(() => {
           if (leftBtn) {
             leftBtn.classList.remove('wrong');
             leftBtn.classList.remove('selected');
@@ -1662,7 +1865,7 @@ const App = (() => {
     initBoard();
 
     if (timerInterval) clearInterval(timerInterval);
-    timerInterval = setInterval(() => {
+    timerInterval = setSafeInterval(() => {
       if (isFinished) {
         clearInterval(timerInterval);
         return;
@@ -1687,6 +1890,7 @@ const App = (() => {
     state.answers = {};
     state.isGraded = false;
     state.index = 0;
+    state.hintedQuestions = new Set();
     if (gameId && state.activeSessions && state.activeSessions[gameId]) {
       delete state.activeSessions[gameId];
     }
@@ -2065,7 +2269,33 @@ const App = (() => {
     const expectedText = q.expected_answer || '';
     const normExpected = q.normalized_answer || norm(expectedText);
 
-    document.querySelector('#play').innerHTML='<div class="question-card"><p class="q-text"><b>'+esc(t('feedback.requirement', 'Yêu cầu:'))+'</b> '+esc(instructionText)+'</p><p class="q-text"><b>'+esc(t('feedback.original_sentence', 'Câu gốc:'))+'</b> '+esc(originalText)+'</p><textarea id="answer" placeholder="'+esc(t('placeholder.sentence_transform', 'Nhập câu trả lời...'))+'"></textarea><button class="btn primary" id="grade">'+esc(t('app.grade', 'Chấm điểm'))+'</button><div id="feedback"></div></div>';
+    document.querySelector('#play').innerHTML='<div class="question-card"><p class="q-text"><b>'+esc(t('feedback.requirement', 'Yêu cầu:'))+'</b> '+esc(instructionText)+'</p><p class="q-text"><b>'+esc(t('feedback.original_sentence', 'Câu gốc:'))+'</b> '+esc(originalText)+'</p><textarea id="answer" placeholder="'+esc(t('placeholder.sentence_transform', 'Nhập câu trả lời...'))+'"></textarea><div style="display:flex; gap:12px; margin-top:12px;"><button class="btn primary" id="grade">'+esc(t('app.grade', 'Chấm điểm'))+'</button><button class="btn btn-outline" id="hint-transform" style="border-color: #eab308; color: #ca8a04;">💡 Gợi ý</button></div><div class="hint-text-box" id="hint-text-transform" style="font-size: 13px; color: var(--text-secondary); margin-top: 10px; display: none; background: rgba(234, 179, 8, 0.05); padding: 8px 12px; border-radius: 6px; border-left: 3px solid #eab308;"></div><div id="feedback"></div></div>';
+    
+    let hintLevel = 0;
+    const hintBtn = document.querySelector('#hint-transform');
+    if (hintBtn) {
+      hintBtn.onclick = () => {
+        const textEl = document.querySelector('#hint-text-transform');
+        if (!textEl) return;
+        textEl.style.display = 'block';
+        hintLevel++;
+        if (hintLevel === 1) {
+          const firstWord = expectedText.split(' ')[0] || '';
+          textEl.innerHTML = `⭐ <b>Gợi ý 1:</b> Từ bắt đầu tiên của đáp án là: <code style="font-size:14px; font-weight:700;">${firstWord}</code>`;
+        } else if (hintLevel === 2) {
+          const firstWord = expectedText.split(' ')[0] || '';
+          textEl.innerHTML = `⭐ <b>Gợi ý 1:</b> Từ đầu tiên là: <code>${firstWord}</code><br>⭐ <b>Gợi ý 2:</b> Quy tắc ngữ pháp: <i>${q.grammar_rule || 'Không có'}</i>`;
+        } else if (hintLevel === 3) {
+          textEl.innerHTML = `⭐ <b>Đáp án là:</b> <code>${expectedText}</code> (Bạn đã xem đáp án nên câu này không tính điểm)`;
+          document.querySelector('#answer').value = expectedText;
+          if (!state.hintedQuestions) state.hintedQuestions = new Set();
+          state.hintedQuestions.add(0);
+          hintBtn.disabled = true;
+          hintBtn.style.opacity = '0.5';
+        }
+      };
+    }
+
     document.querySelector('#grade').onclick=async()=>{
       const signal = getSignal();
       try{
@@ -2074,7 +2304,6 @@ const App = (() => {
         const ansVal = document.querySelector('#answer').value;
         const userNorm = norm(ansVal);
         
-        // 1. Local-first check
         let isCorrect = userNorm === normExpected;
         
         if (!isCorrect && q.acceptable_variations) {
@@ -2086,7 +2315,6 @@ const App = (() => {
           });
         }
 
-        // Check common errors locally
         let localFeedback = "";
         if (!isCorrect && q.common_errors) {
           q.common_errors.forEach(e => {
@@ -2098,12 +2326,12 @@ const App = (() => {
         }
 
         let r;
+        const wasHinted = state.hintedQuestions && state.hintedQuestions.has(0);
         if (isCorrect) {
-          r = { correct: true, score: 1.0, explanation: 'Chính xác! Câu trả lời của bạn trùng khớp với đáp án chuẩn.' };
+          r = { correct: !wasHinted, score: wasHinted ? 0.0 : 1.0, explanation: wasHinted ? 'Bạn đã dùng gợi ý xem đáp án.' : 'Chính xác! Câu trả lời của bạn trùng khớp với đáp án chuẩn.' };
         } else if (localFeedback) {
           r = { correct: false, score: 0.0, explanation: localFeedback };
         } else {
-          // Fallback: Grade with AI
           r=await Bridge.sendAsync('ai_grade',{
             gamemode:'sentence_transform',
             level:document.querySelector('#level').value,
@@ -2117,6 +2345,9 @@ const App = (() => {
         }
 
         if (signal.aborted) return;
+        if (!r.correct && state.pairs && state.pairs[0]) {
+          addWeakWord(state.pairs[0].term);
+        }
         const fb=document.querySelector('#feedback');
         if(!fb)return;
 
@@ -2167,19 +2398,43 @@ const App = (() => {
     const forbidden = q.taboo_words || q.forbidden_words || [];
     const clueText = q.clue || q.ai_description || '';
     
-    document.querySelector('#play').innerHTML='<div class="question-card taboo-card fade-in"><div class="secret-word">???</div><div class="forbidden">'+forbidden.map(w=>'<span>🚫 '+esc(w)+'</span>').join('')+'</div><div class="description">'+esc(clueText)+'</div><textarea id="answer" placeholder="'+esc(t('placeholder.taboo', 'Nhập từ bạn đoán bằng {0}...', langLabel))+'"></textarea><button class="btn primary" id="grade">'+esc(t('app.grade', 'Chấm điểm'))+'</button><div id="feedback"></div></div>';
+    document.querySelector('#play').innerHTML='<div class="question-card taboo-card fade-in"><div class="secret-word">???</div><div class="forbidden">'+forbidden.map(w=>'<span>🚫 '+esc(w)+'</span>').join('')+'</div><div class="description">'+esc(clueText)+'</div><textarea id="answer" placeholder="'+esc(t('placeholder.taboo', 'Nhập từ bạn đoán bằng {0}...', langLabel))+'"></textarea><div style="display:flex; gap:12px; margin-top:12px;"><button class="btn primary" id="grade">'+esc(t('app.grade', 'Chấm điểm'))+'</button><button class="btn btn-outline" id="hint-taboo" style="border-color: #eab308; color: #ca8a04;">💡 Gợi ý</button></div><div class="hint-text-box" id="hint-text-taboo" style="font-size: 13px; color: var(--text-secondary); margin-top: 10px; display: none; background: rgba(234, 179, 8, 0.05); padding: 8px 12px; border-radius: 6px; border-left: 3px solid #eab308;"></div><div id="feedback"></div></div>';
+    
+    let hintLevel = 0;
+    const hintBtn = document.querySelector('#hint-taboo');
+    if (hintBtn) {
+      hintBtn.onclick = () => {
+        const textEl = document.querySelector('#hint-text-taboo');
+        if (!textEl) return;
+        textEl.style.display = 'block';
+        hintLevel++;
+        if (hintLevel === 1) {
+          textEl.innerHTML = `⭐ <b>Gợi ý 1:</b> Từ này bắt đầu bằng chữ: <code style="font-size:14px; font-weight:700;">${secretWord.charAt(0).toUpperCase()}</code>`;
+        } else if (hintLevel === 2) {
+          textEl.innerHTML = `⭐ <b>Gợi ý 1:</b> Từ này bắt đầu bằng chữ: <code>${secretWord.charAt(0).toUpperCase()}</code><br>⭐ <b>Gợi ý 2:</b> Nghĩa tiếng Việt: <i>${q.meaning_vi || 'Không có'}</i>`;
+        } else if (hintLevel === 3) {
+          textEl.innerHTML = `⭐ <b>Đáp án là:</b> <code>${secretWord}</code> (Bạn đã xem đáp án nên câu này không tính điểm)`;
+          document.querySelector('#answer').value = secretWord;
+          if (!state.hintedQuestions) state.hintedQuestions = new Set();
+          state.hintedQuestions.add(0);
+          hintBtn.disabled = true;
+          hintBtn.style.opacity = '0.5';
+        }
+      };
+    }
+
     document.querySelector('#grade').onclick=async()=>{
       const signal = getSignal();
       try{
         setBusy(true, t('app.grading', 'Đang chấm điểm…'));
-        // Try local matching first (case-insensitive guess)
         const guess = document.querySelector('#answer').value.trim().toLowerCase();
         const correctWord = secretWord.trim().toLowerCase();
         const localMatch = guess === correctWord;
 
         let r;
         if (localMatch) {
-          r = { correct: true, score: 1.0, explanation: 'Chính xác! Bạn đã đoán đúng từ mục tiêu.' };
+          const wasHinted = state.hintedQuestions && state.hintedQuestions.has(0);
+          r = { correct: !wasHinted, score: wasHinted ? 0.0 : 1.0, explanation: wasHinted ? 'Bạn đã dùng gợi ý xem đáp án.' : 'Chính xác! Bạn đã đoán đúng từ mục tiêu.' };
         } else {
           r=await Bridge.sendAsync('ai_grade',{
             gamemode:'taboo',
@@ -2191,6 +2446,9 @@ const App = (() => {
         }
 
         if (signal.aborted) return;
+        if (!r.correct) {
+          addWeakWord(secretWord);
+        }
         const fb=document.querySelector('#feedback');
         if(!fb)return;
         
