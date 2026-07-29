@@ -322,7 +322,9 @@ class AIEngine:
                 "message": f"Unknown action: {action}",
             }
         except Exception as e:
-            log.error(f"handle_js_message error: {e}")
+            import traceback
+            tb = traceback.format_exc()
+            log.error(f"handle_js_message error: {e}\n{tb}")
             return {
                 "success": False,
                 "data": {},
