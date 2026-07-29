@@ -104,7 +104,7 @@ def open_settings():
         row.addWidget(inp, 1)
 
         status_label = QLabel("")
-        status_label.setFixedWidth(20)
+        status_label.setFixedWidth(45)
         row.addWidget(status_label)
         key_statuses.append(status_label)
 
@@ -205,12 +205,12 @@ def open_settings():
         client = GeminiClient([key], "auto")
         res = client.test_key(key)
         if res.get("ok"):
-            status_label.setText("\u2713")
-            status_label.setStyleSheet("color: green; font-size: 16px; font-weight: bold;")
+            status_label.setText("OK")
+            status_label.setStyleSheet("color: green; font-weight: bold;")
             log.info(f"Key test OK: {GeminiClient.detect_key_type(key)} -> {res.get('model')}")
         else:
-            status_label.setText("\u2717")
-            status_label.setStyleSheet("color: red; font-size: 16px; font-weight: bold;")
+            status_label.setText("Fail")
+            status_label.setStyleSheet("color: red; font-weight: bold;")
             log.warn(f"Key test FAIL: {res.get('error')}")
 
     # ===== Accept =====
