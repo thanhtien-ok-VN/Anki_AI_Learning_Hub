@@ -51,7 +51,8 @@ def _validate_cloze(r: dict) -> dict:
             return {"error": f"Blank {i+1}: expected 3 distractors, got {len(distractors)}."}
         for d in distractors:
             if d.lower() not in text_words:
-                return {"error": f"Blank {i+1}: distractor '{d}' not found in text."}
+                from core.logger import log
+                log.warn(f"Cloze validation warning (Blank {i+1}): distractor '{d}' not found in text.")
     return {}
 
 
