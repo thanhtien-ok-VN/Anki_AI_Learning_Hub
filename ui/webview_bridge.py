@@ -26,9 +26,11 @@ def setup_bridge(webview, engine, dialog):
                 webview.eval(f"window.Bridge.receive('{_escape(js)}')")
                 return (True, None)
 
-        except Exception:
+        except Exception as e:
+            from core.logger import log
             import traceback
-            traceback.print_exc()
+            tb = traceback.format_exc()
+            log.error(f"Error in on_js_message: {e}\n{tb}")
 
         return handled
 

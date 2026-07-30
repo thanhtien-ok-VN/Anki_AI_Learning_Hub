@@ -5,6 +5,11 @@ ADDON_NAME = "AI Learning Hub"
 ADDON_PATH = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, ADDON_PATH)
 
+try:
+    import core.error_suppressor
+except Exception as e:
+    print(f"Failed to import error_suppressor: {e}")
+
 from aqt import mw, gui_hooks
 from aqt.qt import *
 from aqt.utils import showInfo, showWarning

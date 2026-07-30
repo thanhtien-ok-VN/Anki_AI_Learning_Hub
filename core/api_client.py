@@ -335,42 +335,57 @@ class GeminiClient:
             log.error(f"Uncaught exception in generate_text: {e}")
             return None
 
-    def test_key(self, key: str) -> dict:
-        self._throttle()
+    def test_key_with_waterfall(self, key: str, max_retries: int = 2) -> dict:
         models = self._models_for_call(key)
-        model = models[0] if models else "gemini-1.5-flash"
-        key_type = self.detect_key_type(key)
-        log.info(f"test_key: type={key_type} model={model}")
-        payload = {
-            "contents": [{"parts": [{"text": "Say OK and nothing else."}]}],
-            "generationConfig": {"temperature": 0, "maxOutputTokens": 10},
-        }
-        try:
-            url = self._build_url(model)
-            data = json.dumps(payload).encode("utf-8")
-            req = Request(url, data=data, headers={
-                "Content-Type": "application/json",
-                "x-goog-api-key": key,
-            })
-            resp = urlopen(req, timeout=30)
-            raw = json.loads(resp.read().decode("utf-8"))
-            text = raw.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
-            log.info(f"test_key OK: {model} -> {text}")
-            return {"ok": True, "model": model, "response": text}
-        except HTTPError as e:
-            body = e.read().decode("utf-8", errors="replace")[:300]
-            code = e.code
-            log.warn(f"test_key FAIL: HTTP {code}", {"model": model, "body": body[:150]})
-            if code == 429:
-                return {"ok": False, "model": model, "error": "Rate limited (quota exceeded). Add a fallback key in Settings."}
-            if code == 404:
-                return {"ok": False, "model": model, "error": f"Model '{model}' not found for this key type."}
-            if code == 403:
-                return {"ok": False, "model": model, "error": "API key invalid or not authorized."}
-            return {"ok": False, "model": model, "error": f"HTTP {code}"}
-        except Exception as e:
-            log.error(f"test_key exception: {e}")
-            return {"ok": False, "model": model, "error": str(e)}
+        last_error = ""
+        last_model = models[0] if models else "gemini-1.5-flash"
+        
+        for step, model in enumerate(models):
+            for attempt in range(max_retries):
+                try:
+                    self._throttle()
+                    payload = {
+                        "contents": [{"parts": [{"text": "Say OK and nothing else."}]}],
+                        "generationConfig": {"temperature": 0, "maxOutputTokens": 10},
+                    }
+                    url = self._build_url(model)
+                    data = json.dumps(payload).encode("utf-8")
+                    headers = {"Content-Type": "application/json", "x-goog-api-key": key}
+                    req = Request(url, data=data, headers=headers)
+                    resp = urlopen(req, timeout=30)
+                    raw = json.loads(resp.read().decode("utf-8"))
+                    text = raw.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
+                    log.info(f"test_key_with_waterfall OK: key={self.detect_key_type(key)} model={model} response={text}")
+                    return {"ok": True, "model": model, "response": text}
+                except HTTPError as e:
+                    body = e.read().decode("utf-8", errors="replace")[:300]
+                    code = e.code
+                    log.warn(f"test_key_with_waterfall FAIL: key={self.detect_key_type(key)} model={model} attempt={attempt+1} HTTP {code}")
+                    if code in {429, 500, 503} and attempt < max_retries - 1:
+                        delay = 2.0 * (2 ** attempt) + random.uniform(0, 0.5)
+                        time.sleep(delay)
+                        continue
+                    if code == 404:
+                        last_error = f"Model '{model}' not found"
+                        break  # next model
+                    if code == 403:
+                        return {"ok": False, "model": model, "error": "API key invalid or not authorized."}
+                    last_error = f"HTTP {code}: {body[:120]}"
+                    if attempt >= max_retries - 1:
+                        break  # next model
+                    time.sleep(2.0)
+                except Exception as e:
+                    last_error = str(e)
+                    log.error(f"test_key_with_waterfall exception: key={self.detect_key_type(key)} model={model} error={e}")
+                    break  # next model
+            else:
+                continue  # next model if we never broke
+            break  # stop trying models if we got a non-404/retry error
+        
+        return {"ok": False, "model": last_model, "error": last_error}
+
+    def test_key(self, key: str) -> dict:
+        return self.test_key_with_waterfall(key)
 
 
 class RateLimitError(Exception):

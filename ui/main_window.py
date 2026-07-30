@@ -45,6 +45,14 @@ class AIHubView:
             "message": message,
         }
 
+    def _safe_handle(self, payload: str) -> dict:
+        from core.logger import log
+        try:
+            return self.engine.handle_js_message(payload)
+        except Exception as e:
+            log.error(f"Safe handle error in background thread: {e}")
+            return self._result(False, code="E_INTERNAL", message=str(e))
+
     def _on_bridge_cmd(self, cmd: str) -> str:
         from core.logger import log
 
@@ -64,7 +72,7 @@ class AIHubView:
                     )
                 payload = json.dumps({"action": action, "data": msg.get("data", {})})
                 mw.taskman.run_in_background(
-                    lambda: self.engine.handle_js_message(payload),
+                    lambda: self._safe_handle(payload),
                     partial(self._background_complete, request_id),
                 )
                 return json.dumps(

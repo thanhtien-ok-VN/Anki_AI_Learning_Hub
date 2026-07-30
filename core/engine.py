@@ -268,15 +268,21 @@ class AIEngine:
         )
 
     def stop(self):
-        elapsed = self.timer.stop()
-        self.settings.set("last_session_duration", elapsed)
-        log.info("AIEngine stopped", {"session_seconds": elapsed})
+        try:
+            elapsed = self.timer.stop()
+            self.settings.set("last_session_duration", elapsed)
+            log.info("AIEngine stopped", {"session_seconds": elapsed})
+        except Exception as e:
+            log.error(f"Error stopping AIEngine: {e}")
 
     def _on_timer_tick(self, seconds: int):
         pass
 
     def _on_profile_close(self):
-        self.stop()
+        try:
+            self.stop()
+        except Exception as e:
+            log.error(f"Error in _on_profile_close: {e}")
 
     def handle_js_message(self, message: str) -> dict:
         try:
@@ -540,7 +546,7 @@ class AIEngine:
                 results.append({"key": idx + 1, "ok": False, "error": "Empty"})
                 continue
             client = GeminiClient([key], "auto")
-            res = client.test_key(key)
+            res = client.test_key_with_waterfall(key)
             results.append(
                 {
                     "key": idx + 1,
