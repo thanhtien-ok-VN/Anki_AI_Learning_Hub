@@ -23,6 +23,7 @@ EC = {
     "RECITATION": "E_RECITATION",
     "EMPTY_RESPONSE": "E_EMPTY_RESPONSE",
     "KEY_INVALID": "E_KEY_INVALID",
+    "INTERNAL_ERROR": "E_INTERNAL",
 }
 
 
@@ -310,21 +311,29 @@ class GeminiClient:
         base_delay: float = 4.0,
         progress_callback: Optional[Callable[[str], None]] = None,
     ) -> dict:
-        payload = self._build_payload(prompt, response_schema, temperature)
-        log.info("generate_structured", {
-            "prompt_len": len(prompt),
-            "has_schema": response_schema is not None,
-            "temperature": temperature,
-        })
-        return self._try_keys(payload, max_retries, base_delay, progress_callback)
+        try:
+            payload = self._build_payload(prompt, response_schema, temperature)
+            log.info("generate_structured", {
+                "prompt_len": len(prompt),
+                "has_schema": response_schema is not None,
+                "temperature": temperature,
+            })
+            return self._try_keys(payload, max_retries, base_delay, progress_callback)
+        except Exception as e:
+            log.error(f"Uncaught exception in generate_structured: {e}")
+            return self._err(EC["INTERNAL_ERROR"], f"Internal client error: {e}")
 
     def generate_text(self, prompt: str, temperature: float = 0.7, progress_callback: Optional[Callable[[str], None]] = None) -> Optional[str]:
-        payload = self._build_payload(prompt, schema=None, temperature=temperature)
-        log.info("generate_text", {"prompt_len": len(prompt)})
-        result = self._try_keys(payload, max_retries=2, base_delay=1.0, progress_callback=progress_callback)
-        if result.get("error"):
+        try:
+            payload = self._build_payload(prompt, schema=None, temperature=temperature)
+            log.info("generate_text", {"prompt_len": len(prompt)})
+            result = self._try_keys(payload, max_retries=2, base_delay=1.0, progress_callback=progress_callback)
+            if result.get("error"):
+                return None
+            return json.dumps(result, ensure_ascii=False)
+        except Exception as e:
+            log.error(f"Uncaught exception in generate_text: {e}")
             return None
-        return json.dumps(result, ensure_ascii=False)
 
     def test_key(self, key: str) -> dict:
         self._throttle()

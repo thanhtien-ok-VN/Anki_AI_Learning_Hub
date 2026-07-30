@@ -431,6 +431,7 @@ class AIEngine:
             log.warn(
                 f"Generate failed: {result.get('error_code', '?')} - {result.get('message', '')[:100]}"
             )
+            return result
         else:
             key_used = result.get("_key_used", "?")
             model_used = result.get("_model_used", "?")
