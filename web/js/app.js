@@ -167,41 +167,63 @@ const App = (() => {
     }
   };
 
-  const toastQueue = [];
-  let toastActive = false;
   const toast = (m, opts = {}) => {
-    toastQueue.push({ message: typeof m === 'string' ? m : m.message, ...(typeof m === 'object' ? m : opts) });
-    processToastQueue();
-  };
-  const processToastQueue = () => {
-    if (toastActive || toastQueue.length === 0) return;
-    toastActive = true;
-    const item = toastQueue.shift();
+    const container = document.querySelector('#toast-container') || document.body;
+    const item = { 
+      message: typeof m === 'string' ? m : m.message, 
+      type: opts.type || (m.type || 'info'), 
+      retry: opts.retry || m.retry,
+      retryLabel: opts.retryLabel || m.retryLabel
+    };
+
     const e = document.createElement('div');
-    e.className = 'toast';
-    if (item.retry) e.classList.add('toast-error');
+    e.className = `toast ${item.type}`;
+    if (item.retry) e.classList.add('error');
+
+    const content = document.createElement('div');
+    content.style.display = 'flex';
+    content.style.flexDirection = 'column';
+    content.style.gap = '4px';
+
+    const msgSpan = document.createElement('span');
+    msgSpan.textContent = item.message;
+    content.append(msgSpan);
+    e.append(content);
+
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'toast-close-btn';
+    closeBtn.innerHTML = '✕';
+    
+    const dismiss = () => {
+      clearTimeout(e._timer);
+      e.classList.remove('show');
+      setSafeTimeout(() => { e.remove(); }, 300);
+    };
+    closeBtn.onclick = dismiss;
+
     if (item.retry) {
-      const msgSpan = document.createElement('span');
-      msgSpan.textContent = item.message;
-      e.append(msgSpan);
       const btn = document.createElement('button');
       btn.className = 'toast-retry-btn';
       btn.textContent = item.retryLabel || t('app.retry', 'Thử lại');
-      btn.onclick = () => { clearTimeout(e._timer); e.remove(); toastActive = false; processToastQueue(); item.retry(); };
-      e.append(btn);
-    } else {
-      e.textContent = item.message;
+      btn.onclick = () => {
+        dismiss();
+        item.retry();
+      };
+      const actionsDiv = document.createElement('div');
+      actionsDiv.style.marginTop = '6px';
+      actionsDiv.append(btn);
+      content.append(actionsDiv);
     }
-    document.body.append(e);
+
+    e.append(closeBtn);
+    container.append(e);
+
     setTimeout(() => { e.classList.add('show'); }, 10);
-    e._timer = setSafeTimeout(() => {
-      e.classList.remove('show');
-      setSafeTimeout(() => {
-        e.remove();
-        toastActive = false;
-        processToastQueue();
-      }, 300);
-    }, item.retry ? 8000 : 3000);
+
+    if (item.type !== 'error' && !item.retry) {
+      const duration = item.type === 'warning' ? 5000 : 3000;
+      e._timer = setSafeTimeout(dismiss, duration);
+    }
   };
 
   const getWeakWords = () => {
@@ -2543,7 +2565,42 @@ const App = (() => {
       const data=await Bridge.sendAsync('test_all_keys', {}, { signal });
       if (signal.aborted) return;
       const results=data.results||[],ok=results.filter(item=>item.ok).length;
-      if(out)out.innerHTML=results.map(item=>`<span class="api-key-status ${item.ok?'ok':'fail'}">${esc(t('app.key_status', 'Key {0} {1}', item.key, item.ok?'✓':'✕'))}</span>`).join('')+` <b>${esc(t('app.api_active_count', '{0}/{1} hoạt động', ok, results.length))}</b>`
+      if (out) {
+        let html = '<div class="api-tester-container" style="display:flex; flex-direction:column; gap:8px; width:100%; margin-top:12px; font-size:13px; text-align:left;">';
+        results.forEach(item => {
+          let statusIcon = item.ok ? '✅' : '❌';
+          let statusText = item.ok ? t('app.api_ok', 'Hoạt động') : t('app.api_fail', 'Lỗi');
+          
+          if (!item.ok && item.error && item.error.includes('429')) {
+            statusIcon = '⚠️';
+            statusText = t('app.api_rate_limited', 'Bị giới hạn (Rate Limited)');
+          }
+
+          let details = '';
+          if (item.ok && item.model) {
+            details = ` - Model: <code>${esc(item.model)}</code>`;
+          } else if (item.error) {
+            details = ` - Lỗi: <span style="color:var(--error); font-weight:600;">${esc(item.error)}</span>`;
+          }
+
+          html += `
+            <div class="api-key-row" style="display:flex; align-items:center; justify-content:space-between; padding:8px 12px; border:1px solid var(--border); border-radius:var(--radius-sm); background:var(--card-bg);">
+              <div>
+                <span style="font-weight:600;">${esc(t('app.key_label', 'Key {0}', item.key))}</span>${details}
+              </div>
+              <span class="api-key-status ${item.ok ? 'ok' : 'fail'}" style="font-weight:600;">
+                ${statusIcon} ${statusText}
+              </span>
+            </div>
+          `;
+        });
+        html += `
+          <div style="margin-top:10px; font-weight:600; text-align:center; font-size:14px; width:100%;">
+            ${esc(t('app.api_active_count', '{0}/{1} hoạt động', ok, results.length))}
+          </div>
+        </div>`;
+        out.innerHTML = html;
+      }
     }catch(e){
       if(e.name==='AbortError'||e.error_code==='E_ABORTED')return;
       if(out)out.textContent=t('app.cannot_test_api', 'Không thể kiểm tra: {0}', e.message)

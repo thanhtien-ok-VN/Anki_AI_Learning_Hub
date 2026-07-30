@@ -198,8 +198,8 @@ def open_settings():
     def _test_key(key: str, status_label: QLabel = None):
         if not key:
             if status_label:
-                status_label.setText("")
-            showWarning("Enter an API key first.")
+                status_label.setText("Empty")
+                status_label.setStyleSheet("color: orange; font-weight: bold;")
             return
         
         if status_label:
@@ -244,12 +244,8 @@ def open_settings():
         log.info("Settings dialog accepted")
         dialog.accept()
 
-    def on_reject():
-        log.debug("Settings dialog cancelled")
-        dialog.reject()
-
     buttons.accepted.connect(on_accept)
-    buttons.rejected.connect(on_reject)
+    buttons.rejected.connect(dialog.reject)
     dialog.exec()
 
 
