@@ -101,8 +101,12 @@ class AIHubView:
                 log.error(f"background_complete eval failed: {e}")
 
     def _on_load_finished(self, ok: bool) -> None:
-        if ok and self._hub_web:
-            self._hub_web.eval("window.Bridge && window.Bridge.hostReady();")
+        try:
+            if ok and self._hub_web:
+                self._hub_web.eval("window.Bridge && window.Bridge.hostReady();")
+        except Exception as e:
+            from core.logger import log
+            log.error(f"loadFinished eval failed: {e}")
 
     def embed(self):
         if not self._closed:

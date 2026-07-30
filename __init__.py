@@ -16,32 +16,60 @@ mw.addonManager.setWebExports(__name__, r"web/.*")
 
 log.info(f"Add-on loaded: {ADDON_NAME} v2.0")
 
+# ===== Global Exception Shield =====
+import traceback as _tb_mod
+_original_excepthook = sys.excepthook
+
+def _aihub_excepthook(exc_type, exc_value, exc_tb):
+    try:
+        tb_text = "".join(_tb_mod.format_exception(exc_type, exc_value, exc_tb))
+        if "AI_Learning_Hub" in tb_text or "ai_learning_hub" in tb_text.lower():
+            log.error(f"[GLOBAL GUARD] Caught unhandled exception:\n{tb_text}")
+            return  # Prevent Anki's error popup dialog
+    except Exception as e:
+        log.error(f"[GLOBAL GUARD] Error in global guard excepthook: {e}")
+    
+    if _original_excepthook:
+        _original_excepthook(exc_type, exc_value, exc_tb)
+
+sys.excepthook = _aihub_excepthook
+
+
 
 def open_hub():
-    if hasattr(mw, "ai_hub_view") and mw.ai_hub_view is not None and not mw.ai_hub_view.is_closed():
-        mw.ai_hub_view.focus()
-        return
+    try:
+        if hasattr(mw, "ai_hub_view") and mw.ai_hub_view is not None and not mw.ai_hub_view.is_closed():
+            mw.ai_hub_view.focus()
+            return
 
-    from ui.main_window import AIHubView
+        from ui.main_window import AIHubView
 
-    if not hasattr(mw, "ai_engine") or mw.ai_engine is None:
-        from core.engine import AIEngine
-        mw.ai_engine = AIEngine()
-        mw.ai_engine.start()
+        if not hasattr(mw, "ai_engine") or mw.ai_engine is None:
+            from core.engine import AIEngine
+            mw.ai_engine = AIEngine()
+            mw.ai_engine.start()
 
-    mw.ai_hub_view = AIHubView(mw.ai_engine)
-    mw.ai_hub_view.embed()
-    log.info("Hub view embedded")
+        mw.ai_hub_view = AIHubView(mw.ai_engine)
+        mw.ai_hub_view.embed()
+        log.info("Hub view embedded")
+    except Exception as e:
+        log.error(f"Error opening AI Hub: {e}")
 
 
 def init_addon():
     from core.engine import AIEngine
 
-    mw.ai_engine = AIEngine()
-    log.info("AIEngine created")
+    try:
+        mw.ai_engine = AIEngine()
+        log.info("AIEngine created")
+    except Exception as e:
+        log.error(f"Error initializing AIEngine: {e}")
 
     def on_profile_open():
-        mw.ai_engine.start()
+        try:
+            mw.ai_engine.start()
+        except Exception as e:
+            log.error(f"Error starting AIEngine on profile open: {e}")
 
     gui_hooks.profile_did_open.append(on_profile_open)
 
@@ -215,34 +243,50 @@ def open_settings():
         def on_done(future):
             try:
                 res = future.result()
-                if res.get("ok"):
-                    status_label.setText("OK")
-                    status_label.setStyleSheet("color: green; font-weight: bold;")
-                    log.info(f"Key test OK: {res.get('model')}")
-                else:
-                    status_label.setText("Fail")
-                    status_label.setStyleSheet("color: red; font-weight: bold;")
-                    log.warn(f"Key test FAIL: {res.get('error')}")
+                # Check if dialog has not been destroyed and widget is still valid
+                if status_label and not status_label.isHidden():
+                    if res.get("ok"):
+                        status_label.setText("OK")
+                        status_label.setStyleSheet("color: green; font-weight: bold;")
+                        log.info(f"Key test OK: {res.get('model')}")
+                    else:
+                        status_label.setText("Fail")
+                        status_label.setStyleSheet("color: red; font-weight: bold;")
+                        log.warn(f"Key test FAIL: {res.get('error')}")
             except Exception as e:
-                status_label.setText("Error")
-                status_label.setStyleSheet("color: red; font-weight: bold;")
                 log.error(f"Key test exception: {e}")
+                try:
+                    if status_label and not status_label.isHidden():
+                        status_label.setText("Error")
+                        status_label.setStyleSheet("color: red; font-weight: bold;")
+                except Exception:
+                    pass
 
         mw.taskman.run_in_background(run_test, on_done)
 
     # ===== Accept =====
     def on_accept():
-        keys = [inp.text().strip() for inp in key_inputs]
-        s.set("api_key", keys[0])
-        s.set("api_key2", keys[1])
-        s.set("api_key3", keys[2])
-        s.set("model", model_cb.currentText())
-        s.set("temperature", temp_spin.value())
-        s.set("ui_lang", ui_lang_cb.currentText())
-        s.set("learn_lang", learn_lang_cb.currentText())
-        mw.ai_engine._reset_api_client()
-        log.info("Settings dialog accepted")
-        dialog.accept()
+        try:
+            keys = [inp.text().strip() for inp in key_inputs]
+            s.set("api_key", keys[0])
+            s.set("api_key2", keys[1])
+            s.set("api_key3", keys[2])
+            s.set("model", model_cb.currentText())
+            s.set("temperature", temp_spin.value())
+            s.set("ui_lang", ui_lang_cb.currentText())
+            s.set("learn_lang", learn_lang_cb.currentText())
+            try:
+                mw.ai_engine._reset_api_client()
+            except Exception as ex:
+                log.error(f"Error resetting API client on accept: {ex}")
+            log.info("Settings dialog accepted")
+        except Exception as e:
+            log.error(f"Error saving settings: {e}")
+        
+        try:
+            dialog.accept()
+        except Exception:
+            pass
 
     buttons.accepted.connect(on_accept)
     buttons.rejected.connect(dialog.reject)
