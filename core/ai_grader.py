@@ -128,23 +128,38 @@ Respond in JSON matching the exact schema below:
 }}
 """
 
-TABOO_GRADER = """You are judging a Taboo word-guessing game.
+TABOO_GRADER = """You are a professional language teacher judging a Taboo word-guessing game.
 
-Target word: {target_word}
-Taboo words: {taboo_words}
-Sample acceptable phrases: {sample_acceptable_phrases}
-Sample forbidden phrases: {sample_forbidden_phrases}
-Student's guess: {user_input}
+Target Word: {target_word}
+Taboo Words (Forbidden): {taboo_words}
+Sample Acceptable Guess Phrases: {sample_acceptable_phrases}
+Sample Forbidden/Invalid Phrases: {sample_forbidden_phrases}
+Student's Guess(es): {user_input} (which may contain multiple terms separated by commas)
 
-Determine if the guess matches or is semantically close enough.
-Consider synonyms, common learner associations.
+Task:
+Determine if any of the student's guesses match or are semantically close/synonymous to the Target Word.
+If a guess uses the Target Word or is synonymous to it, it is correct.
+However, if a guess violates the rules by containing/using any of the Taboo Words (Forbidden), or is semantically unrelated, it must be rejected.
+Explain all reviews and reasons in Vietnamese.
 
-Respond in JSON:
+Respond in JSON matching the exact schema below:
 {{
     "correct": true/false,
-    "score": 0.0-1.0,
-    "explanation": "string",
-    "suggested_words": ["word1", "word2"]
+    "score": 0-10,
+    "ai_analysis": "Overall pedagogical feedback in Vietnamese",
+    "word_definition": "Clear definition of the target word in English and Vietnamese translation",
+    "accepted_phrases": [
+        {{
+            "phrase": "Guess phrase evaluated",
+            "explanation_vi": "Why this phrase is accepted"
+        }}
+    ],
+    "rejected_phrases": [
+        {{
+            "phrase": "Guess phrase evaluated",
+            "reason_vi": "Why this phrase is rejected or violates forbidden taboo words"
+        }}
+    ]
 }}
 """
 

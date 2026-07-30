@@ -2539,7 +2539,7 @@ const App = (() => {
     const forbidden = q.taboo_words || [];
     const clueText = q.clue || '';
     
-    document.querySelector('#play').innerHTML='<div class="question-card taboo-card fade-in"><div class="secret-word">???</div><div class="forbidden">'+forbidden.map(w=>'<span>🚫 '+esc(w)+'</span>').join('')+'</div><div class="description">'+esc(clueText)+'</div><textarea id="answer" placeholder="'+esc(t('placeholder.taboo', 'Nhập từ bạn đoán bằng {0}...', langLabel))+'"></textarea><div style="display:flex; gap:12px; margin-top:12px;"><button class="btn primary" id="grade">'+esc(t('app.grade', 'Chấm điểm'))+'</button><button class="btn btn-outline" id="hint-taboo" style="border-color: #eab308; color: #ca8a04;">💡 Gợi ý</button></div><div class="hint-text-box" id="hint-text-taboo" style="font-size: 13px; color: var(--text-secondary); margin-top: 10px; display: none; background: rgba(234, 179, 8, 0.05); padding: 8px 12px; border-radius: 6px; border-left: 3px solid #eab308;"></div><div id="feedback"></div></div>';
+    document.querySelector('#play').innerHTML='<div class="question-card taboo-card fade-in"><div class="secret-word">???</div><div class="forbidden">'+forbidden.map(w=>'<span>🚫 '+esc(w)+'</span>').join('')+'</div><div class="description">'+esc(clueText)+'</div><textarea id="answer" placeholder="'+esc(t('placeholder.taboo', 'Nhập từ bạn đoán bằng {0}...', langLabel))+'"></textarea><div style="font-size:12px; color:var(--text-secondary); margin-top:4px; line-height:1.4;">💡 <b>LƯU Ý KHI TRẢ LỜI:</b> Bạn có thể nhập nhiều từ/cụm từ cùng lúc để đoán (phân cách bằng dấu phẩy). Tránh sử dụng các từ cấm hiển thị ở trên!</div><div style="display:flex; gap:12px; margin-top:12px;"><button class="btn primary" id="grade">'+esc(t('app.grade', 'Chấm điểm'))+'</button><button class="btn btn-outline" id="hint-taboo" style="border-color: #eab308; color: #ca8a04;">💡 Gợi ý</button></div><div class="hint-text-box" id="hint-text-taboo" style="font-size: 13px; color: var(--text-secondary); margin-top: 10px; display: none; background: rgba(234, 179, 8, 0.05); padding: 8px 12px; border-radius: 6px; border-left: 3px solid #eab308;"></div><div id="feedback"></div></div>';
     
     let hintLevel = 0;
     const hintBtn = document.querySelector('#hint-taboo');
@@ -2568,19 +2568,20 @@ const App = (() => {
       const signal = getSignal();
       try{
         setBusy(true, t('app.grading', 'Đang chấm điểm…'));
-        const guess = document.querySelector('#answer').value.trim().toLowerCase();
+        const guessInput = document.querySelector('#answer').value.trim();
+        const guessList = guessInput.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
         const correctWord = secretWord.trim().toLowerCase();
-        const localMatch = guess === correctWord;
+        const localMatch = guessList.includes(correctWord);
 
         let r;
         if (localMatch) {
           const wasHinted = state.hintedQuestions && state.hintedQuestions.has(0);
-          r = { correct: !wasHinted, score: wasHinted ? 0.0 : 1.0, explanation: wasHinted ? 'Bạn đã dùng gợi ý xem đáp án.' : 'Chính xác! Bạn đã đoán đúng từ mục tiêu.' };
+          r = { correct: !wasHinted, score: wasHinted ? 0.0 : 10.0, explanation: wasHinted ? 'Bạn đã dùng gợi ý xem đáp án.' : 'Chính xác! Bạn đã đoán đúng từ mục tiêu.' };
         } else {
           r=await Bridge.sendAsync('ai_grade',{
             gamemode:'taboo',
             level:document.querySelector('#level').value,
-            user_answer:document.querySelector('#answer').value,
+            user_answer:guessInput,
             target_word:secretWord
           }, { signal });
         }
@@ -2592,23 +2593,57 @@ const App = (() => {
         const fb=document.querySelector('#feedback');
         if(!fb)return;
         
-        let html='<div class="feedback '+(r.correct?'good':'bad')+'"><b>'+(r.correct?esc(t('feedback.exact', 'Chính xác!')):esc(t('feedback.wrong_short', 'Sai rồi')))+'</b><p>'+esc(r.explanation||r.feedback||'')+'</p><p>'+esc(t('feedback.answer_label', 'Đáp án: {0}', secretWord))+'</p>';
+        let html = '<div class="feedback '+(r.correct?'good':'bad')+'"><b>📊 KẾT QUẢ CHẤM ĐIỂM</b><hr>';
+        html += `<p style="font-size: 15px;"><b>${r.correct ? '🎯 CHÍNH XÁC' : '❌ CHƯA CHÍNH XÁC'}</b></p>`;
+        html += `<p>📥 <b>Từ bạn đã nhập:</b> ${guessList.map(g => `<code>${esc(g)}</code>`).join(', ') || 'Chưa nhập'}</p>`;
+        html += `<p>🔑 <b>Từ mục tiêu:</b> <span style="color:var(--success); font-weight:700;">${esc(secretWord)}</span></p>`;
         if (q.meaning_vi) {
-          html += '<p>🇻🇳 Dịch nghĩa: <b>' + esc(q.meaning_vi) + '</b></p>';
-        }
-        html += '<p>📖 '+esc(t('feedback.definition_label', 'Nghĩa: {0}', clueText))+'</p>';
-
-        if (q.sample_acceptable_phrases && q.sample_acceptable_phrases.length) {
-          html += '<p>✅ <b>Cụm từ chấp nhận:</b> ' + q.sample_acceptable_phrases.map(p => `<code>${esc(p)}</code>`).join(', ') + '</p>';
-        }
-        if (q.sample_forbidden_phrases && q.sample_forbidden_phrases.length) {
-          html += '<p>❌ <b>Cụm từ bị cấm:</b> ' + q.sample_forbidden_phrases.map(p => `<code>${esc(p)}</code>`).join(', ') + '</p>';
+          html += `<p>🇻🇳 <b>Dịch nghĩa:</b> ${esc(q.meaning_vi)}</p>`;
         }
         
+        // Nhận xét chi tiết từ AI
+        if (r.ai_analysis || r.explanation || r.feedback) {
+          html += '<hr><p><b>💡 PHÂN TÍCH TỪ AI:</b></p>';
+          if (r.word_definition) {
+            html += `<p>• <b>Nghĩa gốc:</b> ${esc(r.word_definition)}</p>`;
+          }
+          html += `<p>• <b>Nhận xét:</b> ${esc(r.ai_analysis || r.explanation || r.feedback)}</p>`;
+        }
+        
+        // Các cụm từ được chấp nhận
+        if (r.accepted_phrases && r.accepted_phrases.length) {
+          html += '<hr><p><b>✅ CỤM TỪ ĐƯỢC CHẤP NHẬN:</b></p><ul>';
+          r.accepted_phrases.forEach(item => {
+            html += `<li><code>${esc(item.phrase)}</code> ➔ <i>${esc(item.explanation_vi)}</i></li>`;
+          });
+          html += '</ul>';
+        } else if (q.sample_acceptable_phrases && q.sample_acceptable_phrases.length) {
+          html += '<hr><p><b>✅ CỤM TỪ CHẤP NHẬN (MẪU):</b></p><ul>';
+          q.sample_acceptable_phrases.forEach(p => {
+            html += `<li><code>${esc(p)}</code></li>`;
+          });
+          html += '</ul>';
+        }
+        
+        // Các cụm từ bị cấm / không chấp nhận
+        if (r.rejected_phrases && r.rejected_phrases.length) {
+          html += '<hr><p><b>❌ CỤM TỪ KHÔNG CHẤP NHẬN / BỊ CẤM:</b></p><ul>';
+          r.rejected_phrases.forEach(item => {
+            html += `<li><code>${esc(item.phrase)}</code> ➔ <span style="color:var(--error);">${esc(item.reason_vi)}</span></li>`;
+          });
+          html += '</ul>';
+        } else if (q.sample_forbidden_phrases && q.sample_forbidden_phrases.length) {
+          html += '<hr><p><b>❌ CỤM TỪ BỊ CẤM (MẪU):</b></p><ul>';
+          q.sample_forbidden_phrases.forEach(p => {
+            html += `<li><code>${esc(p)}</code></li>`;
+          });
+          html += '</ul>';
+        }
+
         html += '<button class="btn" id="retry-trans">'+esc(t('app.retry', 'Làm lại'))+'</button></div>';
         fb.innerHTML=html;
         const retryBtn=document.querySelector('#retry-trans');
-        if(retryBtn)retryBtn.onclick=()=>{state.answers={};play(state.route)}
+        if(retryBtn)retryBtn.onclick=()=>{state.answers={};generate(state.route)}
       }catch(e){
         if(e.name==='AbortError'||e.error_code==='E_ABORTED')return;
         toast({ message: e.message, retry: () => document.querySelector('#grade')?.click(), retryLabel: t('app.retry_gen', 'Thử lại') });
