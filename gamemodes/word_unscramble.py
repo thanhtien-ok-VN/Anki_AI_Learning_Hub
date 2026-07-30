@@ -193,9 +193,8 @@ class WordUnscrambleMode(GameModeBase):
             matched_sentences = [self.SENTENCE_POOL[0]]
             
         # 4. Trả về đúng schema
-        return {
-            "sentences": matched_sentences[:count]
-        }
+        raw = {"sentences": matched_sentences[:count]}
+        return self.render_ui_data(raw)
 
     def fisher_yates_shuffle(self, words: list[str]) -> list[str]:
         arr = list(words)
