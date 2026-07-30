@@ -2455,9 +2455,7 @@ const App = (() => {
         let r;
         const wasHinted = state.hintedQuestions && state.hintedQuestions.has(0);
         if (isCorrect) {
-          r = { correct: !wasHinted, score: wasHinted ? 0.0 : 1.0, explanation: wasHinted ? 'Bạn đã dùng gợi ý xem đáp án.' : 'Chính xác! Câu trả lời của bạn trùng khớp với đáp án chuẩn.' };
-        } else if (localFeedback) {
-          r = { correct: false, score: 0.0, explanation: localFeedback };
+          r = { correct: !wasHinted, score: wasHinted ? 0.0 : 10.0, explanation: wasHinted ? 'Bạn đã dùng gợi ý xem đáp án.' : 'Chính xác! Câu trả lời của bạn trùng khớp với đáp án chuẩn.' };
         } else {
           r=await Bridge.sendAsync('ai_grade',{
             gamemode:'sentence_transform',
@@ -2478,28 +2476,43 @@ const App = (() => {
         const fb=document.querySelector('#feedback');
         if(!fb)return;
 
-        let html='<div class="feedback '+(r.correct?'good':'bad')+'"><b>'+(r.correct?esc(t('feedback.exact', 'Chính xác!')):esc(t('feedback.needs_improvement', 'Cần cải thiện')))+'</b><p>'+esc(r.explanation||r.feedback||'')+'</p><p>'+esc(t('feedback.answer_label', 'Đáp án: {0}', expectedText))+'</p>';
-        
-        if (q.grammar_rule) {
-          html += '<hr><p><b>📌 Quy tắc ngữ pháp:</b> ' + esc(q.grammar_rule) + '</p>';
+        let html = '';
+        if (r.correct) {
+          html += '<div class="feedback good"><b>🎉 ' + esc(t('feedback.exact', 'Chính xác!')) + '</b>';
+          html += `<p style="margin-top:10px;">• <b>Câu trả lời của bạn:</b> <span style="color:var(--success); font-weight:600;">${esc(ansVal)}</span></p>`;
+          if (r.explanation) {
+            html += `<p style="color:var(--text-secondary); font-size:13px; margin:4px 0;"><i>(${esc(r.explanation)})</i></p>`;
+          }
+        } else {
+          html += '<div class="feedback bad"><b>❌ ' + esc(t('feedback.needs_improvement', 'Chưa chính xác rồi!')) + '</b>';
+          html += `<p style="margin-top:10px;">• <b>Câu trả lời của bạn:</b> <span style="color:var(--error); font-weight:600;">${esc(ansVal)}</span></p>`;
+          html += `<p>• <b>Đáp án chuẩn:</b> <span style="color:var(--success); font-weight:600;">${esc(expectedText)}</span></p>`;
+          
+          // Phân tích lỗi chi tiết 4 bước từ AI
+          if (r.specific_error || r.why_wrong || r.how_to_fix || r.why_fix) {
+            html += `<hr><p><b>🔍 Phân tích chi tiết lỗi sai:</b></p>
+            <div class="error-item" style="margin-bottom:12px; padding:8px 12px; border-left:3px solid var(--error); background:rgba(239, 68, 68, 0.02); border-radius:4px;">
+              <p style="margin:2px 0;">🔴 <b>Lỗi:</b> ${esc(r.specific_error || 'Lỗi cấu trúc/Từ vựng')}</p>
+              <p style="margin:2px 0; padding-left:14px; font-size:13px;">❌ <b>Lỗi sai:</b> <span style="color:var(--error);">${esc(ansVal)}</span> ➔ <b>Vì sao sai:</b> <i>${esc(r.why_wrong || 'Chưa biến đổi đúng cấu trúc ngữ pháp yêu cầu')}</i></p>
+              <p style="margin:2px 0; padding-left:14px; font-size:13px;">💡 <b>Cách sửa:</b> <span style="color:var(--success); font-weight:600;">${esc(r.how_to_fix || expectedText)}</span> ➔ <b>Vì sao sửa:</b> <i>${esc(r.why_fix || 'Đảm bảo đúng quy tắc biến đổi câu')}</i></p>
+            </div>`;
+          } else if (r.explanation || r.feedback) {
+            html += `<p>${esc(r.explanation || r.feedback)}</p>`;
+          }
         }
 
-        if (q.acceptable_variations && q.acceptable_variations.length) {
+        const grammar = q.grammar_rule || r.grammar_rule;
+        if (grammar) {
+          html += '<hr><p><b>📌 Quy tắc ngữ pháp:</b> ' + esc(grammar) + '</p>';
+        }
+
+        const variations = q.acceptable_variations || r.acceptable_variations;
+        if (variations && variations.length) {
           html += '<p>✅ <b>Các biến thể đúng khác:</b></p><ul>';
-          q.acceptable_variations.forEach(v => {
+          variations.forEach(v => {
             const txt = typeof v === 'object' ? v.text : v;
             const note = typeof v === 'object' ? v.note : '';
             html += `<li>${esc(txt)} ${note ? `<i>(${esc(note)})</i>` : ''}</li>`;
-          });
-          html += '</ul>';
-        }
-
-        if (q.common_errors && q.common_errors.length) {
-          html += '<p>⚠️ <b>Lỗi thường gặp cần tránh:</b></p><ul>';
-          q.common_errors.forEach(e => {
-            const err = typeof e === 'object' ? e.error : e;
-            const fbText = typeof e === 'object' ? e.feedback : '';
-            html += `<li>Sai: <span style="color:var(--error);">${esc(err)}</span> ${fbText ? `➔ <i>${esc(fbText)}</i>` : ''}</li>`;
           });
           html += '</ul>';
         }

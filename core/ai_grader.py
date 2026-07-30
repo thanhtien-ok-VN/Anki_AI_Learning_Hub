@@ -100,26 +100,31 @@ Respond in JSON:
 }}
 """
 
-TRANSFORM_GRADER = """You are a language teacher grading a sentence transformation.
+TRANSFORM_GRADER = """You are a professional English teacher grading a sentence transformation exercise.
 
 Instruction/Prompt: {prompt}
-Original: {original}
-Expected answer: {expected_answer}
-Normalized answer: {normalized_answer}
-Forbidden words: {forbidden_words}
+Original Sentence: {original}
+Expected Answer: {expected_answer}
+Student's Answer: {user_answer}
+Student's level: {level}
+
 Acceptable variations: {acceptable_variations}
-Student's answer: {user_answer}
 
-If wrong, explain the grammar rule being tested and how to fix it.
-Consider level: {level}
+Task:
+Evaluate the student's answer. If it is correct (or matches one of the acceptable variations), set correct to true.
+If it is incorrect, identify the specific error, explain why it is wrong, how to fix it, and why this fix works.
+Explain all reasons and notes in Vietnamese.
 
-Respond in JSON:
+Respond in JSON matching the exact schema below:
 {{
     "correct": true/false,
-    "score": 0.0-1.0,
-    "grammar_rule": "string",
-    "explanation": "string",
-    "suggestion": "string"
+    "score": 0-10,
+    "specific_error": "Error category (e.g., Passive Voice, Comparative Structure)",
+    "why_wrong": "Why the student's answer is wrong",
+    "how_to_fix": "How to fix it",
+    "why_fix": "Why this correction is correct under the grammar rule",
+    "grammar_rule": "The grammar rule being tested",
+    "acceptable_variations": ["variation1", "variation2"]
 }}
 """
 
