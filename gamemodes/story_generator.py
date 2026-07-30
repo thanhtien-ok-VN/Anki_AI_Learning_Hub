@@ -7,6 +7,7 @@ class StoryGeneratorMode(GameModeBase):
     icon = "📚"
 
     def render_ui_data(self, raw_result: dict) -> dict:
+        import random
         story_data = raw_result.get("story", {})
         if isinstance(story_data, str):
             story_data = {
@@ -16,6 +17,32 @@ class StoryGeneratorMode(GameModeBase):
                 "highlighted_vocab": [],
                 "full_translation": ""
             }
+            
+        rendered_questions = []
+        for i, q in enumerate(raw_result.get("questions", [])):
+            options = q.get("options", [])
+            
+            # Xáo trộn options và tính correct_index
+            indices = list(range(len(options)))
+            random.shuffle(indices)
+            shuffled_options = [options[j] for j in indices]
+            
+            correct_index = -1
+            for idx, opt in enumerate(shuffled_options):
+                if isinstance(opt, dict) and opt.get("is_correct"):
+                    correct_index = idx
+                    break
+            
+            rendered_questions.append({
+                "id": q.get("id", i + 1),
+                "type": q.get("type", "detail"),
+                "question": q.get("question", ""),
+                "options": shuffled_options,
+                "correct_index": correct_index,
+                "explanation": q.get("explanation", ""),
+                "evidence_quote": q.get("evidence_quote", ""),
+            })
+
         return {
             "story": {
                 "title": story_data.get("title", ""),
@@ -24,17 +51,7 @@ class StoryGeneratorMode(GameModeBase):
                 "highlighted_vocab": story_data.get("highlighted_vocab", []),
                 "full_translation": story_data.get("full_translation", ""),
             },
-            "questions": [
-                {
-                    "id": q.get("id", i + 1),
-                    "type": q.get("type", "detail"),
-                    "question": q.get("question", ""),
-                    "options": q.get("options", []),
-                    "explanation": q.get("explanation", ""),
-                    "evidence_quote": q.get("evidence_quote", ""),
-                }
-                for i, q in enumerate(raw_result.get("questions", []))
-            ],
+            "questions": rendered_questions,
             "discussion_prompt": raw_result.get("discussion_prompt", ""),
         }
 

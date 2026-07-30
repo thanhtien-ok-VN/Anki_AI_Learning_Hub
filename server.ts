@@ -851,6 +851,44 @@ STRUCTURAL RULES:
           }));
         }
 
+        // Shuffle options for fill_blank game mode
+        if (gamemode === "fill_blank" && parsed.questions) {
+          parsed.questions = parsed.questions.map((q: any) => {
+            if (!q.options || !Array.isArray(q.options)) return q;
+            const originalOptions = [...q.options];
+            const shuffledOptions = originalOptions
+              .map((value) => ({ value, sort: Math.random() }))
+              .sort((a, b) => a.sort - b.sort)
+              .map(({ value }) => value);
+            
+            const correctIndex = shuffledOptions.findIndex((o: any) => typeof o === "object" ? o.is_correct : false);
+            return {
+              ...q,
+              options: shuffledOptions,
+              correct_index: correctIndex
+            };
+          });
+        }
+
+        // Shuffle options for story game mode
+        if (gamemode === "story" && parsed.questions) {
+          parsed.questions = parsed.questions.map((q: any) => {
+            if (!q.options || !Array.isArray(q.options)) return q;
+            const originalOptions = [...q.options];
+            const shuffledOptions = originalOptions
+              .map((value) => ({ value, sort: Math.random() }))
+              .sort((a, b) => a.sort - b.sort)
+              .map(({ value }) => value);
+            
+            const correctIndex = shuffledOptions.findIndex((o: any) => typeof o === "object" ? o.is_correct : false);
+            return {
+              ...q,
+              options: shuffledOptions,
+              correct_index: correctIndex
+            };
+          });
+        }
+
         return res.json({
           success: true,
           data: parsed

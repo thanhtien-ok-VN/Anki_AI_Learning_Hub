@@ -7,30 +7,45 @@ class FillBlankMode(GameModeBase):
     icon = "✍️"
 
     def render_ui_data(self, raw_result: dict) -> dict:
+        import random
         questions = raw_result.get("questions", [raw_result])
-        return {
-            "questions": [
+        rendered_questions = []
+        for q in questions:
+            options = [
                 {
-                    "sentence": q.get("sentence", ""),
-                    "target_word": q.get("target_word", ""),
-                    "meaning_vi": q.get("meaning_vi", ""),
-                    "full_translation": q.get("full_translation", ""),
-                    "options": [
-                        {
-                            "word": o.get("word", ""),
-                            "is_correct": o.get("is_correct", False),
-                            "type": o.get("type", ""),
-                            "reason": o.get("reason", ""),
-                        }
-                        for o in q.get("options", [])
-                    ],
-                    "explanation": q.get("explanation", ""),
-                    "grammar_note": q.get("grammar_note", ""),
-                    "user_definition": q.get("user_definition", ""),
+                    "word": o.get("word", ""),
+                    "is_correct": o.get("is_correct", False),
+                    "type": o.get("type", ""),
+                    "reason": o.get("reason", ""),
                 }
-                for q in questions
+                for o in q.get("options", [])
             ]
-        }
+            
+            # Xáo trộn options ngẫu nhiên
+            indices = list(range(len(options)))
+            random.shuffle(indices)
+            shuffled_options = [options[j] for j in indices]
+            
+            # Tính correct_index mới sau khi xáo trộn
+            correct_index = -1
+            for idx, opt in enumerate(shuffled_options):
+                if opt["is_correct"]:
+                    correct_index = idx
+                    break
+                    
+            rendered_questions.append({
+                "sentence": q.get("sentence", ""),
+                "target_word": q.get("target_word", ""),
+                "meaning_vi": q.get("meaning_vi", ""),
+                "full_translation": q.get("full_translation", ""),
+                "options": shuffled_options,
+                "correct_index": correct_index,
+                "explanation": q.get("explanation", ""),
+                "grammar_note": q.get("grammar_note", ""),
+                "user_definition": q.get("user_definition", ""),
+            })
+            
+        return {"questions": rendered_questions}
 
     def check_answer(self, user_input: Any, correct: Any) -> dict:
         selected_idx = int(user_input) if user_input is not None else -1
