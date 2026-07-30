@@ -62,6 +62,7 @@ const App = (() => {
       localStorage.setItem(PFX + 'prefs', JSON.stringify(p));
     } catch (e) {}
     Bridge.send('save_context', { gamemode: 'prefs', data: p });
+    Bridge.send('save_prefs', p);
   }
 
   function restorePrefs() {
@@ -2624,12 +2625,23 @@ const App = (() => {
 
   function render(){state.route==='home'?home():game()}
   async function startApp(){
-    window.addEventListener('beforeunload', () => {
-      savePrefs();
-    });
+    const handleSave = () => { savePrefs(); };
+    window.addEventListener('beforeunload', handleSave);
+    window.addEventListener('pagehide', handleSave);
+
     if (window.Utils && typeof window.Utils.initI18n === 'function') {
       await window.Utils.initI18n();
     }
+
+    try {
+      const p = await Bridge.sendAsync('load_prefs');
+      if (p && Object.keys(p).length) {
+        Object.assign(state.userPrefs, p);
+      }
+    } catch (e) {
+      console.warn("Failed to load prefs from Python:", e);
+    }
+
     render();
   }
   if (!window.Bridge) window.Bridge = {};

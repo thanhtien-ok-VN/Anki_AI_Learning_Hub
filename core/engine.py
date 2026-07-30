@@ -304,6 +304,8 @@ class AIEngine:
                 "save_context": self._handle_save_context,
                 "load_context": self._handle_load_context,
                 "clear_context": self._handle_clear_context,
+                "save_prefs": self._handle_save_prefs,
+                "load_prefs": self._handle_load_prefs,
                 "test_key": self._handle_test_key,
                 "test_all_keys": self._handle_test_all_keys,
                 "list_decks": self._handle_list_decks,
@@ -771,3 +773,27 @@ class AIEngine:
         ctx_mgr.clear()
         log.info("Context cleared")
         return {"success": True}
+
+    def _handle_save_prefs(self, data: dict) -> dict:
+        prefs_path = os.path.join(ADDON_PATH, "user_files", "prefs.json")
+        try:
+            os.makedirs(os.path.dirname(prefs_path), exist_ok=True)
+            with open(prefs_path, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=2, ensure_ascii=False)
+            log.debug("Prefs saved to user_files/prefs.json")
+            return {"success": True}
+        except Exception as e:
+            log.error(f"Failed to save prefs: {e}")
+            return {"success": False, "message": str(e)}
+
+    def _handle_load_prefs(self, data: dict = None) -> dict:
+        prefs_path = os.path.join(ADDON_PATH, "user_files", "prefs.json")
+        if os.path.isfile(prefs_path):
+            try:
+                with open(prefs_path, "r", encoding="utf-8") as f:
+                    loaded = json.load(f)
+                log.debug("Prefs loaded from user_files/prefs.json")
+                return loaded
+            except Exception as e:
+                log.warn(f"Failed to load prefs: {e}")
+        return {}
