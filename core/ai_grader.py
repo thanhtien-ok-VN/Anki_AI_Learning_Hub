@@ -47,25 +47,38 @@ Respond in JSON:
 }}
 """
 
-TRANSLATION_GRADER = """You are a language teacher grading a translation.
+TRANSLATION_GRADER = """You are a professional English teacher grading a translation from Vietnamese to English.
 
-Source ({source_lang}): {source_sentence}
-Expected translation ({target_lang}): {reference_translation}
-Student's translation: {user_target}
+Source Sentence (Vietnamese): {source_sentence}
+Expected Translation (English): {reference_translation}
+Student's Translation: {user_target}
 
 Common mistakes to check: {common_mistakes}
+Student's level: {level}
 
-Grade the translation. If wrong, identify specific errors (word choice, grammar, missing parts).
-If different but acceptable, explain why both work.
-Consider the student's level: {level}
+Task:
+Evaluate the student's translation, identify specific errors, and provide grading and suggestions.
+For each error, you MUST provide 5 fields: name, wrong, reason, suggestion, and why.
+Explain all reasons and notes in Vietnamese.
 
-Respond in JSON:
+Respond in JSON matching the exact schema below:
 {{
     "correct": true/false,
-    "score": 0.0-1.0,
-    "errors": ["error1", "error2"],
-    "explanation": "string",
-    "suggestion": "string"
+    "score": 0-10,
+    "level": "Đạt" or "Cần cải thiện",
+    "errors": [
+        {{
+            "name": "Error category (e.g., Verb Tense, Word Choice, Grammar)",
+            "wrong": "The incorrect part of the student's translation",
+            "reason": "Why it is incorrect",
+            "suggestion": "How to fix it",
+            "why": "Why this correction is better"
+        }}
+    ],
+    "suggested_answers": {{
+        "common": "A natural, common translation suitable for the student's level",
+        "advanced": "A more advanced, sophisticated translation with richer vocabulary"
+    }}
 }}
 """
 

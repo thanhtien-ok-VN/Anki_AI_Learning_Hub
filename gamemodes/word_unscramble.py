@@ -6,6 +6,196 @@ class WordUnscrambleMode(GameModeBase):
     name = "unscramble"
     display_name = "Word Unscramble"
     icon = "🧩"
+    is_offline = True
+
+    # Pool câu mẫu đa dạng phân chia theo level và topic để sinh offline
+    SENTENCE_POOL = [
+        # Beginner - Daily Life
+        {
+            "correct_sentence": "She enjoys reading books in the park.",
+            "meaning_vi": "Cô ấy thích đọc sách trong công viên.",
+            "hint": "Một sở thích lành mạnh ngoài trời",
+            "key_vocabulary": [
+                {"word": "enjoys", "meaning_vi": "thích thú, tận hưởng"},
+                {"word": "park", "meaning_vi": "công viên"}
+            ],
+            "difficulty_reason": "Sử dụng động từ thêm -ing sau 'enjoy' và cụm giới từ chỉ nơi chốn.",
+            "grammar_note": "Cấu trúc: enjoy + V-ing (thích làm việc gì).",
+            "level": "beginner",
+            "topic": "daily_life"
+        },
+        {
+            "correct_sentence": "They have been friends since childhood.",
+            "meaning_vi": "Họ đã là bạn bè từ thời thơ ấu.",
+            "hint": "Một tình bạn bền chặt lâu năm",
+            "key_vocabulary": [
+                {"word": "friends", "meaning_vi": "bạn bè"},
+                {"word": "childhood", "meaning_vi": "thời thơ ấu"}
+            ],
+            "difficulty_reason": "Sử dụng thì hiện tại hoàn thành với 'since' chỉ mốc thời gian.",
+            "grammar_note": "Thì hiện tại hoàn thành: S + have/has + V3/ed + since + mốc thời gian.",
+            "level": "beginner",
+            "topic": "daily_life"
+        },
+        # Elementary - Travel
+        {
+            "correct_sentence": "We booked a comfortable hotel near the beach.",
+            "meaning_vi": "Chúng tôi đã đặt một khách sạn thoải mái gần bãi biển.",
+            "hint": "Chuẩn bị chỗ ở cho chuyến đi nghỉ",
+            "key_vocabulary": [
+                {"word": "booked", "meaning_vi": "đặt trước (chỗ, phòng)"},
+                {"word": "comfortable", "meaning_vi": "thoải mái, dễ chịu"}
+            ],
+            "difficulty_reason": "Sử dụng tính từ đứng trước danh từ và cụm giới từ chỉ vị trí.",
+            "grammar_note": "Trật tự từ: Adjective + Noun (comfortable hotel). Near là giới từ chỉ vị trí gần.",
+            "level": "elementary",
+            "topic": "travel"
+        },
+        {
+            "correct_sentence": "Please check the flight schedule before leaving.",
+            "meaning_vi": "Vui lòng kiểm tra lịch trình chuyến bay trước khi đi.",
+            "hint": "Lời nhắc nhở quan trọng tại sân bay",
+            "key_vocabulary": [
+                {"word": "flight", "meaning_vi": "chuyến bay"},
+                {"word": "schedule", "meaning_vi": "lịch trình, thời gian biểu"}
+            ],
+            "difficulty_reason": "Sử dụng câu mệnh lệnh lịch sự với 'Please' và mệnh đề rút gọn với 'before + V-ing'.",
+            "grammar_note": "Rút gọn mệnh đề trạng ngữ: before/after + V-ing (khi cùng chủ ngữ).",
+            "level": "elementary",
+            "topic": "travel"
+        },
+        # Intermediate - Work
+        {
+            "correct_sentence": "The manager advocates using technology to improve work efficiency.",
+            "meaning_vi": "Người quản lý ủng hộ việc sử dụng công nghệ để nâng cao hiệu suất công việc.",
+            "hint": "Cách cải tiến quy trình làm việc",
+            "key_vocabulary": [
+                {"word": "advocates", "meaning_vi": "ủng hộ, tán thành"},
+                {"word": "efficiency", "meaning_vi": "hiệu suất, hiệu quả"}
+            ],
+            "difficulty_reason": "Sử dụng động từ đi kèm danh động từ và cụm giới từ chỉ mục đích.",
+            "grammar_note": "Cấu trúc: advocate + V-ing (ủng hộ làm việc gì). To + Verb chỉ mục đích.",
+            "level": "intermediate",
+            "topic": "work"
+        },
+        {
+            "correct_sentence": "We need to mitigate risks before launching the new project.",
+            "meaning_vi": "Chúng ta cần giảm thiểu rủi ro trước khi ra mắt dự án mới.",
+            "hint": "Quản trị rủi ro trong doanh nghiệp",
+            "key_vocabulary": [
+                {"word": "mitigate", "meaning_vi": "giảm nhẹ, giảm thiểu"},
+                {"word": "launching", "meaning_vi": "ra mắt, khởi chạy"}
+            ],
+            "difficulty_reason": "Sử dụng động từ khuyết thiếu nhẹ 'need to' và mệnh đề phân từ.",
+            "grammar_note": "Cấu trúc: need + to-inf (cần làm gì). 'Before + V-ing' thay cho 'before we launch'.",
+            "level": "intermediate",
+            "topic": "work"
+        },
+        # Upper-Intermediate - Culture
+        {
+            "correct_sentence": "Traditional customs are passing down through generations.",
+            "meaning_vi": "Các phong tục truyền thống đang được truyền lại qua các thế hệ.",
+            "hint": "Sự kế thừa văn hóa gia đình và xã hội",
+            "key_vocabulary": [
+                {"word": "traditional", "meaning_vi": "truyền thống"},
+                {"word": "generations", "meaning_vi": "các thế hệ"}
+            ],
+            "difficulty_reason": "Sử dụng phrasal verb ở thì tiếp diễn và từ vựng trừu tượng.",
+            "grammar_note": "Cụm động từ: pass down (truyền lại). Thì hiện tại tiếp diễn chỉ xu hướng đang diễn ra.",
+            "level": "upper_intermediate",
+            "topic": "culture"
+        },
+        {
+            "correct_sentence": "Language plays an essential role in preserving cultural identity.",
+            "meaning_vi": "Ngôn ngữ đóng vai trò cốt lõi trong việc gìn giữ bản sắc văn hóa.",
+            "hint": "Mối quan hệ giữa ngôn ngữ và văn hóa dân tộc",
+            "key_vocabulary": [
+                {"word": "essential", "meaning_vi": "thiết yếu, cốt lõi"},
+                {"word": "preserving", "meaning_vi": "gìn giữ, bảo tồn"}
+            ],
+            "difficulty_reason": "Sử dụng cụm từ cố định 'play a role in' đi kèm danh động từ.",
+            "grammar_note": "Collocation: play a/an + Adj + role + in + V-ing (đóng vai trò như thế nào trong việc gì).",
+            "level": "upper_intermediate",
+            "topic": "culture"
+        },
+        # Advanced - Science & Technology
+        {
+            "correct_sentence": "Artificial intelligence is shifting the paradigm of modern education.",
+            "meaning_vi": "Trí tuệ nhân tạo đang thay đổi mô hình của giáo dục hiện đại.",
+            "hint": "Tác động của AI đối với trường học",
+            "key_vocabulary": [
+                {"word": "paradigm", "meaning_vi": "mô hình, khuôn mẫu"},
+                {"word": "shifting", "meaning_vi": "dịch chuyển, thay đổi"}
+            ],
+            "difficulty_reason": "Sử dụng từ vựng nâng cao và danh từ ghép phức tạp.",
+            "grammar_note": "Cụm từ: shift the paradigm (thay đổi hoàn toàn tư duy/mô hình).",
+            "level": "advanced",
+            "topic": "science"
+        },
+        {
+            "correct_sentence": "We conducted a comprehensive study to scrutinize the hypothesis.",
+            "meaning_vi": "Chúng tôi đã tiến hành một nghiên cứu toàn diện để xem xét kỹ lưỡng giả thuyết.",
+            "hint": "Các bước trong nghiên cứu khoa học",
+            "key_vocabulary": [
+                {"word": "comprehensive", "meaning_vi": "toàn diện"},
+                {"word": "scrutinize", "meaning_vi": "xem xét kỹ lưỡng"}
+            ],
+            "difficulty_reason": "Sử dụng cấu trúc câu phức với động từ chỉ mục đích và từ vựng học thuật C1-C2.",
+            "grammar_note": "Cấu trúc: conduct a study (tiến hành nghiên cứu). Scrutinize là động từ học thuật chỉ sự xem xét tỉ mỉ.",
+            "level": "advanced",
+            "topic": "science"
+        }
+    ]
+
+    def generate(self, **kwargs) -> dict:
+        level = kwargs.get("level", "intermediate")
+        topic = kwargs.get("topic", "daily_life")
+        count = kwargs.get("count", 5)
+        vocab_pairs = kwargs.get("vocab_pairs") or []
+        
+        # 1. Tìm các câu mẫu chứa các từ trong vocab_pairs của người dùng
+        matched_sentences = []
+        if vocab_pairs:
+            terms = [p.get("term", "").strip().lower() for p in vocab_pairs if p.get("term")]
+            # Xáo trộn các từ vựng để chọn ngẫu nhiên
+            random.shuffle(terms)
+            for term in terms:
+                if len(matched_sentences) >= count:
+                    break
+                # Tìm xem có câu mẫu nào chứa từ khóa này không
+                for s in self.SENTENCE_POOL:
+                    sentence_text = s["correct_sentence"].lower()
+                    # So khớp từ đơn lập để tránh khớp một phần từ (ví dụ 'eat' khớp với 'creative')
+                    if f" {term} " in f" {sentence_text} " or sentence_text.startswith(term + " ") or sentence_text.endswith(" " + term) or sentence_text.endswith(" " + term + "."):
+                        if s not in matched_sentences:
+                            matched_sentences.append(s)
+                            break
+
+        # 2. Nếu chưa đủ số lượng, bổ sung câu từ Pool theo level và topic của giao diện
+        fallback_sentences = [
+            s for s in self.SENTENCE_POOL
+            if s.get("level") == level and s.get("topic") == topic
+        ]
+        # Nếu không có câu nào đúng level/topic trong pool, lấy toàn bộ pool làm fallback
+        if not fallback_sentences:
+            fallback_sentences = self.SENTENCE_POOL[:]
+            
+        random.shuffle(fallback_sentences)
+        
+        for s in fallback_sentences:
+            if len(matched_sentences) >= count:
+                break
+            if s not in matched_sentences:
+                matched_sentences.append(s)
+                
+        # 3. Đảm bảo có ít nhất 1 câu hỏi nếu pool trống (tránh lỗi chia cho 0)
+        if not matched_sentences:
+            matched_sentences = [self.SENTENCE_POOL[0]]
+            
+        # 4. Trả về đúng schema
+        return {
+            "sentences": matched_sentences[:count]
+        }
 
     def fisher_yates_shuffle(self, words: list[str]) -> list[str]:
         arr = list(words)

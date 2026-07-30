@@ -2306,12 +2306,51 @@ const App = (() => {
         const fb=document.querySelector('#feedback');
         if(!fb)return;
         
-        let html='<div class="feedback '+(r.correct?'good':'bad')+'"><b>'+(r.correct?esc(t('feedback.exact', 'Chính xác!')):esc(t('feedback.needs_improvement', 'Cần cải thiện')))+'</b><p>'+esc(r.explanation||r.feedback||'')+'</p><p>'+esc(t('feedback.answer_label', 'Đáp án: {0}', targetText))+'</p>';
+        let html='<div class="feedback '+(r.correct?'good':'bad')+'"><b>'+(r.correct?esc(t('feedback.exact', 'Chính xác!')):esc(t('feedback.needs_improvement', 'Cần cải thiện')))+'</b>';
+        
+        // Hiển thị Đánh giá chung
+        if (typeof r.score !== 'undefined') {
+          const lv = r.level || (r.correct ? 'Đạt' : 'Cần cải thiện');
+          html += `<div class="overall-grade" style="margin-top:10px; padding:10px; background:rgba(0,0,0,0.02); border-radius:6px; border-left:4px solid ${r.correct?'var(--success)':'var(--error)'}">
+            <p style="margin: 0;">📊 <b>${esc(t('feedback.overall_grade', 'ĐÁNH GIÁ CHUNG'))}:</b> Điểm số: <span style="font-size:16px; font-weight:700; color:${r.correct?'var(--success)':'var(--error)'}">${r.score}/10</span> (${esc(lv)})</p>
+          </div>`;
+        }
+        
+        // Hiển thị Phân tích lỗi
+        if (r.errors && r.errors.length) {
+          html += '<hr><p><b>🔍 ' + esc(t('feedback.error_analysis', 'PHÂN TÍCH LỖI:')) + '</b></p>';
+          r.errors.forEach(err => {
+            if (typeof err === 'object' && err.name) {
+              html += `<div class="error-item" style="margin-bottom:12px; padding:8px 12px; border-left:3px solid var(--error); background:rgba(239, 68, 68, 0.02); border-radius:4px;">
+                <p style="margin:2px 0;">🔴 <b>Lỗi:</b> ${esc(err.name)}</p>
+                <p style="margin:2px 0; padding-left:14px; font-size:13px;">❌ <b>Lỗi sai:</b> <span style="color:var(--error);">${esc(err.wrong)}</span> ➔ <b>Vì sao sai:</b> <i>${esc(err.reason)}</i></p>
+                <p style="margin:2px 0; padding-left:14px; font-size:13px;">💡 <b>Gợi ý sửa:</b> <span style="color:var(--success); font-weight:600;">${esc(err.suggestion)}</span> ➔ <b>Vì sao sửa:</b> <i>${esc(err.why)}</i></p>
+              </div>`;
+            } else {
+              html += `<p>• ${esc(err)}</p>`;
+            }
+          });
+        } else if (r.explanation || r.feedback) {
+          html += `<p>${esc(r.explanation || r.feedback)}</p>`;
+        }
+        
+        // Hiển thị Đáp án gợi ý
+        if (r.suggested_answers) {
+          html += '<hr><p><b>✅ ' + esc(t('feedback.suggested_answers_title', 'ĐÁP ÁN GỢI Ý:')) + '</b></p>';
+          if (r.suggested_answers.common) {
+            html += `<p style="margin:4px 0;">• <b>Thông thường (Common):</b> <span style="color:var(--success); font-weight:600;">${esc(r.suggested_answers.common)}</span></p>`;
+          }
+          if (r.suggested_answers.advanced) {
+            html += `<p style="margin:4px 0;">• <b>Nâng cao (Advanced):</b> <span style="color:var(--success); font-weight:600;">${esc(r.suggested_answers.advanced)}</span></p>`;
+          }
+        } else {
+          html += '<p>' + esc(t('feedback.answer_label', 'Đáp án: {0}', targetText)) + '</p>';
+        }
         
         if (keyVocab && keyVocab.length) {
           html += '<hr><p><b>' + esc(t('feedback.word_analysis', 'Phân tích từ:')) + '</b></p>';
           keyVocab.forEach(v => {
-            html += `<p>• <b>${esc(v.source || v.word)}</b>: ${esc(v.target || v.meaning_vi || v.meaning)} ${v.note ? ' — ' + esc(v.note) : ''}</p>`;
+            html += `<p style="margin:4px 0;">• <b>${esc(v.source || v.word)}</b>: ${esc(v.target || v.meaning_vi || v.meaning)} ${v.note ? ' — ' + esc(v.note) : ''}</p>`;
           });
         }
         if (commonMistakes && commonMistakes.length) {
