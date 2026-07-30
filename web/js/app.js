@@ -61,7 +61,7 @@ const App = (() => {
     try {
       localStorage.setItem(PFX + 'prefs', JSON.stringify(p));
     } catch (e) {}
-    Bridge.send('save_context', p);
+    Bridge.send('save_context', { gamemode: 'prefs', data: p });
   }
 
   function restorePrefs() {
@@ -469,8 +469,9 @@ const App = (() => {
     </main>`);
 
     bindCommon();
-    bindSource();
-    restorePrefs();
+    bindSource().then(() => {
+      restorePrefs();
+    });
 
     const gameId = g[0];
     if (state.activeSessions && state.activeSessions[gameId]) {
@@ -2623,6 +2624,9 @@ const App = (() => {
 
   function render(){state.route==='home'?home():game()}
   async function startApp(){
+    window.addEventListener('beforeunload', () => {
+      savePrefs();
+    });
     if (window.Utils && typeof window.Utils.initI18n === 'function') {
       await window.Utils.initI18n();
     }

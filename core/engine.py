@@ -742,8 +742,14 @@ class AIEngine:
 
     def _handle_save_context(self, data: dict) -> dict:
         ctx_mgr = self._get_context_mgr()
-        gamemode = data.get("gamemode", "")
-        payload = data.get("data", {})
+        gamemode = data.get("gamemode")
+        if gamemode is not None:
+            payload = data.get("data", {})
+        else:
+            # Tương thích ngược: Nếu truyền trực tiếp dict preferences
+            gamemode = "prefs"
+            payload = data
+            
         ctx_mgr.save(gamemode, payload, ttl_minutes=60)
         log.debug(f"Context saved manually for {gamemode}")
         return {}
