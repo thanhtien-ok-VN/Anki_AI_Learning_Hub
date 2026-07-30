@@ -4,7 +4,7 @@ const App = (() => {
 
   function loadPrefs() {
     try {
-      const p = sessionStorage.getItem(PFX + 'prefs');
+      const p = localStorage.getItem(PFX + 'prefs');
       if (p) Object.assign(state.userPrefs, JSON.parse(p));
     } catch (e) {}
   }
@@ -59,7 +59,7 @@ const App = (() => {
 
     state.userPrefs = p;
     try {
-      sessionStorage.setItem(PFX + 'prefs', JSON.stringify(p));
+      localStorage.setItem(PFX + 'prefs', JSON.stringify(p));
     } catch (e) {}
     Bridge.send('save_context', p);
   }
@@ -97,7 +97,7 @@ const App = (() => {
     state.pairs = [];
     state.seen.clear();
     try {
-      sessionStorage.removeItem(PFX + 'prefs');
+      localStorage.removeItem(PFX + 'prefs');
     } catch (e) {}
     Bridge.send('clear_context');
   }
