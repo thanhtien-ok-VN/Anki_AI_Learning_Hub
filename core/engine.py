@@ -471,6 +471,27 @@ class AIEngine:
                     "message": validation["error"],
                 }
 
+        # Ánh xạ định nghĩa từ Anki deck của người dùng vào câu hỏi Fill in the Blank
+        if gamemode == "fill_blank" and not result.get("error"):
+            vocab_map = {}
+            for p in source_pairs:
+                term = p.get("term", "").strip().lower()
+                defn = p.get("definition", "").strip()
+                if term and defn:
+                    vocab_map[term] = defn
+                    
+            if "questions" in result:
+                for q in result["questions"]:
+                    target = q.get("target_word", "").strip().lower()
+                    matched_def = vocab_map.get(target)
+                    if not matched_def:
+                        # Khớp tương đối nếu từ ghép hoặc chứa từ khóa
+                        for term, defn in vocab_map.items():
+                            if term == target or (len(term) > 3 and term in target) or (len(target) > 3 and target in term):
+                                matched_def = defn
+                                break
+                    q["user_definition"] = matched_def if matched_def else q.get("meaning_vi", "")
+
         if gm and not result.get("error"):
             rendered = gm.render_ui_data(result)
             if rendered:

@@ -1331,7 +1331,7 @@ const App = (() => {
           if (correctIdx === -1) correctIdx = q.correct_index;
           const correctOpt = q.options[correctIdx];
           const word = typeof correctOpt === 'object' ? correctOpt.word : correctOpt;
-          const translation = typeof correctOpt === 'object' ? correctOpt.translation : (q.options_translations ? q.options_translations[correctIdx] : '');
+          const translation = q.user_definition || q.meaning_vi || (typeof correctOpt === 'object' ? correctOpt.translation : '');
 
           hintLevel++;
           if (hintLevel === 1) {

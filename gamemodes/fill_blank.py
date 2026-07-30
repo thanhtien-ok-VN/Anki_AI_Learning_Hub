@@ -26,6 +26,7 @@ class FillBlankMode(GameModeBase):
                     ],
                     "explanation": q.get("explanation", ""),
                     "grammar_note": q.get("grammar_note", ""),
+                    "user_definition": q.get("user_definition", ""),
                 }
                 for q in questions
             ]

@@ -23,6 +23,7 @@ if HAS_PYDANTIC:
         options: List[FillBlankOption]  # exactly 4
         explanation: str
         grammar_note: Optional[str] = None
+        user_definition: Optional[str] = None
 
     class FillBlankSchema(BaseModel):
         questions: List[FillBlankQuestion]
@@ -198,7 +199,8 @@ RAW_DICT_SCHEMAS = {
                             }
                         },
                         "explanation": {"type": "STRING"},
-                        "grammar_note": {"type": "STRING"}
+                        "grammar_note": {"type": "STRING"},
+                        "user_definition": {"type": "STRING"}
                     },
                     "required": ["sentence", "target_word", "meaning_vi", "full_translation", "options", "explanation"]
                 }
