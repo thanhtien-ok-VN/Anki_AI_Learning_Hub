@@ -91,11 +91,14 @@ class AIHubView:
                 response = resolve_background_result(result)
             except Exception as exc:
                 response = self._result(False, code="E_BACKGROUND", message=str(exc))
-            js = "window.Bridge && window.Bridge.complete(%s, %s);" % (
-                json.dumps(request_id),
-                json.dumps(response, ensure_ascii=False),
-            )
-            self._hub_web.eval(js)
+            try:
+                js = "window.Bridge && window.Bridge.complete(%s, %s);" % (
+                    json.dumps(request_id),
+                    json.dumps(response, ensure_ascii=False),
+                )
+                self._hub_web.eval(js)
+            except Exception as e:
+                log.error(f"background_complete eval failed: {e}")
 
     def _on_load_finished(self, ok: bool) -> None:
         if ok and self._hub_web:

@@ -202,9 +202,12 @@ class AIEngine:
     def _send_progress(self, text: str):
         from aqt import mw
         def update_ui():
-            if hasattr(self, "main_window") and self.main_window and self.main_window._hub_web:
-                js = f"if(window.Bridge && window.Bridge.updateStatus) window.Bridge.updateStatus({json.dumps(text)});"
-                self.main_window._hub_web.eval(js)
+            try:
+                if hasattr(self, "main_window") and self.main_window and self.main_window._hub_web:
+                    js = f"if(window.Bridge && window.Bridge.updateStatus) window.Bridge.updateStatus({json.dumps(text)});"
+                    self.main_window._hub_web.eval(js)
+            except Exception as e:
+                log.error(f"update_ui progress eval failed: {e}")
         mw.taskman.run_on_main(update_ui)
 
     def _get_context_mgr(self):

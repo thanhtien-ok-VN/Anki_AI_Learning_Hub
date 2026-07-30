@@ -126,7 +126,16 @@ const App = (() => {
   loadHistory();
 
   const root = document.querySelector('#app');
-  const t = (key, fallback, ...args) => window.t ? window.t(key, fallback, ...args) : (fallback || key);
+  const t = (key, fallback, ...args) => {
+    if (window.t) return window.t(key, fallback, ...args);
+    let text = fallback || key;
+    if (args.length > 0) {
+      args.forEach((val, idx) => {
+        text = text.replace(new RegExp('\\{' + idx + '\\}', 'g'), val ?? '');
+      });
+    }
+    return text;
+  };
   const normalizeText = text => {
     if (!text) return "";
     return String(text)
