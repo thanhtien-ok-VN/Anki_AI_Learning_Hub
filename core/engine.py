@@ -205,7 +205,7 @@ class AIEngine:
             if hasattr(self, "main_window") and self.main_window and self.main_window._hub_web:
                 js = f"if(window.Bridge && window.Bridge.updateStatus) window.Bridge.updateStatus({json.dumps(text)});"
                 self.main_window._hub_web.eval(js)
-        mw.taskman.run_on_main_thread(update_ui)
+        mw.taskman.run_on_main(update_ui)
 
     def _get_context_mgr(self):
         if self._context_mgr is None:
