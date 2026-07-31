@@ -4,10 +4,9 @@ Topic: {topic}
 
 Requirements:
 - The exercise MUST revolve around the topic "{topic}".
-- Generate a diverse, natural sentence appropriate for the selected level. Vary grammatical structures (compound/complex sentences, passive voice, conditionals, relative clauses, comparison, or common idioms/collocations) to keep the exercises engaging and pedagogical.
+- The sentence MUST use this grammatical type: {sentence_type}. Do NOT use any other sentence structure. Keep the meaning natural and appropriate for the topic and level.
 - Focus on common mistakes made by Vietnamese learners (tense, pluralization, articles, word order, prepositions).
 - Provide the reference translation and alternative correct versions.
-- Break down key vocabulary and common errors with corrections.
 
 Output raw JSON only, no markdown formatting.
 {
@@ -16,12 +15,6 @@ Output raw JSON only, no markdown formatting.
   "reference_translation": "I intended to go out, but it rained.",
   "alternative_translations": [
     {"text": "I planned to go out, but it was raining.", "note": "..."}
-  ],
-  "key_vocabulary": [
-    {"source": "định", "target": "intend/plan", "note": "..."}
-  ],
-  "common_mistakes": [
-    {"wrong": "I want to go out but rain.", "error_type": "Tense & Structure", "correction": "..."}
   ],
   "grading_rubric": "..."
 }

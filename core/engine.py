@@ -370,6 +370,21 @@ class AIEngine:
         else:
             effective = count
 
+        if gamemode == "translation":
+            TRANSLATION_SENTENCE_TYPES = [
+                "passive voice",
+                "conditional (if + would)",
+                "present perfect vs past simple",
+                "comparative / superlative",
+                "relative clause (who/which/that)",
+                "complex sentence with because/although/while",
+                "modal verbs (can, should, must, might)",
+                "common idiom or phrasal verb",
+                "reported speech",
+                "negative + tag/question structure",
+            ]
+            data["sentence_type"] = random.choice(TRANSLATION_SENTENCE_TYPES)
+
         if source_pairs:
             needed = min(effective, len(source_pairs))
             data["vocab_pairs"] = random.sample(source_pairs, needed) if needed else []
@@ -678,7 +693,6 @@ class AIEngine:
                 "source_sentence": data.get("source_sentence", data.get("source_text", "")),
                 "reference_translation": data.get("reference_translation", data.get("expected", "")),
                 "user_target": data.get("user_answer", ""),
-                "common_mistakes": data.get("common_mistakes", "None provided"),
             }
         elif gamemode == "sentence_transform":
             prompt_data = {

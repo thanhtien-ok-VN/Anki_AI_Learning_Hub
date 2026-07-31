@@ -156,33 +156,9 @@ const SCHEMAS: Record<string, any> = {
           required: ["text", "note"]
         }
       },
-      key_vocabulary: {
-        type: "array",
-        items: {
-          type: "object",
-          properties: {
-            source: { type: "string" },
-            target: { type: "string" },
-            note: { type: "string" }
-          },
-          required: ["source", "target", "note"]
-        }
-      },
-      common_mistakes: {
-        type: "array",
-        items: {
-          type: "object",
-          properties: {
-            wrong: { type: "string" },
-            error_type: { type: "string" },
-            correction: { type: "string" }
-          },
-          required: ["wrong", "error_type", "correction"]
-        }
-      },
       grading_rubric: { type: "string" }
     },
-    required: ["source_sentence", "target_language", "reference_translation", "alternative_translations", "key_vocabulary", "common_mistakes", "grading_rubric"]
+    required: ["source_sentence", "target_language", "reference_translation", "alternative_translations", "grading_rubric"]
   },
   unscramble: {
     type: "object",
@@ -458,13 +434,6 @@ function getFallbackExercise(gamemode: string, data: any) {
       reference_translation: "Using technology pragmatically helps improve work performance.",
       alternative_translations: [
         { text: "Applying technology in a practical way enhances productivity.", note: "Trang trọng hơn" }
-      ],
-      key_vocabulary: [
-        { source: "sử dụng công nghệ", target: "use technology", note: "Cụm động từ" },
-        { source: "hiệu suất công việc", target: "work performance", note: "Danh từ ghép" }
-      ],
-      common_mistakes: [
-        { wrong: "use technology pragmatic", error_type: "Grammar", correction: "Cần dùng trạng từ 'pragmatically' để bổ nghĩa cho động từ 'use'." }
       ],
       grading_rubric: "Đánh giá dựa trên độ chính xác ngữ pháp và sự tự nhiên của bản dịch."
     };

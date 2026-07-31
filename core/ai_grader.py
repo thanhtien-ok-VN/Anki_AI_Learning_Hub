@@ -53,7 +53,6 @@ Source Sentence (Vietnamese): {source_sentence}
 Expected Translation (English): {reference_translation}
 Student's Translation: {user_target}
 
-Common mistakes to check: {common_mistakes}
 Student's level: {level}
 
 Task:

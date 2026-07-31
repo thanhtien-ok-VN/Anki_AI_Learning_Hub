@@ -2079,9 +2079,7 @@ const App = (() => {
     const isNewSchema = !!x.source_sentence;
     const sourceText = isNewSchema ? x.source_sentence : (x.sentences && x.sentences[0] ? x.sentences[0].source_text : '');
     const targetText = isNewSchema ? x.reference_translation : (x.sentences && x.sentences[0] ? x.sentences[0].target_text : '');
-    const keyVocab = isNewSchema ? x.key_vocabulary : (x.sentences && x.sentences[0] ? x.sentences[0].vocabulary : []);
     const alternativeTranslations = isNewSchema ? x.alternative_translations : [];
-    const commonMistakes = isNewSchema ? x.common_mistakes : [];
 
     document.querySelector('#play').innerHTML='<div class="question-card"><p class="q-text">'+esc(sourceText)+'</p><textarea id="answer" placeholder="'+esc(t('placeholder.translation', 'Nhập bản dịch…'))+'"></textarea><button class="btn" id="grade">'+esc(t('app.grade', 'Chấm điểm'))+'</button><div id="feedback"></div></div>';
     document.querySelector('#grade').onclick=async()=>{
@@ -2143,23 +2141,7 @@ const App = (() => {
           html += '<p>' + esc(t('feedback.answer_label', 'Đáp án: {0}', targetText)) + '</p>';
         }
         
-        if (keyVocab && keyVocab.length) {
-          html += '<hr><p><b>' + esc(t('feedback.word_analysis', 'Phân tích từ:')) + '</b></p>';
-          keyVocab.forEach(v => {
-            html += `<p style="margin:4px 0;">• <b>${esc(v.source || v.word)}</b>: ${esc(v.target || v.meaning_vi || v.meaning)} ${v.note ? ' — ' + esc(v.note) : ''}</p>`;
-          });
-        }
-        if (commonMistakes && commonMistakes.length) {
-          html += '<p><b>' + esc(t('feedback.common_errors', 'Lỗi thường gặp:')) + '</b></p><ul>';
-          commonMistakes.forEach(m => {
-            if (typeof m === 'object') {
-              html += `<li>Sai: <span style="color:var(--error); font-weight:600;">${esc(m.wrong)}</span> ➔ Sửa: <span style="color:var(--success); font-weight:600;">${esc(m.correction)}</span> (${esc(m.error_type)})</li>`;
-            } else {
-              html += `<li>${esc(m)}</li>`;
-            }
-          });
-          html += '</ul>';
-        }
+
         if (alternativeTranslations && alternativeTranslations.length) {
           html += '<p><b>' + esc(t('feedback.alt_translations', 'Cách dịch khác:')) + '</b></p><ul>';
           alternativeTranslations.forEach(a => {

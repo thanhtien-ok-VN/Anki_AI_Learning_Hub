@@ -4,10 +4,9 @@
 
 要求：
 - 练习内容必须围绕主题 "{topic}"。
-- 生成适合所选水平的多样化、自然的句子。改变语法结构（并列句/复合句、被动语态、条件句、定语从句、比较级或常见的成语/固定搭配），以保持练习的趣味性和教学价值。
+- 该句子必须使用此语法类型：{sentence_type}。请勿使用任何其他句式结构。保持语义自然，并符合主题和所选水平。
 - 重点关注越南学习者常犯的错误（时态、复数、冠词、词序、介词）。
 - 提供参考翻译和其他正确的备选版本。
-- 用越南语详细分析重点词汇和常见错误（附带修改建议）。
 
 仅输出原始 JSON，不得使用 markdown 格式。
 {
@@ -16,12 +15,6 @@
   "reference_translation": "I intended to go out, but it rained.",
   "alternative_translations": [
     {"text": "I planned to go out, but it was raining.", "note": "..."}
-  ],
-  "key_vocabulary": [
-    {"source": "định", "target": "intend/plan", "note": "..."}
-  ],
-  "common_mistakes": [
-    {"wrong": "I want to go out but rain.", "error_type": "Tense & Structure", "correction": "..."}
   ],
   "grading_rubric": "..."
 }

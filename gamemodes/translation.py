@@ -11,8 +11,6 @@ class TranslationMode(GameModeBase):
             "source_sentence": raw_result.get("source_sentence", ""),
             "reference_translation": raw_result.get("reference_translation", ""),
             "alternative_translations": raw_result.get("alternative_translations", []),
-            "key_vocabulary": raw_result.get("key_vocabulary", []),
-            "common_mistakes": raw_result.get("common_mistakes", []),
             "grading_rubric": raw_result.get("grading_rubric", ""),
         }
 

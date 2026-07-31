@@ -49,23 +49,11 @@ if HAS_PYDANTIC:
         text: str
         note: str
 
-    class KeyVocab(BaseModel):
-        source: str
-        target: str
-        note: str
-
-    class CommonMistake(BaseModel):
-        wrong: str
-        error_type: str
-        correction: str
-
     class TranslationSchema(BaseModel):
         source_sentence: str
         target_language: str
         reference_translation: str
         alternative_translations: List[AltTranslation]
-        key_vocabulary: List[KeyVocab]
-        common_mistakes: List[CommonMistake]
         grading_rubric: str
 
     # ===================== 4. UNSCRAMBLE =====================
@@ -250,33 +238,9 @@ RAW_DICT_SCHEMAS = {
                     "required": ["text", "note"]
                 }
             },
-            "key_vocabulary": {
-                "type": "ARRAY",
-                "items": {
-                    "type": "OBJECT",
-                    "properties": {
-                        "source": {"type": "STRING"},
-                        "target": {"type": "STRING"},
-                        "note": {"type": "STRING"}
-                    },
-                    "required": ["source", "target", "note"]
-                }
-            },
-            "common_mistakes": {
-                "type": "ARRAY",
-                "items": {
-                    "type": "OBJECT",
-                    "properties": {
-                        "wrong": {"type": "STRING"},
-                        "error_type": {"type": "STRING"},
-                        "correction": {"type": "STRING"}
-                    },
-                    "required": ["wrong", "error_type", "correction"]
-                }
-            },
             "grading_rubric": {"type": "STRING"}
         },
-        "required": ["source_sentence", "target_language", "reference_translation", "alternative_translations", "key_vocabulary", "common_mistakes", "grading_rubric"]
+        "required": ["source_sentence", "target_language", "reference_translation", "alternative_translations", "grading_rubric"]
     },
     "unscramble": {
         "type": "OBJECT",
