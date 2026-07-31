@@ -177,64 +177,48 @@ const App = (() => {
     }
   };
 
-  const toast = (m, opts = {}) => {
-    const container = document.querySelector('#toast-container') || document.body;
-    const item = { 
-      message: typeof m === 'string' ? m : m.message, 
-      type: opts.type || (m.type || 'info'), 
-      retry: opts.retry || m.retry,
-      retryLabel: opts.retryLabel || m.retryLabel
+  const statusState = { key: '', shownAt: 0 };
+  const bridgeMessage = error => {
+    const messages = {
+      E_RATE_LIMIT: t('app.ai_rate_limited', 'AI đang bận. Vui lòng thử lại sau.'),
+      E_API_ERROR: t('app.ai_unavailable', 'AI hiện tạm không khả dụng. Vui lòng thử lại sau.'),
+      E_NO_KEYS: t('app.ai_no_keys', 'Chưa có API key. Hãy cấu hình trong phần cài đặt.'),
+      E_TIMEOUT: t('app.ai_timeout', 'Yêu cầu AI mất quá nhiều thời gian.'),
+      E_INTERNAL: t('app.ai_internal_error', 'AI Hub không thể hoàn tất yêu cầu này.'),
+      E_BACKGROUND: t('app.ai_internal_error', 'AI Hub không thể hoàn tất yêu cầu này.'),
+      E_BRIDGE: t('app.ai_internal_error', 'AI Hub không thể hoàn tất yêu cầu này.'),
+      E_BRIDGE_NETWORK: t('app.ai_internal_error', 'AI Hub không thể hoàn tất yêu cầu này.'),
+      E_BRIDGE_PARSE: t('app.ai_internal_error', 'AI Hub không thể hoàn tất yêu cầu này.'),
+      E_PYCMD: t('app.ai_internal_error', 'AI Hub không thể hoàn tất yêu cầu này.'),
     };
-
-    const e = document.createElement('div');
-    e.className = `toast ${item.type}`;
-    if (item.retry) e.classList.add('error');
-
-    const content = document.createElement('div');
-    content.style.display = 'flex';
-    content.style.flexDirection = 'column';
-    content.style.gap = '4px';
-
-    const msgSpan = document.createElement('span');
-    msgSpan.textContent = item.message;
-    content.append(msgSpan);
-    e.append(content);
-
-    const closeBtn = document.createElement('button');
-    closeBtn.className = 'toast-close-btn';
-    closeBtn.innerHTML = '✕';
-    
-    const dismiss = () => {
-      clearTimeout(e._timer);
-      e.classList.remove('show');
-      setSafeTimeout(() => { e.remove(); }, 300);
-    };
-    closeBtn.onclick = dismiss;
-
-    if (item.retry) {
-      const btn = document.createElement('button');
-      btn.className = 'toast-retry-btn';
-      btn.textContent = item.retryLabel || t('app.retry', 'Thử lại');
-      btn.onclick = () => {
-        dismiss();
-        item.retry();
-      };
-      const actionsDiv = document.createElement('div');
-      actionsDiv.style.marginTop = '6px';
-      actionsDiv.append(btn);
-      content.append(actionsDiv);
-    }
-
-    e.append(closeBtn);
-    container.append(e);
-
-    setTimeout(() => { e.classList.add('show'); }, 10);
-
-    if (item.type !== 'error' && !item.retry) {
-      const duration = item.type === 'warning' ? 5000 : 3000;
-      e._timer = setSafeTimeout(dismiss, duration);
-    }
+    return messages[error?.error_code] || error?.message || t('app.operation_failed', 'Thao tác không thể hoàn tất.');
   };
+
+  const clearStatus = () => {
+    const banner = document.querySelector('#status-banner');
+    if (banner) banner.hidden = true;
+    statusState.key = '';
+  };
+
+  const showStatus = error => {
+    const banner = document.querySelector('#status-banner');
+    const message = document.querySelector('#status-banner-message');
+    if (!banner || !message) return;
+    const key = error?.error_code || String(error?.message || error || 'status');
+    const now = Date.now();
+    if (statusState.key === key && now - statusState.shownAt < 30000) {
+      statusState.shownAt = now;
+    } else {
+      statusState.key = key;
+      statusState.shownAt = now;
+    }
+    message.textContent = typeof error === 'string' ? error : bridgeMessage(error);
+    banner.hidden = false;
+  };
+
+  const showBridgeFailure = error => showStatus(error);
+  window.addEventListener('aihub:bridge-success', clearStatus);
+  document.querySelector('#status-banner-close')?.addEventListener('click', clearStatus);
 
   const getWeakWords = () => {
     try {
@@ -346,14 +330,12 @@ const App = (() => {
     const pendingGen = loadPendingGen();
     let pendingBanner = '';
     if (pendingGen) {
-      const gameInfo = games.find(g => g[0] === pendingGen.gamemode);
       pendingBanner = `
         <div class="resume-banner" style="background: rgba(239, 68, 68, 0.06); border: 1px solid #ef4444; border-radius: 8px; padding: 16px; margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between; gap: 12px; animation: slideDown 0.3s ease;">
           <div style="font-size: 14.5px; color: var(--text-primary); text-align: left;">
-            ⚠️ <b>Bài tập chưa tạo xong:</b> Lần trước quá trình tạo bài <b>${esc(t(pendingGen.gamemode + '.title', gameInfo ? gameInfo[2] : pendingGen.gamemode))}</b> đã bị gián đoạn.
+            ⚠️ <b>Bài tập chưa tạo xong:</b> Lần trước quá trình tạo bài đã bị gián đoạn.
           </div>
           <div style="display: flex; gap: 10px;">
-            <button class="btn" id="retry-pending-btn" style="padding: 8px 16px; background: #ef4444; color: white; border: none; font-weight: 600; cursor: pointer;">Thử lại</button>
             <button class="btn btn-outline" id="discard-pending-btn" style="padding: 8px 16px; border-color: #6b7280; color: #6b7280; background: white; font-weight: 600; cursor: pointer;">Bỏ qua</button>
           </div>
         </div>
@@ -391,13 +373,6 @@ const App = (() => {
     }
 
     if (pendingGen) {
-      const retryBtn = document.querySelector('#retry-pending-btn');
-      if (retryBtn) {
-        retryBtn.onclick = () => {
-          clearPendingGen();
-          nav(pendingGen.gamemode);
-        };
-      }
       const discardBtn = document.querySelector('#discard-pending-btn');
       if (discardBtn) {
         discardBtn.onclick = () => {
@@ -857,7 +832,7 @@ const App = (() => {
         abortActiveRequests();
         clearPendingGen();
         setBusy(false);
-        toast('Đã hủy thao tác.');
+        showStatus('Đã hủy thao tác.');
       };
     }
     const cancelGen = document.querySelector('#cancel-gen');
@@ -866,7 +841,7 @@ const App = (() => {
         abortActiveRequests();
         clearPendingGen();
         setBusy(false);
-        toast('Đã hủy tạo bài.');
+        showStatus('Đã hủy tạo bài.');
       };
     }
   }
@@ -898,7 +873,7 @@ const App = (() => {
       }
     } catch (e) {
       if (e.name === 'AbortError' || e.error_code === 'E_ABORTED') return;
-      toast({ message: e.message, retry: bindSource, retryLabel: t('app.retry_gen', 'Thử lại') });
+      showBridgeFailure(e);
     }
 
     const deckSearch = document.querySelector('#deck-search');
@@ -970,7 +945,7 @@ const App = (() => {
       }
     } catch (e) {
       if (e.name === 'AbortError' || e.error_code === 'E_ABORTED') return;
-      toast({ message: e.message, retry: loadModels, retryLabel: t('app.retry_gen', 'Thử lại') });
+      showBridgeFailure(e);
     }
   }
 
@@ -996,7 +971,7 @@ const App = (() => {
       }
     } catch (e) {
       if (e.name === 'AbortError' || e.error_code === 'E_ABORTED') return;
-      toast({ message: e.message, retry: loadFields, retryLabel: t('app.retry_gen', 'Thử lại') });
+      showBridgeFailure(e);
     }
   }
 
@@ -1030,7 +1005,7 @@ const App = (() => {
       return !!state.pairs.length;
     } catch (e) {
       if (e.name === 'AbortError' || e.error_code === 'E_ABORTED') return false;
-      toast({ message: e.message, retry: sample, retryLabel: t('app.retry_gen', 'Thử lại') });
+      showBridgeFailure(e);
       return false;
     }
   }
@@ -1112,7 +1087,8 @@ const App = (() => {
       clearPendingGen();
     } catch(e) {
       if (e.name === 'AbortError' || e.error_code === 'E_ABORTED') return;
-      toast({ message: e.message, retry: () => generate(id, optsOverride), retryLabel: t('app.retry_gen', 'Thử lại') });
+      clearPendingGen();
+      showBridgeFailure(e);
     } finally {
       if (!signal.aborted) setBusy(false);
     }
@@ -2380,7 +2356,7 @@ const App = (() => {
         if(retryBtn)retryBtn.onclick=()=>{state.answers={};play(state.route)}
       }catch(e){
         if(e.name==='AbortError'||e.error_code==='E_ABORTED')return;
-        toast({ message: e.message, retry: () => document.querySelector('#grade')?.click(), retryLabel: t('app.retry_gen', 'Thử lại') });
+        showBridgeFailure(e);
       }finally{
         if(!signal.aborted)setBusy(false)
       }
@@ -2523,7 +2499,7 @@ const App = (() => {
         if(retryBtn)retryBtn.onclick=()=>{state.answers={};play(state.route)}
       }catch(e){
         if(e.name==='AbortError'||e.error_code==='E_ABORTED')return;
-        toast({ message: e.message, retry: () => document.querySelector('#grade')?.click(), retryLabel: t('app.retry_gen', 'Thử lại') });
+        showBridgeFailure(e);
       }finally{
         if(!signal.aborted)setBusy(false)
       }
@@ -2646,7 +2622,7 @@ const App = (() => {
         if(retryBtn)retryBtn.onclick=()=>{state.answers={};generate(state.route)}
       }catch(e){
         if(e.name==='AbortError'||e.error_code==='E_ABORTED')return;
-        toast({ message: e.message, retry: () => document.querySelector('#grade')?.click(), retryLabel: t('app.retry_gen', 'Thử lại') });
+        showBridgeFailure(e);
       }finally{
         if(!signal.aborted)setBusy(false)
       }
@@ -2669,7 +2645,7 @@ const App = (() => {
           let statusIcon = item.ok ? '✅' : '❌';
           let statusText = item.ok ? t('app.api_ok', 'Hoạt động') : t('app.api_fail', 'Lỗi');
           
-          if (!item.ok && item.error && item.error.includes('429')) {
+          if (!item.ok && item.error_code === 'E_RATE_LIMIT') {
             statusIcon = '⚠️';
             statusText = t('app.api_rate_limited', 'Bị giới hạn (Rate Limited)');
           }
@@ -2701,7 +2677,7 @@ const App = (() => {
       }
     }catch(e){
       if(e.name==='AbortError'||e.error_code==='E_ABORTED')return;
-      if(out)out.textContent=t('app.cannot_test_api', 'Không thể kiểm tra: {0}', e.message)
+      showBridgeFailure(e);
     }finally{
       if(!signal.aborted){
         setBusy(false);

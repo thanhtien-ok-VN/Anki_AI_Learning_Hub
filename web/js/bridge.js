@@ -78,6 +78,7 @@ const Bridge = {
             try { pending.signal.removeEventListener('abort', pending.abortHandler); } catch (_) {}
         }
         if (result?.success) {
+            window.dispatchEvent(new CustomEvent('aihub:bridge-success'));
             pending.resolve(result.data);
         } else {
             const err = Object.assign(new Error(result?.message || 'Anki request failed'), result || {});

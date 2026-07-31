@@ -876,53 +876,25 @@ body {
     to { transform: rotate(360deg); }
 }
 
-/* Toast notification */
-.toast-container {
+/* Non-blocking status banner */
+.status-banner {
     position: fixed;
-    bottom: 24px;
-    right: 24px;
+    right: 20px;
+    bottom: 20px;
     display: flex;
-    flex-direction: column;
-    gap: 10px;
     z-index: 9999;
-    pointer-events: none;
-}
-.toast {
-    pointer-events: auto;
+    align-items: center;
+    gap: 12px;
+    max-width: min(420px, calc(100vw - 40px));
     background: var(--card-bg);
-    border: 1px solid var(--border);
-    border-left: 4px solid var(--primary);
+    border: 1px solid #f59e0b;
+    border-left: 4px solid #f59e0b;
     border-radius: var(--radius-sm);
-    padding: 12px 18px;
-    min-width: 280px;
-    max-width: 420px;
+    padding: 10px 12px;
     box-shadow: 0 4px 16px rgba(0,0,0,0.12);
     font-size: 13px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    opacity: 0;
-    transform: translateX(100px);
-    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
-.toast.show {
-    opacity: 1;
-    transform: translateX(0);
-}
-.toast.success {
-    border-left-color: var(--success);
-}
-.toast.warning {
-    border-left-color: #eab308;
-}
-.toast.error {
-    border-left-color: var(--error);
-    background: #fef2f2;
-    color: #991b1b;
-    border-color: #fee2e2;
-}
-.toast-close-btn {
+.status-banner button {
     background: none;
     border: none;
     color: var(--text-secondary);
@@ -931,22 +903,8 @@ body {
     padding: 2px 4px;
     line-height: 1;
 }
-.toast-close-btn:hover {
+.status-banner button:hover {
     color: var(--text);
-}
-.toast-retry-btn {
-    background: var(--primary);
-    color: white;
-    border: none;
-    padding: 6px 12px;
-    border-radius: var(--radius-sm);
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    white-space: nowrap;
-}
-.toast-retry-btn:hover {
-    background: var(--primary-hover);
 }
 
 /* SPA source controls */

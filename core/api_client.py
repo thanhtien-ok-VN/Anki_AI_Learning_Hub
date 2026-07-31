@@ -66,11 +66,9 @@ class GeminiClient:
             return [preferred]
         return self.resolve_model_chain(api_key)
 
-    def _err(self, code: str, msg: str, extra: dict = None) -> dict:
+    def _err(self, code: str, msg: str, detail: str = "") -> dict:
         result = {"error": True, "error_code": code, "message": msg}
-        if extra:
-            result.update(extra)
-        log.warn(f"API error [{code}]: {msg}", extra)
+        log.warn(f"API error [{code}]: {detail or msg}")
         return result
 
     def _ok(self, data: dict, key_label: str, model: str) -> dict:
@@ -189,6 +187,7 @@ class GeminiClient:
 
         has_schema = "response_schema" in payload.get("generationConfig", {})
         last_error = ""
+        final_code = EC["API_ERROR"]
         now = time.monotonic()
         order = [self._active_key_index] + [i for i in range(len(self.keys)) if i != self._active_key_index]
         eligible = [i for i in order if self._unhealthy_until.get(i, 0) <= now]
@@ -238,6 +237,7 @@ class GeminiClient:
                             return self._ok(result, key_label, model)
                         return result
                     except RateLimitError:
+                        final_code = EC["RATE_LIMIT"]
                         if attempt < max_retries - 1:
                             delay = self._retry_delay(attempt)
                             log.warn(f"{key_label} {model} rate limited, retry in {delay:.1f}s")
@@ -248,6 +248,7 @@ class GeminiClient:
                         last_error = f"{key_label} {model}: rate limited after {max_retries} retries"
                         notify(f"Key{idx+1} ({model}) hết lượt gọi. Đang chuyển key...")
                     except ModelNotFoundError as e:
+                        final_code = EC["API_ERROR"]
                         self._unhealthy_until[idx] = time.monotonic() + 300
                         last_error = f"{key_label}: {e}"
                         log.warn(last_error)
@@ -269,6 +270,7 @@ class GeminiClient:
                                     return self._ok(result, f"{key_label} (text fallback)", model)
                                 return result
                             except Exception as e2:
+                                final_code = EC["API_ERROR"]
                                 last_error = f"{key_label}: schema+text both failed: {e2}"
                                 log.error(last_error)
                                 notify(f"Key{idx+1} ({model}) gọi dự phòng thất bại. Đang chuyển key...")
@@ -276,6 +278,7 @@ class GeminiClient:
                         last_error = f"{key_label}: {e}"
                         break
                     except ApiError as e:
+                        final_code = EC["API_ERROR"]
                         last_error = f"{key_label}: {e}"
                         is_auth_error = "invalid" in str(e).lower() or "authoriz" in str(e).lower()
                         delay = 3600 if is_auth_error else 20
@@ -293,6 +296,7 @@ class GeminiClient:
                             continue
                         break
                     except Exception as e:
+                        final_code = EC["INTERNAL_ERROR"]
                         last_error = f"{key_label}: {e}"
                         notify(f"Key{idx+1} lỗi không xác định. Đang chuyển key...")
                         if attempt < max_retries - 1:
@@ -300,7 +304,13 @@ class GeminiClient:
                             continue
                         break
 
-        return self._err(EC["API_ERROR"], f"All keys failed. Last: {last_error}")
+        if final_code == EC["RATE_LIMIT"]:
+            message = "AI is temporarily busy. Please try again later."
+        elif final_code == EC["INTERNAL_ERROR"]:
+            message = "The AI request could not be completed."
+        else:
+            message = "AI is temporarily unavailable. Please try again later."
+        return self._err(final_code, message, last_error)
 
     def generate_structured(
         self,
@@ -321,23 +331,27 @@ class GeminiClient:
             return self._try_keys(payload, max_retries, base_delay, progress_callback)
         except Exception as e:
             log.error(f"Uncaught exception in generate_structured: {e}")
-            return self._err(EC["INTERNAL_ERROR"], f"Internal client error: {e}")
+            return self._err(EC["INTERNAL_ERROR"], "The AI request could not be completed.", str(e))
 
-    def generate_text(self, prompt: str, temperature: float = 0.7, progress_callback: Optional[Callable[[str], None]] = None) -> Optional[str]:
+    def generate_text_result(self, prompt: str, temperature: float = 0.7, progress_callback: Optional[Callable[[str], None]] = None) -> dict:
         try:
             payload = self._build_payload(prompt, schema=None, temperature=temperature)
             log.info("generate_text", {"prompt_len": len(prompt)})
-            result = self._try_keys(payload, max_retries=2, base_delay=1.0, progress_callback=progress_callback)
-            if result.get("error"):
-                return None
-            return json.dumps(result, ensure_ascii=False)
+            return self._try_keys(payload, max_retries=2, base_delay=1.0, progress_callback=progress_callback)
         except Exception as e:
             log.error(f"Uncaught exception in generate_text: {e}")
+            return self._err(EC["INTERNAL_ERROR"], "The AI request could not be completed.", str(e))
+
+    def generate_text(self, prompt: str, temperature: float = 0.7, progress_callback: Optional[Callable[[str], None]] = None) -> Optional[str]:
+        result = self.generate_text_result(prompt, temperature, progress_callback)
+        if result.get("error"):
             return None
+        return json.dumps(result, ensure_ascii=False)
 
     def test_key_with_waterfall(self, key: str, max_retries: int = 2) -> dict:
         models = self._models_for_call(key)
         last_error = ""
+        error_code = EC["API_ERROR"]
         last_model = models[0] if models else "gemini-1.5-flash"
         
         for step, model in enumerate(models):
@@ -365,24 +379,38 @@ class GeminiClient:
                         delay = 2.0 * (2 ** attempt) + random.uniform(0, 0.5)
                         time.sleep(delay)
                         continue
+                    if code in {429, 500, 503}:
+                        error_code = EC["RATE_LIMIT"]
+                        last_error = "AI is temporarily busy. Please try again later."
+                        break
                     if code == 404:
-                        last_error = f"Model '{model}' not found"
+                        last_error = "The selected model is unavailable."
                         break  # next model
                     if code == 403:
-                        return {"ok": False, "model": model, "error": "API key invalid or not authorized."}
-                    last_error = f"HTTP {code}: {body[:120]}"
+                        return {
+                            "ok": False,
+                            "model": model,
+                            "error_code": EC["KEY_INVALID"],
+                            "error": "API key invalid or not authorized.",
+                        }
+                    last_error = "AI is temporarily unavailable. Please try again later."
                     if attempt >= max_retries - 1:
                         break  # next model
                     time.sleep(2.0)
                 except Exception as e:
-                    last_error = str(e)
+                    last_error = "AI is temporarily unavailable. Please try again later."
                     log.error(f"test_key_with_waterfall exception: key={self.detect_key_type(key)} model={model} error={e}")
                     break  # next model
             else:
                 continue  # next model if we never broke
             break  # stop trying models if we got a non-404/retry error
         
-        return {"ok": False, "model": last_model, "error": last_error}
+        return {
+            "ok": False,
+            "model": last_model,
+            "error_code": error_code,
+            "error": last_error or "AI is temporarily unavailable. Please try again later.",
+        }
 
     def test_key(self, key: str) -> dict:
         return self.test_key_with_waterfall(key)

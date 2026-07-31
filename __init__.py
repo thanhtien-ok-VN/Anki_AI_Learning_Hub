@@ -5,11 +5,6 @@ ADDON_NAME = "AI Learning Hub"
 ADDON_PATH = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, ADDON_PATH)
 
-try:
-    import core.error_suppressor
-except Exception as e:
-    print(f"Failed to import error_suppressor: {e}")
-
 from aqt import mw, gui_hooks
 from aqt.qt import *
 from aqt.utils import showInfo, showWarning
@@ -20,26 +15,6 @@ from core.i18n import t, load_strings
 mw.addonManager.setWebExports(__name__, r"web/.*")
 
 log.info(f"Add-on loaded: {ADDON_NAME} v2.0")
-
-# ===== Global Exception Shield =====
-import traceback as _tb_mod
-_original_excepthook = sys.excepthook
-
-def _aihub_excepthook(exc_type, exc_value, exc_tb):
-    try:
-        tb_text = "".join(_tb_mod.format_exception(exc_type, exc_value, exc_tb))
-        if "AI_Learning_Hub" in tb_text or "ai_learning_hub" in tb_text.lower():
-            log.error(f"[GLOBAL GUARD] Caught unhandled exception:\n{tb_text}")
-            return  # Prevent Anki's error popup dialog
-    except Exception as e:
-        log.error(f"[GLOBAL GUARD] Error in global guard excepthook: {e}")
-    
-    if _original_excepthook:
-        _original_excepthook(exc_type, exc_value, exc_tb)
-
-sys.excepthook = _aihub_excepthook
-
-
 
 def open_hub():
     try:

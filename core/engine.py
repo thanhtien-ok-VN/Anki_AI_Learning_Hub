@@ -324,6 +324,16 @@ class AIEngine:
                 # All public bridge results have one stable envelope.  Existing
                 # gamemode payloads remain inside data for the SPA.
                 if isinstance(result, dict) and "success" in result:
+                    if not result.get("success"):
+                        log.warn(
+                            f"Bridge operation failed: {result.get('message', '')}"
+                        )
+                        return {
+                            "success": False,
+                            "data": {},
+                            "error_code": result.get("error_code", "E_OPERATION"),
+                            "message": "The AI Hub could not complete this request.",
+                        }
                     return result
                 if isinstance(result, dict) and result.get("error"):
                     return {
@@ -348,7 +358,7 @@ class AIEngine:
                 "success": False,
                 "data": {},
                 "error_code": "E_INTERNAL",
-                "message": str(e),
+                "message": "The AI Hub could not complete this request.",
             }
 
     def _handle_generate(self, data: dict) -> dict:
@@ -575,6 +585,7 @@ class AIEngine:
                     "key": idx + 1,
                     "ok": res.get("ok", False),
                     "model": res.get("model", ""),
+                    "error_code": res.get("error_code", ""),
                     "error": res.get("error", ""),
                     "response": res.get("response", ""),
                 }
@@ -693,14 +704,12 @@ class AIEngine:
         if not client:
             return {"error": True, "error_code": "E_NO_KEYS", "message": "No API key"}
 
-        result = client.generate_text(prompt, temperature=0.3, progress_callback=self._send_progress)
-        if result:
-            try:
-                parsed = json.loads(result)
-                return sanitize_dict(parsed)
-            except Exception:
-                pass
-        return {"correct": False, "score": 0, "explanation": "AI grading failed"}
+        result = client.generate_text_result(
+            prompt, temperature=0.3, progress_callback=self._send_progress
+        )
+        if result.get("error"):
+            return result
+        return sanitize_dict(result)
 
     def _handle_close_hub(self, data: dict = None) -> dict:
         from aqt import mw

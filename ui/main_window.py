@@ -50,8 +50,12 @@ class AIHubView:
         try:
             return self.engine.handle_js_message(payload)
         except Exception as e:
-            log.error(f"Safe handle error in background thread: {e}")
-            return self._result(False, code="E_INTERNAL", message=str(e))
+            log.exception(f"Safe handle error in background thread: {e}")
+            return self._result(
+                False,
+                code="E_INTERNAL",
+                message="The AI Hub could not complete this request.",
+            )
 
     def _on_bridge_cmd(self, cmd: str) -> str:
         from core.logger import log
@@ -84,8 +88,14 @@ class AIHubView:
                 )
             )
         except Exception as exc:
-            log.error(f"Bridge error: {exc}")
-            return json.dumps(self._result(False, code="E_BRIDGE", message=str(exc)))
+            log.exception(f"Bridge error: {exc}")
+            return json.dumps(
+                self._result(
+                    False,
+                    code="E_BRIDGE",
+                    message="The AI Hub could not process this request.",
+                )
+            )
 
     def _background_complete(self, request_id: str, result) -> None:
         with self._bg_lock:
@@ -98,7 +108,12 @@ class AIHubView:
 
                 response = resolve_background_result(result)
             except Exception as exc:
-                response = self._result(False, code="E_BACKGROUND", message=str(exc))
+                log.exception(f"Background task result failed: {exc}")
+                response = self._result(
+                    False,
+                    code="E_BACKGROUND",
+                    message="The AI Hub could not complete this request.",
+                )
             try:
                 js = "window.Bridge && window.Bridge.complete(%s, %s);" % (
                     json.dumps(request_id),
