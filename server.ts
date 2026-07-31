@@ -133,7 +133,7 @@ const SCHEMAS: Record<string, any> = {
             },
             explanation: { type: "string" }
           },
-          required: ["id", "answer", "meaning_vi", "hint", "distractors", "explanation"]
+          required: ["id", "answer", "meaning_vi", "hint", "explanation"]
         }
       }
     },
@@ -428,7 +428,7 @@ function getFallbackExercise(gamemode: string, data: any) {
           answer: "articulate",
           meaning_vi: "diễn đạt lưu loát",
           hint: "Khả năng nói hoặc viết một cách rõ ràng và dễ hiểu",
-          distractors: ["verbose", "ambiguous", "ephemeral"],
+          distractors: [],
           explanation: "'articulate' có nghĩa là diễn đạt rõ ràng, phù hợp với ngữ cảnh giao tiếp chuyên nghiệp."
         },
         {
@@ -436,7 +436,7 @@ function getFallbackExercise(gamemode: string, data: any) {
           answer: "consensus",
           meaning_vi: "sự đồng thuận",
           hint: "Sự nhất trí chung của một nhóm người",
-          distractors: ["scrutiny", "hypothesis", "paradigm"],
+          distractors: [],
           explanation: "'consensus' là sự đồng thuận giữa các thành viên trong nhóm."
         },
         {
@@ -444,7 +444,7 @@ function getFallbackExercise(gamemode: string, data: any) {
           answer: "pragmatic",
           meaning_vi: "thực tế",
           hint: "Cách tiếp cận dựa trên thực tiễn",
-          distractors: ["ambiguous", "verbose", "inevitable"],
+          distractors: [],
           explanation: "'pragmatic' là cách tiếp cận thực tế để giải quyết vấn đề."
         }
       ]

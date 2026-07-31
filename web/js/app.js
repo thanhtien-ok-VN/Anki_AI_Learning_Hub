@@ -1224,12 +1224,9 @@ const App = (() => {
     const gameId = state.route;
 
     const isNewSchema = !!x.paragraph;
-    const allWords = x.blanks.flatMap(b => {
-      const opts = isNewSchema ? (b.options || [b.answer]) : (b.options || [b.correct_word]);
-      return Array.isArray(opts) ? opts : [];
-    }).filter(Boolean);
+    const targetWords = x.blanks.map(b => isNewSchema ? b.answer : (b.correct_word || (b.options ? b.options[b.correct_index] : ''))).filter(Boolean);
     const seen = new Set();
-    const sortedWords = allWords
+    const sortedWords = targetWords
       .filter(w => {
         const k = String(w).toLowerCase();
         if (seen.has(k)) return false;
@@ -1238,16 +1235,14 @@ const App = (() => {
       })
       .sort((a, b) => a.localeCompare(b));
 
-    if (!isNewSchema) {
-      x.blanks.forEach(b => {
-        b.options = sortedWords;
-        const target = b.correct_word || '';
-        const foundIdx = sortedWords.findIndex(w => w.toLowerCase() === target.toLowerCase());
-        if (foundIdx !== -1) {
-          b.correct_index = foundIdx;
-        }
-      });
-    }
+    x.blanks.forEach(b => {
+      b.options = sortedWords;
+      const target = (isNewSchema ? b.answer : b.correct_word) || '';
+      const foundIdx = sortedWords.findIndex(w => w.toLowerCase() === target.toLowerCase());
+      if (foundIdx !== -1) {
+        b.correct_index = foundIdx;
+      }
+    });
 
     const wordBankHtml = `
       <div class="word-bank-box">

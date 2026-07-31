@@ -48,9 +48,9 @@ def _validate_cloze(r: dict) -> dict:
     for i, b in enumerate(blanks):
         if not b.get("answer"):
             return {"error": f"Blank {i+1} missing answer."}
-        distractors = b.get("distractors", [])
-        if len(distractors) != 3:
-            return {"error": f"Blank {i+1}: expected 3 distractors, got {len(distractors)}."}
+        # distractors are optional now, default to empty list if missing
+        if "distractors" not in b:
+            b["distractors"] = []
     return {}
 
 

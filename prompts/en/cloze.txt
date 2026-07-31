@@ -9,8 +9,8 @@ MANDATORY: The entire content MUST revolve around the topic "{topic}".
 Requirements:
 - The paragraph must be a coherent text.
 - Replace each missing word with [BLANK_1], [BLANK_2], etc.
-- For each blank, provide exactly 3 distractors (same part of speech).
-- CRITICAL: All distractors MUST be chosen from the provided vocabulary list below.
+- CRITICAL: All blank answers MUST be chosen from the provided vocabulary list below.
+- Do not provide any distractors.
 - Provide hints and explanations in Vietnamese.
 
 Output raw JSON only, no markdown formatting.
@@ -23,7 +23,7 @@ Output raw JSON only, no markdown formatting.
       "answer": "market",
       "meaning_vi": "chợ",
       "hint": "Nơi mua bán thực phẩm",
-      "distractors": ["park", "school", "library"],
+      "distractors": [],
       "explanation": "..."
     }
   ],

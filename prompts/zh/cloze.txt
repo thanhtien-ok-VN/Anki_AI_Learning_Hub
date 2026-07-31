@@ -8,8 +8,8 @@
 
 要求：
 - 段落必须是一篇连贯的文本。将缺失的单词替换为 [BLANK_1]，[BLANK_2] 等。
-- 对于每个空格，提供恰好 3 个干扰项（相同词性）。
-- 关键约束：所有干扰项必须从下方提供的词汇列表中选取。
+- 关键约束：所有空格的正确答案（answer）必须从下方提供的词汇列表中选取。
+- 不需要提供任何干扰项（distractors）。
 - 使用越南语提供提示和解释。
 
 仅输出原始 JSON，不得使用 markdown 格式。
@@ -22,7 +22,7 @@
       "answer": "market",
       "meaning_vi": "chợ",
       "hint": "Nơi mua bán thực phẩm",
-      "distractors": ["park", "school", "library"],
+      "distractors": [],
       "explanation": "..."
     }
   ],

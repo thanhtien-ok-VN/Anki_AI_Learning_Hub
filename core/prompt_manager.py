@@ -91,9 +91,8 @@ class PromptManager:
                 "Write a coherent paragraph in {language} ({paragraph_min_words}-{paragraph_max_words} words).\n"
                 "Level: {level_instruction}\n"
                 "Topic: {topic}\n"
-                "Then remove {num_blanks} words and provide 4 options for each blank.\n"
-                "Options must include the correct word and 3 plausible distractors from the SAME paragraph or same POS.\n"
-                "Finally generate 2-3 reading comprehension questions about the paragraph.\n"
+                "Then remove {num_blanks} words. All missing words MUST be chosen from the provided vocabulary list.\n"
+                "Do not provide distractors.\n"
                 "Output valid JSON matching the provided schema."
             ),
             "translation": (

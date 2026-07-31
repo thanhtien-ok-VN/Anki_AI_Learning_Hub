@@ -10,7 +10,7 @@ class ClozeMode(GameModeBase):
     def render_ui_data(self, raw_result: dict) -> dict:
         blanks = []
         for i, b in enumerate(raw_result.get("blanks", [])):
-            options = [b.get("answer", "")] + b.get("distractors", [])[:3]
+            options = [b.get("answer", "")]
             # Shuffle options, track correct index
             indices = list(range(len(options)))
             random.shuffle(indices)

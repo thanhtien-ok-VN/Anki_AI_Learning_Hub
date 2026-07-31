@@ -34,7 +34,7 @@ if HAS_PYDANTIC:
         answer: str
         meaning_vi: str
         hint: str
-        distractors: List[str]
+        distractors: List[str] = []
         explanation: str
 
     class ClozeSchema(BaseModel):
@@ -224,7 +224,7 @@ RAW_DICT_SCHEMAS = {
                         "distractors": {"type": "ARRAY", "items": {"type": "STRING"}},
                         "explanation": {"type": "STRING"}
                     },
-                    "required": ["id", "answer", "meaning_vi", "hint", "distractors", "explanation"]
+                    "required": ["id", "answer", "meaning_vi", "hint", "explanation"]
                 }
             },
             "full_solution_text": {"type": "STRING"},
