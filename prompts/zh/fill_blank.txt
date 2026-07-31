@@ -6,11 +6,19 @@
 
 要求：
 - 恰好创建 {count} 个填空句子。每句有一个空白（_____）。
-- 每句提供恰好 4 个选项：
-  + 1 个正确单词。
-  + 1 个反义词（trái nghĩa）。
-  + 1 个语法错误（sai từ loại/ngữ pháp）。
-  + 1 个词义接近但语境错误的词（nghĩa gần giống nhưng sai ngữ cảnh）。
+- 将空白（_____）放置在句子的不同位置（开头、中间、结尾），而不仅仅是中间。
+- 改变空白词的语法角色（如：动词、名词、形容词、副词、短语动词、介词）。
+- 多样化句子结构（主动/被动语态、条件句、定语从句、完成时态、比较级、情态动词）。
+- 每句提供恰好 4 个选项。3 个干扰项必须从以下池中选择至少 2 种不同的类型，并且必须在不同句子间改变干扰项的类型组合（不要对所有句子使用相同的组合）：
+  + correct (正确单词)
+  + antonym (反义词)
+  + synonym / near_synonym (同义词/近义词但语境或色彩不符)
+  + different_word_class (词根相同但词性不同，如：adj/noun/verb/adv)
+  + wrong_tense (时态错误)
+  + wrong_verb_form (动词形式错误，如：V-ing/V3/V-inf)
+  + collocation_error (词语搭配错误)
+  + wrong_context / semantic_close (语义接近但语境错误)
+  + related_word (同一主题下的相关词但意义错误)
 - 详细解释为什么正确答案合适及干扰项错误的原因。
 - 所有解释必须使用越南语（Tiếng Việt）。
 
@@ -21,13 +29,13 @@
     {
       "sentence": "The project was ______ due to lack of funding.",
       "target_word": "abandoned",
-      "meaning_vi": "bị bỏ rơi",
-      "full_translation": "Dự án đã bị bỏ rơi do thiếu kinh phí.",
+      "meaning_vi": "bị bỏ dở",
+      "full_translation": "Dự án đã bị bỏ dở do thiếu kinh phí.",
       "options": [
         {"word": "abandoned", "is_correct": true, "type": "correct", "reason": "..."},
         {"word": "continued", "is_correct": false, "type": "antonym", "reason": "..."},
-        {"word": "abandonedly", "is_correct": false, "type": "grammar_error", "reason": "..."},
-        {"word": "lost", "is_correct": false, "type": "semantic_close", "reason": "..."}
+        {"word": "abandoning", "is_correct": false, "type": "wrong_verb_form", "reason": "..."},
+        {"word": "lost", "is_correct": false, "type": "wrong_context", "reason": "..."}
       ],
       "explanation": "...",
       "grammar_note": "..."

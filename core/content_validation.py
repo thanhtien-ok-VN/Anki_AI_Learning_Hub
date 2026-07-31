@@ -1,6 +1,10 @@
 """Validate game payloads against new schema structure."""
 
-VALID_OPTION_TYPES = {"correct", "antonym", "grammar_error", "semantic_close"}
+VALID_OPTION_TYPES = {
+    "correct", "antonym", "synonym", "near_synonym", "different_word_class",
+    "wrong_tense", "wrong_verb_form", "collocation_error", "wrong_context",
+    "semantic_close", "grammar_error", "related_word",
+}
 VALID_QUESTION_TYPES = {"detail", "inference", "vocabulary"}
 
 

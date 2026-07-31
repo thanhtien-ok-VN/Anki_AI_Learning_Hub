@@ -407,8 +407,8 @@ function getFallbackExercise(gamemode: string, data: any) {
         options: [
           { word: "ubiquitous", is_correct: true, type: "correct", reason: "Chính xác! 'ubiquitous' có nghĩa là phổ biến khắp nơi." },
           { word: "ephemeral", is_correct: false, type: "antonym", reason: "Không phù hợp: 'ephemeral' có nghĩa là ngắn ngủi, tạm thời." },
-          { word: "pragmatic", is_correct: false, type: "semantic_close", reason: "Không phù hợp: 'pragmatic' có nghĩa là thực tế, thiết thực." },
-          { word: "verbose", is_correct: false, type: "grammar_error", reason: "Không phù hợp: 'verbose' có nghĩa là dài dòng." }
+          { word: "pragmatic", is_correct: false, type: "wrong_context", reason: "Không phù hợp: 'pragmatic' có nghĩa là thực tế, thiết thực." },
+          { word: "ubiquitously", is_correct: false, type: "different_word_class", reason: "Không phù hợp: 'ubiquitously' là trạng từ, trong khi sau động từ 'become' cần một tính từ." }
         ],
         explanation: "Chọn 'ubiquitous' vì ngữ cảnh mô tả điện thoại thông minh xuất hiện ở khắp mọi nơi.",
         grammar_note: "Cấu trúc: 'become + adjective' (trở nên như thế nào)."

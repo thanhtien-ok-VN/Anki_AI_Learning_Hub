@@ -83,8 +83,8 @@ class PromptManager:
                 "Generate {count} fill-in-the-blank sentences in {language}.\n"
                 "Level: {level_instruction}\n"
                 "Topic: {topic}\n"
-                "Each sentence has ONE blank (_____). Provide exactly 4 options (1 correct + 3 distractors).\n"
-                "Distractors must be plausible (same part of speech, common learner errors).\n"
+                "Each sentence has ONE blank (_____). Place the blank at various positions. Provide exactly 4 options (1 correct + 3 distractors).\n"
+                "Distractors must be selected from different types: antonyms, synonyms, different word classes, wrong verb tenses, or semantic/contextual errors.\n"
                 "Output valid JSON matching the provided schema."
             ),
             "cloze": (

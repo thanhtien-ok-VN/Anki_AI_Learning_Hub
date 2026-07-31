@@ -35,7 +35,7 @@ Student's answer: {user_answer}
 Explain why the correct answer is right or wrong. Include:
 - Semantic meaning of the correct word in context
 - Grammar rule involved
-- Why the other options are incorrect (consider option types: correct/antonym/grammar_error/semantic_close)
+- Why the other options are incorrect (consider the option types and semantic/grammatical context)
 
 Respond in JSON:
 {{
