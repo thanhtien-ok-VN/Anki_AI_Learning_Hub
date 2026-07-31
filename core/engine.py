@@ -1,6 +1,7 @@
 import json
 import os
 import time
+import random
 from typing import Any, Optional
 
 from aqt import mw, gui_hooks
@@ -361,6 +362,10 @@ class AIEngine:
         minimum, maximum = GAME_LIMITS.get(gamemode, (1, 5))
         count = max(minimum, min(int(data.get("count", minimum)), maximum))
         data["count"] = count
+        source_pairs = data.get("vocab_pairs") or []
+        if source_pairs:
+            needed = min(count, len(source_pairs))
+            data["vocab_pairs"] = random.sample(source_pairs, needed) if needed else []
         # SPA callers only need to provide the common controls.  These defaults
         # satisfy each prompt template without making UI routes template-aware.
         data.setdefault("paragraph_min_words", 80)
