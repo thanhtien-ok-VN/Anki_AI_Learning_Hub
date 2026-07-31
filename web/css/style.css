@@ -906,6 +906,9 @@ body {
 .status-banner button:hover {
     color: var(--text);
 }
+.status-banner[hidden] {
+    display: none;
+}
 
 /* SPA source controls */
 .source-panel { margin-bottom: 16px; }
