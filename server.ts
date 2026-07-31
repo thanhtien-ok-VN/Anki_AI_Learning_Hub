@@ -18,7 +18,7 @@ let appSettings: Record<string, any> = {
   learn_lang: "en",
 };
 
-let appContext: Record<string, any> | null = null;
+
 
 // Built-in vocabulary samples for decks
 const BUILTIN_DECKS = [
@@ -693,22 +693,7 @@ app.post("/api/bridge", async (req, res) => {
       }
     }
 
-    if (action === "save_context") {
-      appContext = data;
-      return res.json({ success: true, data: {} });
-    }
 
-    if (action === "load_context") {
-      return res.json({
-        success: true,
-        data: appContext ? { has_context: true, ...appContext } : { has_context: false }
-      });
-    }
-
-    if (action === "clear_context") {
-      appContext = null;
-      return res.json({ success: true, data: { success: true } });
-    }
 
     if (action === "save_to_anki") {
       return res.json({ success: true, data: { success: true, count: 1 } });

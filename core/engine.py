@@ -194,7 +194,6 @@ class AIEngine:
         self._api_client = None
         self._prompt_mgr = None
         self._gamemode_cache = {}
-        self._context_mgr = None
 
         self.timer.tick.connect(self._on_timer_tick)
         gui_hooks.profile_will_close.append(self._on_profile_close)
@@ -210,12 +209,6 @@ class AIEngine:
                 log.error(f"update_ui progress eval failed: {e}")
         mw.taskman.run_on_main(update_ui)
 
-    def _get_context_mgr(self):
-        if self._context_mgr is None:
-            from core.context_manager import ContextManager
-
-            self._context_mgr = ContextManager()
-        return self._context_mgr
 
     def _get_api_client(self):
         if self._api_client is None:
@@ -301,9 +294,7 @@ class AIEngine:
                 "check_api_key": self._handle_check_api_key,
                 "save_to_anki": self._handle_save_to_anki,
                 "check_answer": self._handle_check_answer,
-                "save_context": self._handle_save_context,
-                "load_context": self._handle_load_context,
-                "clear_context": self._handle_clear_context,
+
                 "save_prefs": self._handle_save_prefs,
                 "load_prefs": self._handle_load_prefs,
                 "test_key": self._handle_test_key,
@@ -509,17 +500,6 @@ class AIEngine:
             if rendered:
                 result = rendered
 
-        ctx_mgr = self._get_context_mgr()
-        ctx_mgr.save(
-            gamemode,
-            {
-                "config": data,
-                "result": result,
-                "prompt": prompt,
-            },
-            ttl_minutes=60,
-        )
-        log.debug("Context saved", {"gamemode": gamemode})
 
         # Recursively sanitize all HTML content in result before returning
         result = sanitize_dict(result)
@@ -751,37 +731,7 @@ class AIEngine:
             "message": f"No check handler for {gamemode}",
         }
 
-    def _handle_save_context(self, data: dict) -> dict:
-        ctx_mgr = self._get_context_mgr()
-        gamemode = data.get("gamemode")
-        if gamemode is not None:
-            payload = data.get("data", {})
-        else:
-            # Tương thích ngược: Nếu truyền trực tiếp dict preferences
-            gamemode = "prefs"
-            payload = data
-            
-        ctx_mgr.save(gamemode, payload, ttl_minutes=60)
-        log.debug(f"Context saved manually for {gamemode}")
-        return {}
 
-    def _handle_load_context(self, data: dict = None) -> dict:
-        ctx_mgr = self._get_context_mgr()
-        ctx = ctx_mgr.load()
-        if ctx:
-            log.debug(
-                "Context loaded",
-                {"keys": list(ctx.keys()) if isinstance(ctx, dict) else "?"},
-            )
-            return {"has_context": True, **ctx}
-        log.debug("No context found")
-        return {"has_context": False}
-
-    def _handle_clear_context(self, data: dict = None) -> dict:
-        ctx_mgr = self._get_context_mgr()
-        ctx_mgr.clear()
-        log.info("Context cleared")
-        return {"success": True}
 
     def _handle_save_prefs(self, data: dict) -> dict:
         prefs_path = os.path.join(ADDON_PATH, "user_files", "prefs.json")

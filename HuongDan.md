@@ -81,7 +81,7 @@
 | Giai đoạn | Mô tả |
 |:--|:--|
 | **Input** | User chọn game mode, level, topic, language, count; hệ thống tự động lấy vocab pairs từ Anki deck qua `sample_vocab_pairs()` |
-| **Processing** | ① PromptManager: template + level instruction + vocab injection | ② GeminiClient: key rotation, throttling (1.5s), retry (×3), schema validation | ③ ContentValidation: 4 options, dedup, correct_index range | ④ AIEngine: context saving (TTL 60 phút) |
+| **Processing** | ① PromptManager: template + level instruction + vocab injection | ② GeminiClient: key rotation, throttling (1.5s), retry (×3), schema validation | ③ ContentValidation: 4 options, dedup, correct_index range |
 | **Output** | JSON response → GameModeBase.render_ui_data() → UI render; user answers → check_answer() / ai_grade() |
 
 ### Sơ đồ Plugin (Game Mode Architecture)
@@ -118,8 +118,6 @@ Mỗi game mode kế thừa `GameModeBase` và implement 3 phương thức trừ
 | `_handle_ai_grade(data)` | Chấm điểm câu trả lời bằng AI | gamemode, user_answer, expected, source_text | `{correct, score, explanation, suggestion}` |
 | `_handle_save_to_anki(data)` | Lưu kết quả game vào Anki deck | gamemode, content, deck_name | `{success, count}` |
 | `_handle_check_answer(data)` | Kiểm tra đáp án local | user_input, correct | `{correct, points}` |
-| `_handle_save_context(data)` | Ghi context ra file JSON | gamemode, data | `{}` |
-| `_handle_load_context(data)` | Đọc context từ file | — | `{has_context, gamemode, data}` |
 | `_handle_test_key(data)` | Test 1 API key | key string | `{ok, model, response}` |
 | `_handle_test_all_keys(data)` | Test cả 3 keys | — | `{results: [{key, ok, model}]}` |
 | `get_gamemode(name)` | Lazy-load + cache GameMode instance | tên game | GameModeBase instance |
@@ -218,12 +216,6 @@ Kiểm tra AI output trước khi gửi lên UI:
 - `list_source_fields()` → field names của model
 - `sample_vocab_pairs()` → random sample N pairs, de-duplicated, exclude seen pair keys
 
-### 3.9 ContextManager (`core/context_manager.py`)
-
-- Lưu JSON tại `user_files/context.json`
-- TTL mặc định: 60 phút
-- `save(gamemode, data, ttl_minutes)` → ghi file
-- `load()` → kiểm tra TTL → clear nếu expired → return context hoặc None
 
 ### 3.10 i18n (`core/i18n.py`)
 
@@ -300,7 +292,6 @@ SPA (app.js) ──JSON──▶ Bridge (bridge.js) ──pycmd()──▶ AIHub
 | **Content bị Recitation** | Return `E_RECITATION` | `api_client.py:150-151` |
 | **JSON parse fail** | Codeblock stripping → retry → `ApiError` | `api_client.py:158-175` |
 | **Options < 4 hoặc duplicate** | `validate_game_result` → `E_AI_CONTENT` | `content_validation.py:22-29` |
-| **Context expired (>60 phút)** | `ContextManager.load()` → auto clear | `context_manager.py:34-36` |
 | **Anki collection chưa mở** | `E_COLLECTION_CLOSED` | `deck_source.py:41-42` |
 | **Deck/Model không tồn tại** | `E_DECK_NOT_FOUND` / `E_MODEL_NOT_FOUND` | `deck_source.py:85-86,102-103` |
 | **2 fields giống nhau** | `E_FIELDS_IDENTICAL` | `deck_source.py:124-125` |
@@ -334,7 +325,6 @@ SPA (app.js) ──JSON──▶ Bridge (bridge.js) ──pycmd()──▶ AIHub
 | **Content Validation** | Validate AI output trước khi render — bắt lỗi duplicate/empty options |
 | **Async Bridge** | Promise-based JS ↔ Python, background I/O không block UI |
 | **i18n Complete** | Toàn bộ UI strings qua `lang/*.json`, bao gồm settings dialog |
-| **Context Persistence** | TTL-based context — user có thể quay lại bài tập trong 60 phút |
 | **Comprehensive Logging** | File log auto-rotate, level-based, kèm extra data dict |
 | **CEFR Level Instruction** | 5 cấp độ từ A1 đến C2, mỗi cấp có instruction riêng cho prompt |
 

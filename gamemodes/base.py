@@ -64,14 +64,7 @@ class GameModeBase(ABC):
         """Return (front, back) for a single Anki note from game data item."""
         pass
 
-    def save_context(self, data: dict) -> dict:
-        return {"gamemode": self.name, "data": data}
 
-    def load_context(self, ctx: dict) -> Optional[dict]:
-        raw = ctx.get("data") if ctx else None
-        if raw:
-            return self.render_ui_data(raw)
-        return None
 
     def save_to_anki(self, items: List[dict], deck_name: str = "AI Learning") -> int:
         from aqt import mw

@@ -25,7 +25,6 @@ const App = (() => {
         delete state.history['matching'];
         localStorage.setItem(PFX + 'history', JSON.stringify(state.history));
       }
-      clearActiveSession();
     } catch (e) {}
   }
 
@@ -61,7 +60,6 @@ const App = (() => {
     try {
       localStorage.setItem(PFX + 'prefs', JSON.stringify(p));
     } catch (e) {}
-    Bridge.send('save_context', { gamemode: 'prefs', data: p });
     Bridge.send('save_prefs', p);
   }
 
@@ -100,7 +98,6 @@ const App = (() => {
     try {
       localStorage.removeItem(PFX + 'prefs');
     } catch (e) {}
-    Bridge.send('clear_context');
   }
 
   let currentAbortController = new AbortController();
@@ -240,39 +237,7 @@ const App = (() => {
     } catch (_) {}
   };
 
-  const saveActiveSession = () => {
-    try {
-      if (!state.exercise) {
-        localStorage.removeItem('ai_learning_hub_active_session');
-        return;
-      }
-      const session = {
-        route: state.route,
-        exercise: state.exercise,
-        answers: state.answers,
-        index: state.index,
-        isGraded: state.isGraded,
-        hintedQuestions: state.hintedQuestions ? Array.from(state.hintedQuestions) : []
-      };
-      localStorage.setItem('ai_learning_hub_active_session', JSON.stringify(session));
-    } catch (_) {}
-  };
 
-  const loadActiveSession = () => {
-    try {
-      const data = localStorage.getItem('ai_learning_hub_active_session');
-      if (data) {
-        return JSON.parse(data);
-      }
-    } catch (_) {}
-    return null;
-  };
-
-  const clearActiveSession = () => {
-    try {
-      localStorage.removeItem('ai_learning_hub_active_session');
-    } catch (_) {}
-  };
 
   const nav = r => {
     disposeCurrentGame();
@@ -311,76 +276,10 @@ const App = (() => {
   }
 
   function home() {
-    const saved = loadActiveSession();
-    let resumeBanner = '';
-    if (saved && saved.exercise) {
-      resumeBanner = `
-        <div class="resume-banner" style="background: rgba(234, 179, 8, 0.08); border: 1px solid #eab308; border-radius: 8px; padding: 16px; margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between; gap: 12px; animation: slideDown 0.3s ease;">
-          <div style="font-size: 14.5px; color: var(--text-primary); text-align: left;">
-            💡 <b>Bài học dang dở:</b> Bạn có một phiên học chưa hoàn thành ở game <b>${esc(t(saved.route + '.title', saved.route))}</b>.
-          </div>
-          <div style="display: flex; gap: 10px;">
-            <button class="btn btn-outline" id="resume-btn" style="padding: 8px 16px; border-color: #ca8a04; color: #ca8a04; background: white; font-weight: 600; cursor: pointer;">Tiếp tục</button>
-            <button class="btn btn-outline" id="discard-resume-btn" style="padding: 8px 16px; border-color: #ef4444; color: #ef4444; background: white; font-weight: 600; cursor: pointer;">Bỏ qua</button>
-          </div>
-        </div>
-      `;
-    }
-
-    const pendingGen = loadPendingGen();
-    let pendingBanner = '';
-    if (pendingGen) {
-      pendingBanner = `
-        <div class="resume-banner" style="background: rgba(239, 68, 68, 0.06); border: 1px solid #ef4444; border-radius: 8px; padding: 16px; margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between; gap: 12px; animation: slideDown 0.3s ease;">
-          <div style="font-size: 14.5px; color: var(--text-primary); text-align: left;">
-            ⚠️ <b>Bài tập chưa tạo xong:</b> Lần trước quá trình tạo bài đã bị gián đoạn.
-          </div>
-          <div style="display: flex; gap: 10px;">
-            <button class="btn btn-outline" id="discard-pending-btn" style="padding: 8px 16px; border-color: #6b7280; color: #6b7280; background: white; font-weight: 600; cursor: pointer;">Bỏ qua</button>
-          </div>
-        </div>
-      `;
-    }
-
-    shell('<main class="container"><div class="header" style="padding-top:50px">' + resumeBanner + pendingBanner + '<h1>' + esc(t('app.title', 'AI Learning Hub')) + '</h1><p>' + esc(t('app.home_subtitle', 'Chọn một game để học từ bộ thẻ Anki')) + '</p><div class="api-check"><button class="btn btn-outline" id="test-keys">' + esc(t('app.test_api', 'Kiểm tra API')) + '</button><span id="api-result" aria-live="polite"></span></div></div><div class="game-grid">' + games.map(g => '<button class="game-card" data-game="' + g[0] + '"><div class="icon">' + g[1] + '</div><h3>' + esc(t(g[0] + '.title', g[2])) + '</h3><p>' + esc(getGameDesc(g[0])) + '</p></button>').join('') + '</div></main>');
+    shell('<main class="container"><div class="header" style="padding-top:50px"><h1>' + esc(t('app.title', 'AI Learning Hub')) + '</h1><p>' + esc(t('app.home_subtitle', 'Chọn một game để học từ bộ thẻ Anki')) + '</p><div class="api-check"><button class="btn btn-outline" id="test-keys">' + esc(t('app.test_api', 'Kiểm tra API')) + '</button><span id="api-result" aria-live="polite"></span></div></div><div class="game-grid">' + games.map(g => '<button class="game-card" data-game="' + g[0] + '"><div class="icon">' + g[1] + '</div><h3>' + esc(t(g[0] + '.title', g[2])) + '</h3><p>' + esc(getGameDesc(g[0])) + '</p></button>').join('') + '</div></main>');
     bindCommon();
     document.querySelectorAll('[data-game]').forEach(e => e.onclick = () => nav(e.dataset.game));
     document.querySelector('#test-keys').onclick = testKeys;
-
-    if (saved) {
-      const resumeBtn = document.querySelector('#resume-btn');
-      if (resumeBtn) {
-        resumeBtn.onclick = () => {
-          state.route = saved.route;
-          state.exercise = saved.exercise;
-          state.answers = saved.answers || {};
-          state.index = saved.index || 0;
-          state.isGraded = !!saved.isGraded;
-          state.hintedQuestions = new Set(saved.hintedQuestions || []);
-          
-          location.hash = saved.route;
-          shell('<main class="container fade-in"><div class="header"><h1>' + esc(t(saved.route + '.title', saved.route)) + '</h1></div><div id="play"></div></main>');
-          play(saved.route);
-        };
-      }
-      const discardBtn = document.querySelector('#discard-resume-btn');
-      if (discardBtn) {
-        discardBtn.onclick = () => {
-          clearActiveSession();
-          home();
-        };
-      }
-    }
-
-    if (pendingGen) {
-      const discardBtn = document.querySelector('#discard-pending-btn');
-      if (discardBtn) {
-        discardBtn.onclick = () => {
-          clearPendingGen();
-          home();
-        };
-      }
-    }
   }
 
   function getGameDesc(id) {
@@ -450,16 +349,7 @@ const App = (() => {
     });
 
     const gameId = g[0];
-    if (state.activeSessions && state.activeSessions[gameId]) {
-      const sess = state.activeSessions[gameId];
-      state.exercise = sess.exercise;
-      state.answers = sess.answers || {};
-      state.isGraded = sess.isGraded || false;
-      state.currentHistoryItem = sess.historyItem || null;
-      play(gameId);
-    } else {
-      resetGameState(gameId);
-    }
+    resetGameState(gameId);
 
     document.querySelector('#back').onclick = () => { savePrefs(); nav('home'); };
     document.querySelector('#generate').onclick = () => { savePrefs(); generate(g[0]); };
@@ -821,7 +711,6 @@ const App = (() => {
     if (closeBtn) {
       closeBtn.onclick = () => {
         abortActiveRequests();
-        clearPendingGen();
         clearPrefs();
         Bridge.send('close_hub');
       };
@@ -830,7 +719,6 @@ const App = (() => {
     if (cancelBtn) {
       cancelBtn.onclick = () => {
         abortActiveRequests();
-        clearPendingGen();
         setBusy(false);
         showStatus('Đã hủy thao tác.');
       };
@@ -839,7 +727,6 @@ const App = (() => {
     if (cancelGen) {
       cancelGen.onclick = () => {
         abortActiveRequests();
-        clearPendingGen();
         setBusy(false);
         showStatus('Đã hủy tạo bài.');
       };
@@ -1009,27 +896,7 @@ const App = (() => {
       return false;
     }
   }
-  const clearPendingGen = () => {
-    try { localStorage.removeItem('ai_learning_hub_pending_gen'); } catch (_) {}
-  };
 
-  const savePendingGen = (id, opts) => {
-    try {
-      localStorage.setItem('ai_learning_hub_pending_gen', JSON.stringify({
-        gamemode: id, opts, timestamp: Date.now()
-      }));
-    } catch (_) {}
-  };
-
-  const loadPendingGen = () => {
-    try {
-      const data = localStorage.getItem('ai_learning_hub_pending_gen');
-      if (!data) return null;
-      const p = JSON.parse(data);
-      if (Date.now() - p.timestamp > 3600000) { clearPendingGen(); return null; }
-      return p;
-    } catch (_) { return null; }
-  };
 
   async function generate(id, optsOverride){
     const signal = getSignal();
@@ -1065,7 +932,6 @@ const App = (() => {
           if (fs) opts.focus = fs.value;
         }
       }
-      savePendingGen(id, opts);
       state.exercise = await Bridge.sendAsync('generate', opts, { signal });
       if (signal.aborted) return;
       state.index = 0;
@@ -1073,21 +939,11 @@ const App = (() => {
       state.isGraded = false;
 
       const historyItem = addHistory(id, state.exercise);
-
-      if (!state.activeSessions) state.activeSessions = {};
-      state.activeSessions[id] = {
-        exercise: state.exercise,
-        answers: state.answers,
-        isGraded: false,
-        historyItem: historyItem
-      };
-      saveActiveSession();
+      state.currentHistoryItem = historyItem;
 
       play(id);
-      clearPendingGen();
     } catch(e) {
       if (e.name === 'AbortError' || e.error_code === 'E_ABORTED') return;
-      clearPendingGen();
       showBridgeFailure(e);
     } finally {
       if (!signal.aborted) setBusy(false);
@@ -1286,10 +1142,6 @@ const App = (() => {
           const qIdx = +b.dataset.q;
           const cIdx = +b.dataset.choice;
           state.answers[qIdx] = cIdx;
-          if (state.activeSessions && state.activeSessions[gameId]) {
-            state.activeSessions[gameId].answers[qIdx] = cIdx;
-          }
-
           const choices = document.querySelectorAll(`#choices-${qIdx} [data-choice]`);
           choices.forEach(btn => btn.classList.remove('selected'));
           b.classList.add('selected');
@@ -1337,10 +1189,6 @@ const App = (() => {
       if (gradeBtn) {
         gradeBtn.onclick = () => {
           state.isGraded = true;
-          if (state.activeSessions && state.activeSessions[gameId]) {
-            state.activeSessions[gameId].isGraded = true;
-          }
-
           let score = 0;
           x.questions.forEach((q, i) => {
             let correctIdx = q.options.findIndex(o => typeof o === 'object' ? o.is_correct : false);
@@ -1359,10 +1207,6 @@ const App = (() => {
           if (state.currentHistoryItem) {
             state.currentHistoryItem.answers = { ...state.answers };
             state.currentHistoryItem.score = score;
-          }
-          if (state.activeSessions && state.activeSessions[gameId] && state.activeSessions[gameId].historyItem) {
-            state.activeSessions[gameId].historyItem.answers = { ...state.answers };
-            state.activeSessions[gameId].historyItem.score = score;
           }
           saveHistory();
 
@@ -1523,9 +1367,6 @@ const App = (() => {
           const bIdx = +sel.dataset.blank;
           const val = sel.value;
           state.answers[bIdx] = val !== '' ? +val : undefined;
-          if (state.activeSessions && state.activeSessions[gameId]) {
-            state.activeSessions[gameId].answers[bIdx] = state.answers[bIdx];
-          }
         };
       });
 
@@ -1533,10 +1374,6 @@ const App = (() => {
       if (gradeBtn) {
         gradeBtn.onclick = () => {
           state.isGraded = true;
-          if (state.activeSessions && state.activeSessions[gameId]) {
-            state.activeSessions[gameId].isGraded = true;
-          }
-
           let s = 0;
           x.blanks.forEach((b, i) => {
             if (state.answers[i] === b.correct_index) s++;
@@ -1545,10 +1382,6 @@ const App = (() => {
           if (state.currentHistoryItem) {
             state.currentHistoryItem.answers = { ...state.answers };
             state.currentHistoryItem.score = s;
-          }
-          if (state.activeSessions && state.activeSessions[gameId] && state.activeSessions[gameId].historyItem) {
-            state.activeSessions[gameId].historyItem.answers = { ...state.answers };
-            state.activeSessions[gameId].historyItem.score = s;
           }
           saveHistory();
 
@@ -1953,9 +1786,6 @@ const App = (() => {
     state.index = 0;
     state.currentHistoryItem = null;
     state.hintedQuestions = new Set();
-    if (gameId && state.activeSessions && state.activeSessions[gameId]) {
-      delete state.activeSessions[gameId];
-    }
     const d = document.querySelector('#play');
     if (d) d.innerHTML = '';
   }
@@ -2194,10 +2024,6 @@ const App = (() => {
           const cIdx = +btn.dataset.choice;
 
           state.answers[qIdx] = cIdx;
-          if (state.activeSessions && state.activeSessions[gameId]) {
-            state.activeSessions[gameId].answers[qIdx] = cIdx;
-          }
-
           const opts = d.querySelectorAll(`#story-opts-${qIdx} [data-choice]`);
           opts.forEach(o => o.classList.remove('selected'));
           btn.classList.add('selected');
@@ -2208,10 +2034,6 @@ const App = (() => {
       if (gradeBtn) {
         gradeBtn.onclick = () => {
           state.isGraded = true;
-          if (state.activeSessions && state.activeSessions[gameId]) {
-            state.activeSessions[gameId].isGraded = true;
-          }
-
           let currentScore = 0;
           questions.forEach((q, i) => {
             let correctIdx = q.options.findIndex(o => typeof o === 'object' ? o.is_correct : false);
@@ -2222,10 +2044,6 @@ const App = (() => {
           if (state.currentHistoryItem) {
             state.currentHistoryItem.answers = { ...state.answers };
             state.currentHistoryItem.score = currentScore;
-          }
-          if (state.activeSessions && state.activeSessions[gameId] && state.activeSessions[gameId].historyItem) {
-            state.activeSessions[gameId].historyItem.answers = { ...state.answers };
-            state.activeSessions[gameId].historyItem.score = currentScore;
           }
           saveHistory();
 
@@ -2238,10 +2056,6 @@ const App = (() => {
         retryBtn.onclick = () => {
           state.answers = {};
           state.isGraded = false;
-          if (state.activeSessions && state.activeSessions[gameId]) {
-            state.activeSessions[gameId].answers = {};
-            state.activeSessions[gameId].isGraded = false;
-          }
           play(gameId);
         };
       }
