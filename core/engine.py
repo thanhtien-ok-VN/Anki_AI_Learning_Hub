@@ -363,9 +363,17 @@ class AIEngine:
         count = max(minimum, min(int(data.get("count", minimum)), maximum))
         data["count"] = count
         source_pairs = data.get("vocab_pairs") or []
+        if gamemode == "cloze":
+            num_blanks = max(1, min(int(data.get("num_blanks") or 5), len(source_pairs) or 5, 10))
+            data["num_blanks"] = num_blanks
+            effective = num_blanks
+        else:
+            effective = count
+
         if source_pairs:
-            needed = min(count, len(source_pairs))
+            needed = min(effective, len(source_pairs))
             data["vocab_pairs"] = random.sample(source_pairs, needed) if needed else []
+            data["blank_words"] = ", ".join(p["term"] for p in data["vocab_pairs"])
         # SPA callers only need to provide the common controls.  These defaults
         # satisfy each prompt template without making UI routes template-aware.
         data.setdefault("paragraph_min_words", 80)
@@ -499,6 +507,22 @@ class AIEngine:
                                 matched_def = defn
                                 break
                     q["user_definition"] = matched_def if matched_def else q.get("meaning_vi", "")
+
+        if gamemode == "cloze" and not result.get("error"):
+            blanks = result.get("blanks", [])
+            answers = [b.get("answer", "").strip().lower() for b in blanks]
+            terms = {p.get("term", "").strip().lower() for p in data.get("vocab_pairs", [])}
+            ok = (
+                len(blanks) == int(data["num_blanks"])
+                and len(set(answers)) == len(answers)
+                and all(a in terms for a in answers)
+            )
+            if not ok:
+                return {
+                    "error": True,
+                    "error_code": "E_AI_CONTENT",
+                    "message": "Đáp án cloze phải đúng các từ đã chọn. Vui lòng thử lại.",
+                }
 
         if gm and not result.get("error"):
             rendered = gm.render_ui_data(result)

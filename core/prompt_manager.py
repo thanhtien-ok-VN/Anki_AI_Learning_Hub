@@ -91,7 +91,7 @@ class PromptManager:
                 "Write a coherent paragraph in {language} ({paragraph_min_words}-{paragraph_max_words} words).\n"
                 "Level: {level_instruction}\n"
                 "Topic: {topic}\n"
-                "Then remove {num_blanks} words. All missing words MUST be chosen from the provided vocabulary list.\n"
+                "Then remove {num_blanks} words. The blank answers MUST be EXACTLY these words, each used exactly once: {blank_words}.\n"
                 "Do not provide distractors.\n"
                 "Output valid JSON matching the provided schema."
             ),

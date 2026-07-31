@@ -8,8 +8,8 @@ MANDATORY: The entire content MUST revolve around the topic "{topic}".
 
 Requirements:
 - The paragraph must be a coherent text.
-- Replace each missing word with [BLANK_1], [BLANK_2], etc.
-- CRITICAL: All blank answers MUST be chosen from the provided vocabulary list below.
+- Replace each missing word with [BLANK_1], [BLANK_2], etc. in order of appearance.
+- CRITICAL: The blank answers MUST be EXACTLY these words, each used exactly once: {blank_words}. Write a coherent paragraph that naturally contains ALL of them.
 - Do not provide any distractors.
 - Provide hints and explanations in Vietnamese.
 
