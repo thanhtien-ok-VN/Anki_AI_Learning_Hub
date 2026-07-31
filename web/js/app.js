@@ -1829,7 +1829,7 @@ const App = (() => {
       } else {
         sentenceDisplayHtml = `
           <div class="unscramble-sentence-box" id="sentence-box-${i}" style="min-height:54px; padding:12px 16px; border:2px dashed var(--border); border-radius:8px; display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:12px; background:rgba(0,0,0,0.01);">
-            ${chosen.length ? chosen.map((w, wIdx) => `<button class="drag-word" data-back-q="${i}" data-back-idx="${wIdx}" style="padding:6px 12px; background:var(--primary); color:white; border:none; border-radius:4px; font-size:14px; font-weight:600; cursor:pointer; box-shadow:0 2px 4px rgba(0,0,0,0.08); transition:all 0.2s;">${esc(w)}</button>`).join('') : '<span style="color:var(--text-secondary); font-style:italic;">Bấm các từ bên dưới để ghép câu...</span>'}
+            <span style="color:var(--text-secondary); font-style:italic;">Bấm các từ bên dưới để ghép câu...</span>
           </div>
         `;
       }
@@ -1837,47 +1837,15 @@ const App = (() => {
       // Hàng chip từ để chọn (chỉ hiện khi chưa chấm)
       let chipsHtml = '';
       if (!isGraded) {
-        // Lọc các từ chưa chọn
-        const remainingWords = q.shuffled_words.filter((w, j) => {
-          const timesInShuffled = q.shuffled_words.slice(0, j + 1).filter(x => x === w).length;
-          const timesInChosen = chosen.filter(x => x === w).length;
-          return timesInChosen < timesInShuffled;
-        });
-
         chipsHtml = `
-          <div class="drag-container" id="chips-container-${i}" style="margin-top:14px; display:flex; flex-wrap:wrap; gap:8px; padding:12px 0;">
-            ${remainingWords.map(w => `<button class="drag-word" data-word-q="${i}" data-word="${esc(w)}" style="padding:6px 12px; background:var(--card-bg); border:1px solid var(--border); border-radius:4px; font-size:14px; cursor:pointer; box-shadow:0 1px 3px rgba(0,0,0,0.05); transition:all 0.2s;">${esc(w)}</button>`).join('')}
-          </div>
-        `;
-      }
-
-      // Phần thông tin phụ trong details
-      let detailsHtml = '';
-      const mean = q.meaning_vi || q.sentence_meaning;
-      if (mean || q.grammar_note) {
-        detailsHtml = `
-          <details style="margin-top:12px; padding:8px; background:rgba(0,0,0,0.01); border-radius:4px; font-size:13px; color:var(--text-secondary);">
-            <summary style="cursor:pointer; font-weight:600;">Xem nghĩa và ngữ pháp</summary>
-            <div style="margin-top:8px;">
-              ${mean ? `<p style="margin:4px 0;">🌐 <b>Bản dịch:</b> ${esc(mean)}</p>` : ''}
-              ${q.grammar_note ? `<p style="margin:4px 0;">📌 <b>Ngữ pháp:</b> ${esc(q.grammar_note)}</p>` : ''}
-              ${q.key_vocabulary?.length ? `
-                <p style="margin:4px 0;">📖 <b>Từ vựng:</b></p>
-                <ul style="margin:4px 0 0 16px; padding:0;">
-                  ${q.key_vocabulary.map(kv => `<li><b>${esc(kv.word)}</b>: ${esc(kv.meaning_vi || kv.meaning)}</li>`).join('')}
-                </ul>
-              ` : ''}
-            </div>
-          </details>
+          <div class="drag-container" id="chips-container-${i}" style="margin-top:14px; display:flex; flex-wrap:wrap; gap:8px; padding:12px 0;"></div>
         `;
       }
 
       return `
         <div class="${cardClass}" style="margin-bottom:24px;">
-          <p class="hint-text" style="font-size:14.5px; color:var(--text-secondary); margin-bottom:8px;">💡 <b>Gợi ý:</b> ${esc(q.hint)}</p>
           ${sentenceDisplayHtml}
           ${chipsHtml}
-          ${detailsHtml}
         </div>
       `;
     }).join('');
@@ -1902,32 +1870,59 @@ const App = (() => {
 
     d.innerHTML = cardsHtml + submitBtnHtml;
 
-    // Ràng buộc sự kiện
-    if (!isGraded) {
-      // Nhấp vào chip từ gợi ý để thêm vào câu đang ghép
-      d.querySelectorAll('[data-word]').forEach(btn => {
+    // Cập nhật DOM cục bộ ban đầu của từng card câu hỏi
+    x.questions.forEach((q, i) => {
+      if (!isGraded) {
+        updateUnscrambleCardDOM(i, q);
+      }
+    });
+
+    function updateUnscrambleCardDOM(qIdx, question) {
+      const chosenBox = d.querySelector(`#sentence-box-${qIdx}`);
+      const chipsBox = d.querySelector(`#chips-container-${qIdx}`);
+      if (!chosenBox || !chipsBox) return;
+
+      const chosen = state.answers[qIdx] || [];
+      const remainingWords = question.shuffled_words.filter((w, j) => {
+        const timesInShuffled = question.shuffled_words.slice(0, j + 1).filter(x => x === w).length;
+        const timesInChosen = chosen.filter(x => x === w).length;
+        return timesInChosen < timesInShuffled;
+      });
+
+      // 1. Cập nhật ô chứa các từ đã chọn
+      if (chosen.length) {
+        chosenBox.innerHTML = chosen.map((w, wIdx) => 
+          `<button class="drag-word" data-back-idx="${wIdx}" style="padding:6px 12px; background:var(--primary); color:white; border:none; border-radius:4px; font-size:14px; font-weight:600; cursor:pointer; box-shadow:0 2px 4px rgba(0,0,0,0.08); transition:all 0.2s;">${esc(w)}</button>`
+        ).join('');
+
+        chosenBox.querySelectorAll('[data-back-idx]').forEach(btn => {
+          btn.onclick = () => {
+            const wIdx = +btn.dataset.backIdx;
+            state.answers[qIdx].splice(wIdx, 1);
+            updateUnscrambleCardDOM(qIdx, question);
+          };
+        });
+      } else {
+        chosenBox.innerHTML = '<span style="color:var(--text-secondary); font-style:italic;">Bấm các từ bên dưới để ghép câu...</span>';
+      }
+
+      // 2. Cập nhật các chips từ gợi ý
+      chipsBox.innerHTML = remainingWords.map((w) => 
+        `<button class="drag-word" data-word="${esc(w)}" style="padding:6px 12px; background:var(--card-bg); border:1px solid var(--border); border-radius:4px; font-size:14px; cursor:pointer; box-shadow:0 1px 3px rgba(0,0,0,0.05); transition:all 0.2s;">${esc(w)}</button>`
+      ).join('');
+
+      chipsBox.querySelectorAll('[data-word]').forEach(btn => {
         btn.onclick = () => {
-          const qIdx = +btn.dataset.wordQ;
           const word = btn.dataset.word;
           if (!state.answers[qIdx]) state.answers[qIdx] = [];
           state.answers[qIdx].push(word);
-          renderUnscrambleAll(x);
+          updateUnscrambleCardDOM(qIdx, question);
         };
       });
+    }
 
-      // Nhấp vào từ trong câu đang ghép để gỡ ra
-      d.querySelectorAll('[data-back-q]').forEach(btn => {
-        btn.onclick = () => {
-          const qIdx = +btn.dataset.backQ;
-          const wIdx = +btn.dataset.backIdx;
-          if (state.answers[qIdx]) {
-            state.answers[qIdx].splice(wIdx, 1);
-            renderUnscrambleAll(x);
-          }
-        };
-      });
-
-      // Nút nộp bài chấm điểm
+    // Nút nộp bài chấm điểm
+    if (!isGraded) {
       const gradeBtn = document.querySelector('#grade-unscramble');
       if (gradeBtn) {
         gradeBtn.onclick = async () => {
@@ -1935,7 +1930,6 @@ const App = (() => {
             setBusy(true, 'Đang chấm bài bằng AI...');
             const signal = getSignal();
             
-            // Loop gọi AI chấm điểm cho từng câu
             for (let i = 0; i < x.questions.length; i++) {
               if (signal.aborted) return;
               const q = x.questions[i];
@@ -1955,7 +1949,6 @@ const App = (() => {
             state.isGraded = true;
             setBusy(false);
 
-            // Lưu lịch sử
             let finalScore = 0;
             x.questions.forEach((q, i) => {
               if (state.answers[`feedback_${i}`]?.correct) finalScore++;

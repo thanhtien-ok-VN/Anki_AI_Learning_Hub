@@ -96,7 +96,6 @@ Respond in JSON matching the exact schema below:
     "explanation": "Detailed explanation in Vietnamese of what is wrong (out of order words, grammar rules) and how to fix it."
 }}
 """
-"""
 
 TRANSFORM_GRADER = """You are a professional English teacher grading a sentence transformation exercise.
 
