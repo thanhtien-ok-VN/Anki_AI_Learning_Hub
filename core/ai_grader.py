@@ -86,17 +86,16 @@ UNSCRAMBLE_GRADER = """You are a language teacher grading a sentence unscramble 
 Correct sentence: {correct_sentence}
 Student's sentence: {user_sentence}
 
-If wrong, identify which words are out of order and explain the correct syntax/grammar rule.
+If wrong, identify which words are out of order and explain the correct syntax/grammar rule in Vietnamese.
 Consider level: {level}
 
-Respond in JSON:
+Respond in JSON matching the exact schema below:
 {{
     "correct": true/false,
-    "score": 0.0-1.0,
-    "wrong_words": ["word1", "word2"],
-    "grammar_rule": "string",
-    "explanation": "string"
+    "score": 0-10,
+    "explanation": "Detailed explanation in Vietnamese of what is wrong (out of order words, grammar rules) and how to fix it."
 }}
+"""
 """
 
 TRANSFORM_GRADER = """You are a professional English teacher grading a sentence transformation exercise.

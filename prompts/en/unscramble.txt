@@ -5,7 +5,8 @@ Topic: {topic}
 MANDATORY: The entire content MUST revolve around the topic "{topic}".
 
 Requirements:
-- Generate {count} grammatically correct English sentences.
+- Generate exactly {count} grammatically correct English sentences.
+- The {count} sentences MUST each use a DIFFERENT grammatical structure. Use these structures (one per sentence, in order): {sentence_types}. Do NOT repeat structures.
 - Each sentence must have 6-12 words with clear structure.
 - Provide a Vietnamese hint and full translation.
 - Highlight key vocabulary with Vietnamese meanings.

@@ -1782,8 +1782,207 @@ const App = (() => {
     renderBoard();
   }
 
-  function renderUnscrambleAll(x){const d=document.querySelector('#play');if(!x?.questions?.length){d.innerHTML='<div class="empty-state"><p>Không có câu hỏi.</p></div>';return;}d.innerHTML=x.questions.map((q,i)=>{return'<div class="question-card unscramble-card fade-in"><p class="hint-text">'+esc(q.hint)+'</p><div id="us-'+i+'" class="unscramble-area"></div><button class="btn" id="ugrade-'+i+'">Chấm điểm</button><div id="ufeedback-'+i+'"></div></div>'}).join('');x.questions.forEach((q,i)=>{renderUnscrambleSingle(q,i,x.questions)});}
-  function renderUnscrambleSingle(q,i,all){const chosen=[];const area=document.querySelector('#us-'+i);function draw(){area.innerHTML='<div class="drop-zone">'+chosen.map(w=>'<button class="drag-word" data-back="'+esc(w)+'">'+esc(w)+'</button>').join('')+'</div><div class="drag-container">'+q.shuffled_words.filter((w,j)=>!chosen.includes(w)||chosen.filter(x=>x===w).length<q.shuffled_words.slice(0,j+1).filter(x=>x===w).length).map(w=>'<button class="drag-word" data-word="'+esc(w)+'">'+esc(w)+'</button>').join('')+'</div>';area.querySelectorAll('[data-word]').forEach(e=>e.onclick=()=>{chosen.push(e.dataset.word);draw()});area.querySelectorAll('[data-back]').forEach(e=>e.onclick=()=>{chosen.splice(chosen.indexOf(e.dataset.back),1);draw()})}draw();document.querySelector('#ugrade-'+i).onclick=()=>{const ok=norm(chosen.join(' '))===norm(q.correct_sentence);const fb=document.querySelector('#ufeedback-'+i);let html='<div class="feedback '+(ok?'good':'bad')+'"><b>'+(ok?'Chính xác!':'Chưa đúng.')+'</b><p>'+esc(q.correct_sentence)+'</p>';const mean = q.meaning_vi || q.sentence_meaning; if(mean)html+='<p>🌐 '+esc(mean)+'</p>';const vocab = q.key_vocabulary || q.key_vocab; if(vocab)html+=vocab.map(k=>'<p>📖 <b>'+esc(k.word)+'</b>: '+esc(k.meaning_vi || k.meaning)+'</p>').join('');if(q.difficulty_reason)html+='<p>📊 <b>Mức độ:</b> '+esc(q.difficulty_reason)+'</p>';if(q.grammar_note)html+='<p>📌 <b>Ngữ pháp:</b> '+esc(q.grammar_note)+'</p>';html+='</div>';fb.innerHTML=html}}
+  function renderUnscrambleAll(x) {
+    const d = document.querySelector('#play');
+    if (!x?.questions?.length) { d.innerHTML = '<div class="empty-state"><p>Không có câu hỏi.</p></div>'; return; }
+    const isGraded = !!state.isGraded;
+    const gameId = state.route;
+
+    let score = 0;
+    if (isGraded) {
+      x.questions.forEach((q, i) => {
+        const feedbackObj = state.answers[`feedback_${i}`];
+        if (feedbackObj && feedbackObj.correct) score++;
+      });
+    }
+
+    const cardsHtml = x.questions.map((q, i) => {
+      const chosen = state.answers[i] || [];
+      const isCorrect = isGraded && state.answers[`feedback_${i}`]?.correct;
+      const feedbackObj = isGraded ? state.answers[`feedback_${i}`] : null;
+
+      let cardClass = 'question-card unscramble-card fade-in';
+      if (isGraded) {
+        cardClass += isCorrect ? ' correct-card' : ' wrong-card';
+      }
+
+      // Khung hiển thị câu đang ghép/câu đúng nổi bật
+      let sentenceDisplayHtml = '';
+      if (isGraded) {
+        sentenceDisplayHtml = `
+          <div class="unscramble-correct-box" style="margin-top:12px; padding:14px 16px; border:2px solid ${isCorrect?'var(--success)':'#ef4444'}; border-radius:8px; background:rgba(0,0,0,0.02);">
+            <div style="font-size:18px; font-weight:700; color:${isCorrect?'var(--success)':'#ef4444'}; display:flex; align-items:center; gap:8px;">
+              ${isCorrect?'✓':'✕'} ${esc(q.correct_sentence)}
+            </div>
+            ${!isCorrect && chosen.length ? `
+              <p style="margin:8px 0 0; font-size:14.5px; color:#ef4444;">
+                ❌ <b>Câu bạn xếp:</b> <span style="font-weight:600;">${esc(chosen.join(' '))}</span>
+              </p>
+            ` : ''}
+            ${feedbackObj?.explanation ? `
+              <p style="margin:8px 0 0; font-size:13.5px; color:var(--text-secondary); line-height:1.5;">
+                ℹ️ <b>Giải thích lỗi:</b> ${esc(feedbackObj.explanation)}
+              </p>
+            ` : ''}
+          </div>
+        `;
+      } else {
+        sentenceDisplayHtml = `
+          <div class="unscramble-sentence-box" id="sentence-box-${i}" style="min-height:54px; padding:12px 16px; border:2px dashed var(--border); border-radius:8px; display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:12px; background:rgba(0,0,0,0.01);">
+            ${chosen.length ? chosen.map((w, wIdx) => `<button class="drag-word" data-back-q="${i}" data-back-idx="${wIdx}" style="padding:6px 12px; background:var(--primary); color:white; border:none; border-radius:4px; font-size:14px; font-weight:600; cursor:pointer; box-shadow:0 2px 4px rgba(0,0,0,0.08); transition:all 0.2s;">${esc(w)}</button>`).join('') : '<span style="color:var(--text-secondary); font-style:italic;">Bấm các từ bên dưới để ghép câu...</span>'}
+          </div>
+        `;
+      }
+
+      // Hàng chip từ để chọn (chỉ hiện khi chưa chấm)
+      let chipsHtml = '';
+      if (!isGraded) {
+        // Lọc các từ chưa chọn
+        const remainingWords = q.shuffled_words.filter((w, j) => {
+          const timesInShuffled = q.shuffled_words.slice(0, j + 1).filter(x => x === w).length;
+          const timesInChosen = chosen.filter(x => x === w).length;
+          return timesInChosen < timesInShuffled;
+        });
+
+        chipsHtml = `
+          <div class="drag-container" id="chips-container-${i}" style="margin-top:14px; display:flex; flex-wrap:wrap; gap:8px; padding:12px 0;">
+            ${remainingWords.map(w => `<button class="drag-word" data-word-q="${i}" data-word="${esc(w)}" style="padding:6px 12px; background:var(--card-bg); border:1px solid var(--border); border-radius:4px; font-size:14px; cursor:pointer; box-shadow:0 1px 3px rgba(0,0,0,0.05); transition:all 0.2s;">${esc(w)}</button>`).join('')}
+          </div>
+        `;
+      }
+
+      // Phần thông tin phụ trong details
+      let detailsHtml = '';
+      const mean = q.meaning_vi || q.sentence_meaning;
+      if (mean || q.grammar_note) {
+        detailsHtml = `
+          <details style="margin-top:12px; padding:8px; background:rgba(0,0,0,0.01); border-radius:4px; font-size:13px; color:var(--text-secondary);">
+            <summary style="cursor:pointer; font-weight:600;">Xem nghĩa và ngữ pháp</summary>
+            <div style="margin-top:8px;">
+              ${mean ? `<p style="margin:4px 0;">🌐 <b>Bản dịch:</b> ${esc(mean)}</p>` : ''}
+              ${q.grammar_note ? `<p style="margin:4px 0;">📌 <b>Ngữ pháp:</b> ${esc(q.grammar_note)}</p>` : ''}
+              ${q.key_vocabulary?.length ? `
+                <p style="margin:4px 0;">📖 <b>Từ vựng:</b></p>
+                <ul style="margin:4px 0 0 16px; padding:0;">
+                  ${q.key_vocabulary.map(kv => `<li><b>${esc(kv.word)}</b>: ${esc(kv.meaning_vi || kv.meaning)}</li>`).join('')}
+                </ul>
+              ` : ''}
+            </div>
+          </details>
+        `;
+      }
+
+      return `
+        <div class="${cardClass}" style="margin-bottom:24px;">
+          <p class="hint-text" style="font-size:14.5px; color:var(--text-secondary); margin-bottom:8px;">💡 <b>Gợi ý:</b> ${esc(q.hint)}</p>
+          ${sentenceDisplayHtml}
+          ${chipsHtml}
+          ${detailsHtml}
+        </div>
+      `;
+    }).join('');
+
+    let submitBtnHtml = '';
+    if (isGraded) {
+      submitBtnHtml = `
+        <div class="result-summary-bar" style="margin-top:24px; padding:16px; background:var(--card-bg); border:1px solid var(--border); border-radius:8px; display:flex; align-items:center; justify-content:space-between;">
+          <div style="font-size:16px; font-weight:700;">
+            📊 Kết quả: <span style="font-size:20px; color:${score===x.questions.length?'var(--success)':'var(--primary)'}">${score}/${x.questions.length}</span> câu chính xác.
+          </div>
+          <button class="btn" id="story-new-btn">Tạo bài mới</button>
+        </div>
+      `;
+    } else {
+      submitBtnHtml = `
+        <div style="text-align:right; margin-top:24px;">
+          <button class="btn" id="grade-unscramble" style="padding:10px 24px; font-weight:700;">Nộp bài & Chấm điểm</button>
+        </div>
+      `;
+    }
+
+    d.innerHTML = cardsHtml + submitBtnHtml;
+
+    // Ràng buộc sự kiện
+    if (!isGraded) {
+      // Nhấp vào chip từ gợi ý để thêm vào câu đang ghép
+      d.querySelectorAll('[data-word]').forEach(btn => {
+        btn.onclick = () => {
+          const qIdx = +btn.dataset.wordQ;
+          const word = btn.dataset.word;
+          if (!state.answers[qIdx]) state.answers[qIdx] = [];
+          state.answers[qIdx].push(word);
+          renderUnscrambleAll(x);
+        };
+      });
+
+      // Nhấp vào từ trong câu đang ghép để gỡ ra
+      d.querySelectorAll('[data-back-q]').forEach(btn => {
+        btn.onclick = () => {
+          const qIdx = +btn.dataset.backQ;
+          const wIdx = +btn.dataset.backIdx;
+          if (state.answers[qIdx]) {
+            state.answers[qIdx].splice(wIdx, 1);
+            renderUnscrambleAll(x);
+          }
+        };
+      });
+
+      // Nút nộp bài chấm điểm
+      const gradeBtn = document.querySelector('#grade-unscramble');
+      if (gradeBtn) {
+        gradeBtn.onclick = async () => {
+          try {
+            setBusy(true, 'Đang chấm bài bằng AI...');
+            const signal = getSignal();
+            
+            // Loop gọi AI chấm điểm cho từng câu
+            for (let i = 0; i < x.questions.length; i++) {
+              if (signal.aborted) return;
+              const q = x.questions[i];
+              const userAns = (state.answers[i] || []).join(' ');
+              
+              const feedback = await Bridge.sendAsync('ai_grade', {
+                gamemode: 'unscramble',
+                level: document.querySelector('#level').value,
+                user_answer: userAns,
+                expected: q.correct_sentence,
+                correct_sentence: q.correct_sentence
+              }, { signal });
+              
+              state.answers[`feedback_${i}`] = feedback;
+            }
+
+            state.isGraded = true;
+            setBusy(false);
+
+            // Lưu lịch sử
+            let finalScore = 0;
+            x.questions.forEach((q, i) => {
+              if (state.answers[`feedback_${i}`]?.correct) finalScore++;
+            });
+
+            const historyItem = addHistory(gameId, x);
+            state.currentHistoryItem = historyItem;
+            if (state.currentHistoryItem) {
+              state.currentHistoryItem.answers = { ...state.answers };
+              state.currentHistoryItem.score = finalScore;
+            }
+            saveHistory();
+
+            renderUnscrambleAll(x);
+          } catch (e) {
+            setBusy(false);
+            showBridgeFailure(e);
+          }
+        };
+      }
+    } else {
+      const newBtn = document.querySelector('#story-new-btn');
+      if (newBtn) {
+        newBtn.onclick = () => generate(gameId);
+      }
+    }
+  }
 
   function resetGameState(gameId) {
     state.exercise = null;

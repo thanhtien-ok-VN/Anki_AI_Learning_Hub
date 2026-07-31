@@ -385,6 +385,24 @@ class AIEngine:
             ]
             data["sentence_type"] = random.choice(TRANSLATION_SENTENCE_TYPES)
 
+        if gamemode == "unscramble":
+            UNSCRAMBLE_SENTENCE_TYPES = [
+                "passive voice",
+                "conditional (if + would)",
+                "relative clause (who/which/that)",
+                "comparative / superlative",
+                "reported speech",
+                "modal verbs (can, should, must, might)",
+                "common idiom or phrasal verb",
+                "present perfect vs past simple",
+                "imperative sentence",
+                "question structure (why/how/tag)",
+                "complex sentence with because/although/while",
+                "gerund as subject or object",
+            ]
+            sampled_types = random.sample(UNSCRAMBLE_SENTENCE_TYPES, min(count, len(UNSCRAMBLE_SENTENCE_TYPES)))
+            data["sentence_types"] = ", ".join(sampled_types)
+
         if source_pairs:
             needed = min(effective, len(source_pairs))
             data["vocab_pairs"] = random.sample(source_pairs, needed) if needed else []
@@ -693,6 +711,12 @@ class AIEngine:
                 "source_sentence": data.get("source_sentence", data.get("source_text", "")),
                 "reference_translation": data.get("reference_translation", data.get("expected", "")),
                 "user_target": data.get("user_answer", ""),
+            }
+        elif gamemode == "unscramble":
+            prompt_data = {
+                **common,
+                "correct_sentence": data.get("correct_sentence", data.get("expected", "")),
+                "user_sentence": data.get("user_answer", ""),
             }
         elif gamemode == "sentence_transform":
             prompt_data = {

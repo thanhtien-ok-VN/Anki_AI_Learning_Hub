@@ -104,10 +104,10 @@ class PromptManager:
                 "Output valid JSON matching the provided schema."
             ),
             "unscramble": (
-                "Generate {count} grammatically correct sentences in {language}.\n"
+                "Generate exactly {count} grammatically correct sentences in {language}.\n"
                 "Level: {level_instruction}\n"
                 "Topic: {topic}\n"
-                "Each sentence should be 6-12 words long with clear structure.\n"
+                "Each sentence should be 6-12 words long. The {count} sentences MUST each use a DIFFERENT grammatical structure: {sentence_types}.\n"
                 "Output valid JSON matching the provided schema."
             ),
             "story": (
