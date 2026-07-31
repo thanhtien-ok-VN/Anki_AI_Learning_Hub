@@ -1,6 +1,5 @@
 import json
 import os
-import sys
 import time
 import traceback
 from datetime import datetime
@@ -51,10 +50,6 @@ class Logger:
                 f.write(line + "\n")
         except Exception:
             pass
-        if level in (LogLevel.ERROR, LogLevel.WARN):
-            print(line, file=sys.stderr)
-        else:
-            print(line)
 
     def debug(self, message: str, extra: dict = None):
         self._write(LogLevel.DEBUG, message, extra)

@@ -15,6 +15,8 @@ from aqt import mw
 from aqt.qt import QTabWidget, QUrl
 from aqt.webview import AnkiWebView
 
+from core.logger import log
+
 ADDON_PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BACKGROUND_ACTIONS = {"generate", "test_key", "test_all_keys", "ai_grade"}
 
@@ -46,7 +48,6 @@ class AIHubView:
         }
 
     def _safe_handle(self, payload: str) -> dict:
-        from core.logger import log
         try:
             return self.engine.handle_js_message(payload)
         except Exception as e:
@@ -58,8 +59,6 @@ class AIHubView:
             )
 
     def _on_bridge_cmd(self, cmd: str) -> str:
-        from core.logger import log
-
         try:
             msg = json.loads(cmd)
             action = msg.get("action", "")
@@ -128,7 +127,6 @@ class AIHubView:
             if ok and self._hub_web:
                 self._hub_web.eval("window.Bridge && window.Bridge.hostReady();")
         except Exception as e:
-            from core.logger import log
             log.error(f"loadFinished eval failed: {e}")
 
     def embed(self):
