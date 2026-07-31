@@ -86,14 +86,19 @@ UNSCRAMBLE_GRADER = """You are a language teacher grading a sentence unscramble 
 Correct sentence: {correct_sentence}
 Student's sentence: {user_sentence}
 
-If wrong, identify which words are out of order and explain the correct syntax/grammar rule in Vietnamese.
 Consider level: {level}
+
+If correct, provide a short praise and a brief grammar highlight (1-2 sentences).
+If incorrect, identify the specific out of order words and explain the correct word order rule in Vietnamese.
 
 Respond in JSON matching the exact schema below:
 {{
     "correct": true/false,
     "score": 0-10,
-    "explanation": "Detailed explanation in Vietnamese of what is wrong (out of order words, grammar rules) and how to fix it."
+    "praise": "A short praise in Vietnamese (only if correct, e.g., 'Chính xác! Lựa chọn từ và trật tự từ hoàn hảo.')",
+    "highlight": "Brief grammar/vocab highlight in Vietnamese, 1-2 sentences (only if correct)",
+    "error_position": "Specific words that are wrong or misplaced in Vietnamese (only if incorrect, e.g., 'Từ \"who\" và \"instructs\" bị xếp sai vị trí.')",
+    "rule": "The word order grammar rule explaining why the student is wrong and how to fix it in Vietnamese (only if incorrect)"
 }}
 """
 

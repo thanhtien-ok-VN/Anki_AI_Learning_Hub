@@ -12,6 +12,7 @@ Requirements:
 - Highlight key vocabulary with Vietnamese meanings.
 - Explain why this sentence has the difficulty level it has.
 - Include a grammar note about the sentence structure.
+- Include a core_structure field describing the fundamental sentence formula (e.g., "S + should + V + to-V (purpose)").
 
 Output raw JSON only, no markdown formatting.
 {
@@ -26,7 +27,8 @@ Output raw JSON only, no markdown formatting.
         {"word": "lazy", "meaning_vi": "lười biếng"}
       ],
       "difficulty_reason": "Câu sử dụng 3 tính từ và 1 động từ bất quy tắc.",
-      "grammar_note": "Cấu trúc: Subject + Verb + Object. 'Over' là giới từ chỉ hướng."
+      "grammar_note": "Cấu trúc: Subject + Verb + Object. 'Over' là giới từ chỉ hướng.",
+      "core_structure": "S + V + O + Prepositional Phrase"
     }
   ]
 }

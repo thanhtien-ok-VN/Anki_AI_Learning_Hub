@@ -183,9 +183,10 @@ const SCHEMAS: Record<string, any> = {
               }
             },
             difficulty_reason: { type: "string" },
-            grammar_note: { type: "string" }
+            grammar_note: { type: "string" },
+            core_structure: { type: "string" }
           },
-          required: ["correct_sentence", "meaning_vi", "hint", "key_vocabulary", "difficulty_reason", "grammar_note"]
+          required: ["correct_sentence", "meaning_vi", "hint", "key_vocabulary", "difficulty_reason", "grammar_note", "core_structure"]
         }
       }
     },
@@ -451,7 +452,8 @@ function getFallbackExercise(gamemode: string, data: any) {
             { word: "important role", meaning_vi: "vai trò quan trọng" }
           ],
           difficulty_reason: "Cấu trúc S-V-O cơ bản với cụm giới từ.",
-          grammar_note: "Sử dụng cụm danh từ 'modern education' đứng sau giới từ 'in'."
+          grammar_note: "Sử dụng cụm danh từ 'modern education' đứng sau giới từ 'in'.",
+          core_structure: "Subject + Verb + Object + Prepositional Phrase"
         }
       ]
     };

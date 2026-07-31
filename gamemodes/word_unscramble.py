@@ -28,6 +28,7 @@ class WordUnscrambleMode(GameModeBase):
                     "key_vocabulary": s.get("key_vocabulary", []),
                     "difficulty_reason": s.get("difficulty_reason", ""),
                     "grammar_note": s.get("grammar_note", ""),
+                    "core_structure": s.get("core_structure", ""),
                     "word_count": len(s.get("correct_sentence", "").split()),
                 }
                 for s in sentences

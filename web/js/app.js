@@ -1782,6 +1782,8 @@ const App = (() => {
     renderBoard();
   }
 
+  let unscrambleDragState = null;
+
   function renderUnscrambleAll(x) {
     const d = document.querySelector('#play');
     if (!x?.questions?.length) { d.innerHTML = '<div class="empty-state"><p>Không có câu hỏi.</p></div>'; return; }
@@ -1800,36 +1802,72 @@ const App = (() => {
       const chosen = state.answers[i] || [];
       const isCorrect = isGraded && state.answers[`feedback_${i}`]?.correct;
       const feedbackObj = isGraded ? state.answers[`feedback_${i}`] : null;
+      const isUnanswered = isGraded && (!feedbackObj || feedbackObj.unanswered);
 
       let cardClass = 'question-card unscramble-card fade-in';
       if (isGraded) {
-        cardClass += isCorrect ? ' correct-card' : ' wrong-card';
+        if (isUnanswered) cardClass += ' unanswered-card';
+        else cardClass += isCorrect ? ' correct-card' : ' wrong-card';
       }
 
-      // Khung hiển thị câu đang ghép/câu đúng nổi bật
+      // Đề bài (các từ xáo trộn nối bằng " / ")
+      const rawPromptText = `<b>Đề bài:</b> ${q.shuffled_words.join(' / ')}`;
+
+      // Khung hiển thị câu đang ghép/câu đúng nổi bật theo 3 kịch bản
       let sentenceDisplayHtml = '';
       if (isGraded) {
-        sentenceDisplayHtml = `
-          <div class="unscramble-correct-box" style="margin-top:12px; padding:14px 16px; border:2px solid ${isCorrect?'var(--success)':'#ef4444'}; border-radius:8px; background:rgba(0,0,0,0.02);">
-            <div style="font-size:18px; font-weight:700; color:${isCorrect?'var(--success)':'#ef4444'}; display:flex; align-items:center; gap:8px;">
-              ${isCorrect?'✓':'✕'} ${esc(q.correct_sentence)}
+        if (isCorrect) {
+          // Kịch bản 1: Đúng (Correct)
+          sentenceDisplayHtml = `
+            <div class="unscramble-correct-box" style="margin-top:12px; padding:14px 16px; border:2px solid var(--success); border-radius:8px; background:rgba(46, 204, 113, 0.02);">
+              <div style="font-size:12px; font-weight:700; color:white; background:var(--success); padding:3px 8px; border-radius:4px; display:inline-block; margin-bottom:8px;">🟢 ĐÚNG</div>
+              <p style="margin:4px 0 8px; font-size:15px; font-weight:600; color:var(--success);">🎉 ${esc(feedbackObj.praise || 'Chính xác! Lựa chọn trật tự từ hoàn hảo.')}</p>
+              <div style="font-size:18px; font-weight:700; color:var(--success); margin:8px 0;">
+                ✓ ${esc(q.correct_sentence)}
+              </div>
+              ${feedbackObj.highlight ? `
+                <p style="margin:8px 0 0; font-size:13.5px; color:var(--text-secondary); line-height:1.4;">
+                  💡 <b>Điểm sáng:</b> ${esc(feedbackObj.highlight)}
+                </p>
+              ` : ''}
             </div>
-            ${!isCorrect && chosen.length ? `
-              <p style="margin:8px 0 0; font-size:14.5px; color:#ef4444;">
-                ❌ <b>Câu bạn xếp:</b> <span style="font-weight:600;">${esc(chosen.join(' '))}</span>
-              </p>
-            ` : ''}
-            ${feedbackObj?.explanation ? `
-              <p style="margin:8px 0 0; font-size:13.5px; color:var(--text-secondary); line-height:1.5;">
-                ℹ️ <b>Giải thích lỗi:</b> ${esc(feedbackObj.explanation)}
-              </p>
-            ` : ''}
-          </div>
-        `;
+          `;
+        } else if (isUnanswered) {
+          // Kịch bản 3: Bỏ trống (Unanswered)
+          sentenceDisplayHtml = `
+            <div class="unscramble-unanswered-box" style="margin-top:12px; padding:14px 16px; border:2px solid var(--border); border-radius:8px; background:rgba(0,0,0,0.02);">
+              <div style="font-size:12px; font-weight:700; color:white; background:var(--text-secondary); padding:3px 8px; border-radius:4px; display:inline-block; margin-bottom:8px;">⚪ CHƯA TRẢ LỜI</div>
+              <div style="font-size:18px; font-weight:700; color:var(--primary); margin:8px 0;">
+                ✅ ${esc(q.correct_sentence)}
+              </div>
+              ${q.meaning_vi ? `<p style="margin:6px 0; font-size:14px;">📖 <b>Dịch nghĩa:</b> ${esc(q.meaning_vi)}</p>` : ''}
+              ${q.core_structure ? `<p style="margin:6px 0; font-size:13.5px; color:var(--text-secondary);">💡 <b>Cấu trúc chính:</b> <code>${esc(q.core_structure)}</code></p>` : ''}
+            </div>
+          `;
+        } else {
+          // Kịch bản 2: Sai (Incorrect)
+          sentenceDisplayHtml = `
+            <div class="unscramble-wrong-box" style="margin-top:12px; padding:14px 16px; border:2px solid #ef4444; border-radius:8px; background:rgba(239, 68, 68, 0.02);">
+              <div style="font-size:12px; font-weight:700; color:white; background:#ef4444; padding:3px 8px; border-radius:4px; display:inline-block; margin-bottom:8px;">🔴 SAI</div>
+              <p style="margin:4px 0 8px; font-size:14px; font-weight:600; color:#ef4444;">⚠️ Vị trí sai: ${esc(feedbackObj.error_position || 'Trật tự các từ chưa đúng.')}</p>
+              
+              <div class="unscramble-compare" style="margin:10px 0; padding:10px; border-left:3px solid #ef4444; background:rgba(239,68,68,0.02); border-radius:4px;">
+                <p style="margin:2px 0; font-size:13.5px;">❌ <b>Câu của bạn:</b> <span style="color:#ef4444; font-weight:600;">${esc(chosen.join(' '))}</span></p>
+                <p style="margin:2px 0; font-size:13.5px;">✅ <b>Đáp án đúng:</b> <span style="color:var(--success); font-weight:600;">${esc(q.correct_sentence)}</span></p>
+              </div>
+
+              ${feedbackObj.rule ? `
+                <p style="margin:8px 0 0; font-size:13.5px; color:var(--text-secondary); line-height:1.4;">
+                  💡 <b>Giải thích:</b> ${esc(feedbackObj.rule)}
+                </p>
+              ` : ''}
+            </div>
+          `;
+        }
       } else {
         sentenceDisplayHtml = `
-          <div class="unscramble-sentence-box" id="sentence-box-${i}" style="min-height:54px; padding:12px 16px; border:2px dashed var(--border); border-radius:8px; display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:12px; background:rgba(0,0,0,0.01);">
-            <span style="color:var(--text-secondary); font-style:italic;">Bấm các từ bên dưới để ghép câu...</span>
+          <div class="unscramble-sentence-box" id="sentence-box-${i}" style="min-height:58px; padding:12px 16px; border:2px dashed var(--border); border-radius:8px; display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:12px; background:rgba(0,0,0,0.01); transition:all 0.2s;">
+            <span style="color:var(--text-secondary); font-style:italic;">Bấm hoặc kéo các từ bên dưới vào đây...</span>
           </div>
         `;
       }
@@ -1838,12 +1876,13 @@ const App = (() => {
       let chipsHtml = '';
       if (!isGraded) {
         chipsHtml = `
-          <div class="drag-container" id="chips-container-${i}" style="margin-top:14px; display:flex; flex-wrap:wrap; gap:8px; padding:12px 0;"></div>
+          <div class="drag-container" id="chips-container-${i}" style="margin-top:14px; display:flex; flex-wrap:wrap; gap:8px; padding:12px 0; min-height:48px; border-radius:8px; transition:all 0.2s;"></div>
         `;
       }
 
       return `
-        <div class="${cardClass}" style="margin-bottom:24px;">
+        <div class="${cardClass}" style="margin-bottom:24px; padding:16px; border:1px solid var(--border); border-radius:8px; background:var(--card-bg);">
+          <p style="font-size:14.5px; color:var(--text-secondary); margin-bottom:10px; line-height:1.4;">${rawPromptText}</p>
           ${sentenceDisplayHtml}
           ${chipsHtml}
         </div>
@@ -1855,7 +1894,7 @@ const App = (() => {
       submitBtnHtml = `
         <div class="result-summary-bar" style="margin-top:24px; padding:16px; background:var(--card-bg); border:1px solid var(--border); border-radius:8px; display:flex; align-items:center; justify-content:space-between;">
           <div style="font-size:16px; font-weight:700;">
-            📊 Kết quả: <span style="font-size:20px; color:${score===x.questions.length?'var(--success)':'var(--primary)'}">${score}/${x.questions.length}</span> câu chính xác.
+            📊 Kết quả bài làm: <span style="font-size:20px; color:${score===x.questions.length?'var(--success)':'var(--primary)'}">${score}/${x.questions.length}</span> câu chính xác.
           </div>
           <button class="btn" id="story-new-btn">Tạo bài mới</button>
         </div>
@@ -1892,33 +1931,107 @@ const App = (() => {
       // 1. Cập nhật ô chứa các từ đã chọn
       if (chosen.length) {
         chosenBox.innerHTML = chosen.map((w, wIdx) => 
-          `<button class="drag-word" data-back-idx="${wIdx}" style="padding:6px 12px; background:var(--primary); color:white; border:none; border-radius:4px; font-size:14px; font-weight:600; cursor:pointer; box-shadow:0 2px 4px rgba(0,0,0,0.08); transition:all 0.2s;">${esc(w)}</button>`
+          `<button class="drag-word" draggable="true" data-back-idx="${wIdx}" style="padding:6px 12px; background:var(--primary); color:white; border:none; border-radius:4px; font-size:14px; font-weight:600; cursor:pointer; box-shadow:0 2px 4px rgba(0,0,0,0.08); transition:all 0.2s;">${esc(w)}</button>`
         ).join('');
 
         chosenBox.querySelectorAll('[data-back-idx]').forEach(btn => {
+          // Sự kiện click (Dự phòng)
           btn.onclick = () => {
             const wIdx = +btn.dataset.backIdx;
             state.answers[qIdx].splice(wIdx, 1);
             updateUnscrambleCardDOM(qIdx, question);
           };
+          // Sự kiện Drag
+          btn.ondragstart = (e) => {
+            unscrambleDragState = { qIdx, word: btn.textContent, type: 'chosen', index: +btn.dataset.backIdx };
+            e.dataTransfer.effectAllowed = 'move';
+          };
         });
       } else {
-        chosenBox.innerHTML = '<span style="color:var(--text-secondary); font-style:italic;">Bấm các từ bên dưới để ghép câu...</span>';
+        chosenBox.innerHTML = '<span style="color:var(--text-secondary); font-style:italic;">Bấm hoặc kéo các từ bên dưới vào đây...</span>';
       }
 
       // 2. Cập nhật các chips từ gợi ý
       chipsBox.innerHTML = remainingWords.map((w) => 
-        `<button class="drag-word" data-word="${esc(w)}" style="padding:6px 12px; background:var(--card-bg); border:1px solid var(--border); border-radius:4px; font-size:14px; cursor:pointer; box-shadow:0 1px 3px rgba(0,0,0,0.05); transition:all 0.2s;">${esc(w)}</button>`
+        `<button class="drag-word" draggable="true" data-word="${esc(w)}" style="padding:6px 12px; background:var(--card-bg); border:1px solid var(--border); border-radius:4px; font-size:14px; cursor:pointer; box-shadow:0 1px 3px rgba(0,0,0,0.05); transition:all 0.2s;">${esc(w)}</button>`
       ).join('');
 
       chipsBox.querySelectorAll('[data-word]').forEach(btn => {
+        // Sự kiện click (Dự phòng)
         btn.onclick = () => {
           const word = btn.dataset.word;
           if (!state.answers[qIdx]) state.answers[qIdx] = [];
           state.answers[qIdx].push(word);
           updateUnscrambleCardDOM(qIdx, question);
         };
+        // Sự kiện Drag
+        btn.ondragstart = (e) => {
+          unscrambleDragState = { qIdx, word: btn.dataset.word, type: 'chip' };
+          e.dataTransfer.effectAllowed = 'copy';
+        };
       });
+
+      // 3. Sự kiện Drop/DragOver cho ChosenBox
+      chosenBox.ondragover = (e) => {
+        if (unscrambleDragState && unscrambleDragState.qIdx === qIdx) {
+          e.preventDefault();
+          chosenBox.style.border = '2px dashed var(--primary)';
+          chosenBox.style.background = 'rgba(54, 162, 235, 0.03)';
+        }
+      };
+      chosenBox.ondragleave = () => {
+        chosenBox.style.border = '2px dashed var(--border)';
+        chosenBox.style.background = 'rgba(0,0,0,0.01)';
+      };
+      chosenBox.ondrop = (e) => {
+        e.preventDefault();
+        chosenBox.style.border = '2px dashed var(--border)';
+        chosenBox.style.background = 'rgba(0,0,0,0.01)';
+        if (!unscrambleDragState || unscrambleDragState.qIdx !== qIdx) return;
+
+        if (unscrambleDragState.type === 'chip') {
+          // Kéo từ chip vào hộp
+          if (!state.answers[qIdx]) state.answers[qIdx] = [];
+          state.answers[qIdx].push(unscrambleDragState.word);
+        } else if (unscrambleDragState.type === 'chosen') {
+          // Kéo đổi vị trí trong hộp
+          const chosenArr = state.answers[qIdx] || [];
+          const movedWord = chosenArr.splice(unscrambleDragState.index, 1)[0];
+          
+          const targetBtn = e.target.closest('[data-back-idx]');
+          if (targetBtn) {
+            const targetIdx = +targetBtn.dataset.backIdx;
+            chosenArr.splice(targetIdx, 0, movedWord);
+          } else {
+            chosenArr.push(movedWord);
+          }
+        }
+        updateUnscrambleCardDOM(qIdx, question);
+        unscrambleDragState = null;
+      };
+
+      // 4. Sự kiện Drop/DragOver cho ChipsBox (thả trả lại chip)
+      chipsBox.ondragover = (e) => {
+        if (unscrambleDragState && unscrambleDragState.qIdx === qIdx && unscrambleDragState.type === 'chosen') {
+          e.preventDefault();
+          chipsBox.style.background = 'rgba(0,0,0,0.04)';
+        }
+      };
+      chipsBox.ondragleave = () => {
+        chipsBox.style.background = 'transparent';
+      };
+      chipsBox.ondrop = (e) => {
+        e.preventDefault();
+        chipsBox.style.background = 'transparent';
+        if (!unscrambleDragState || unscrambleDragState.qIdx !== qIdx) return;
+
+        if (unscrambleDragState.type === 'chosen') {
+          // Gỡ từ
+          state.answers[qIdx].splice(unscrambleDragState.index, 1);
+          updateUnscrambleCardDOM(qIdx, question);
+        }
+        unscrambleDragState = null;
+      };
     }
 
     // Nút nộp bài chấm điểm
@@ -1935,6 +2048,15 @@ const App = (() => {
               const q = x.questions[i];
               const userAns = (state.answers[i] || []).join(' ');
               
+              if (!userAns.trim()) {
+                // Kịch bản 3: Chưa làm -> Không cần gọi AI chấm
+                state.answers[`feedback_${i}`] = {
+                  correct: false,
+                  unanswered: true
+                };
+                continue;
+              }
+
               const feedback = await Bridge.sendAsync('ai_grade', {
                 gamemode: 'unscramble',
                 level: document.querySelector('#level').value,

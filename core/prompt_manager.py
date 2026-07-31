@@ -108,6 +108,7 @@ class PromptManager:
                 "Level: {level_instruction}\n"
                 "Topic: {topic}\n"
                 "Each sentence should be 6-12 words long. The {count} sentences MUST each use a DIFFERENT grammatical structure: {sentence_types}.\n"
+                "Provide a core_structure field describing the sentence formula.\n"
                 "Output valid JSON matching the provided schema."
             ),
             "story": (

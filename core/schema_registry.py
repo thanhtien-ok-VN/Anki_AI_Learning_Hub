@@ -68,6 +68,7 @@ if HAS_PYDANTIC:
         key_vocabulary: List[UnscrambleVocab]
         difficulty_reason: str
         grammar_note: str
+        core_structure: str
 
     class UnscrambleSchema(BaseModel):
         questions: List[UnscrambleSentence]
@@ -265,9 +266,10 @@ RAW_DICT_SCHEMAS = {
                             }
                         },
                         "difficulty_reason": {"type": "STRING"},
-                        "grammar_note": {"type": "STRING"}
+                        "grammar_note": {"type": "STRING"},
+                        "core_structure": {"type": "STRING"}
                     },
-                    "required": ["correct_sentence", "meaning_vi", "hint", "key_vocabulary", "difficulty_reason", "grammar_note"]
+                    "required": ["correct_sentence", "meaning_vi", "hint", "key_vocabulary", "difficulty_reason", "grammar_note", "core_structure"]
                 }
             }
         },

@@ -12,6 +12,7 @@
 - 用越南语标出重点词汇及其含义。
 - 解释该句子达到此难度级别的合理原因。
 - 包含关于句子结构的语法注释。
+- 包含一个 core_structure 字段，描述句子的基本公式结构（例如："S + should + V + to-V (目的)"）。
 
 仅输出原始 JSON，不得使用 markdown 格式。
 {
@@ -26,7 +27,8 @@
         {"word": "lazy", "meaning_vi": "lười biếng"}
       ],
       "difficulty_reason": "Câu sử dụng 3 tính từ và 1 động từ bất quy tắc.",
-      "grammar_note": "Cấu trúc: Subject + Verb + Object. 'Over' là giới từ chỉ hướng."
+      "grammar_note": "Cấu trúc: Subject + Verb + Object. 'Over' là giới từ chỉ hướng.",
+      "core_structure": "S + V + O + Prepositional Phrase"
     }
   ]
 }
