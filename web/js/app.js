@@ -1224,8 +1224,19 @@ const App = (() => {
     const gameId = state.route;
 
     const isNewSchema = !!x.paragraph;
-    const targetWords = x.blanks.map(b => isNewSchema ? b.answer : (b.correct_word || (b.options ? b.options[b.correct_index] : ''))).filter(Boolean);
-    const sortedWords = [...targetWords].sort((a, b) => a.localeCompare(b));
+    const allWords = x.blanks.flatMap(b => {
+      const opts = isNewSchema ? (b.options || [b.answer]) : (b.options || [b.correct_word]);
+      return Array.isArray(opts) ? opts : [];
+    }).filter(Boolean);
+    const seen = new Set();
+    const sortedWords = allWords
+      .filter(w => {
+        const k = String(w).toLowerCase();
+        if (seen.has(k)) return false;
+        seen.add(k);
+        return true;
+      })
+      .sort((a, b) => a.localeCompare(b));
 
     if (!isNewSchema) {
       x.blanks.forEach(b => {
