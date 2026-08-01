@@ -225,7 +225,8 @@ const SCHEMAS: Record<string, any> = {
               }
             },
             explanation: { type: "string" },
-            evidence_quote: { type: "string" }
+            evidence_quote: { type: "string" },
+            target_word: { type: "string" }
           },
           required: ["id", "type", "question", "options", "explanation", "evidence_quote"]
         }
@@ -459,8 +460,9 @@ function getFallbackExercise(gamemode: string, data: any) {
       questions: [
         {
           id: 1,
-          type: "detail",
+          type: "vocabulary",
           question: "What was Alex known for during presentations?",
+          target_word: "articulate",
           options: [
             { text: "His articulate style", is_correct: true },
             { text: "His verbose explanations", is_correct: false },

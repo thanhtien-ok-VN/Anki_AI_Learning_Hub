@@ -2336,6 +2336,27 @@ const App = (() => {
       });
     }
 
+    const targetWords = questions
+      .filter(q => q.type === 'vocabulary' && q.target_word)
+      .map(q => q.target_word);
+
+    function highlightWords(text, words) {
+      if (!words || !words.length) return esc(text);
+      const sortedWords = [...words]
+        .filter(Boolean)
+        .map(w => w.trim())
+        .filter(w => w.length > 0)
+        .sort((a, b) => b.length - a.length);
+
+      if (!sortedWords.length) return esc(text);
+
+      const escapedText = esc(text);
+      const escapedSortedWords = sortedWords.map(w => esc(w).replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'));
+      const escPattern = new RegExp(`\\b(${escapedSortedWords.join('|')})\\b`, 'gi');
+
+      return escapedText.replace(escPattern, (match) => `<b class="story-target-word">${match}</b>`);
+    }
+
     let title = "";
     let content = "";
     let fullTranslation = "";
@@ -2355,7 +2376,7 @@ const App = (() => {
           <span class="story-passage-badge">${questions.length} câu hỏi</span>
         </div>
         <div class="story-passage-content" style="font-size:15px; line-height:1.6;">
-          ${esc(content).replace(/\n\n/g, '<br><br>')}
+          ${highlightWords(content, targetWords).replace(/\n\n/g, '<br><br>')}
         </div>
         ${fullTranslation ? `
           <details style="margin-top:12px; border-top:1px dashed var(--border); padding-top:10px;">

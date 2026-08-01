@@ -1462,3 +1462,11 @@ select.auto-filled { border-color: var(--primary); background: var(--primary-lig
 
 /* Taboo card */
 .taboo-card .description { font-size: 16px; line-height: 1.7; padding: 16px; background: var(--primary-light); border-radius: var(--radius); margin: 16px 0; }
+
+.story-target-word {
+    font-weight: 700;
+    background: #fff3bf;
+    color: #2c2c2c;
+    padding: 0 4px;
+    border-radius: 4px;
+}

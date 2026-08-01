@@ -9,6 +9,7 @@
 要求：
 - 故事必须包含标题。
 - 生成 {question_count} 个问题。问题类型："detail", "inference", "vocabulary"。
+- 对于 "vocabulary" 类型的问题，必须提供 "target_word" 字段，包含故事中被提问的确切单词。
 - 每个正确答案必须包含直接提取自故事中的原文引用（"evidence_quote"）。
 - 提供故事的完整越南语翻译。
 
@@ -23,16 +24,17 @@
   "questions": [
     {
       "id": 1,
-      "type": "detail",
-      "question": "Why did Sarah feel desperate?",
+      "type": "vocabulary",
+      "question": "What is the meaning of the word 'desperate' in the context?",
+      "target_word": "desperate",
       "options": [
-        {"text": "She missed the last train.", "is_correct": true},
-        {"text": "She lost her wallet.", "is_correct": false},
-        {"text": "She was late for work.", "is_correct": false},
-        {"text": "She forgot her phone.", "is_correct": false}
+        {"text": "having little or no hope", "is_correct": true},
+        {"text": "extremely happy", "is_correct": false},
+        {"text": "very busy", "is_correct": false},
+        {"text": "bored", "is_correct": false}
       ],
       "explanation": "...",
-      "evidence_quote": "Sarah stood alone on the empty platform..."
+      "evidence_quote": "Sarah stood alone on the empty platform feeling desperate..."
     }
   ],
   "discussion_prompt": "..."

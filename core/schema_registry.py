@@ -96,6 +96,7 @@ if HAS_PYDANTIC:
         options: List[StoryQuestionOption]
         explanation: str
         evidence_quote: str
+        target_word: Optional[str] = None
 
     class StorySchema(BaseModel):
         story: StoryContent
@@ -307,7 +308,8 @@ RAW_DICT_SCHEMAS = {
                             }
                         },
                         "explanation": {"type": "STRING"},
-                        "evidence_quote": {"type": "STRING"}
+                        "evidence_quote": {"type": "STRING"},
+                        "target_word": {"type": "STRING"}
                     },
                     "required": ["id", "type", "question", "options", "explanation", "evidence_quote"]
                 }

@@ -41,6 +41,7 @@ class StoryGeneratorMode(GameModeBase):
                 "correct_index": correct_index,
                 "explanation": q.get("explanation", ""),
                 "evidence_quote": q.get("evidence_quote", ""),
+                "target_word": q.get("target_word", ""),
             })
 
         return {
