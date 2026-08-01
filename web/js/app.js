@@ -9,6 +9,47 @@ const App = (() => {
     } catch (e) {}
   }
 
+  function loadMatchingStats() {
+    try {
+      const stats = localStorage.getItem(PFX + 'matching_stats');
+      if (stats) {
+        state.matchingStats = JSON.parse(stats);
+      } else {
+        state.matchingStats = {
+          aggregates: {
+            total_games: 0,
+            total_correct: 0,
+            total_wrong: 0,
+            avg_accuracy: 0,
+            avg_time_sec: 0,
+            best_time_sec: 999999
+          },
+          records: []
+        };
+      }
+    } catch (e) {
+      state.matchingStats = {
+        aggregates: {
+          total_games: 0,
+          total_correct: 0,
+          total_wrong: 0,
+          avg_accuracy: 0,
+          avg_time_sec: 0,
+          best_time_sec: 999999
+        },
+        records: []
+      };
+    }
+  }
+
+  function saveMatchingStats() {
+    try {
+      if (state.matchingStats) {
+        localStorage.setItem(PFX + 'matching_stats', JSON.stringify(state.matchingStats));
+      }
+    } catch (e) {}
+  }
+
   function loadHistory() {
     try {
       const h = localStorage.getItem(PFX + 'history');
@@ -16,6 +57,7 @@ const App = (() => {
         state.history = JSON.parse(h) || {};
         delete state.history['matching'];
       }
+      loadMatchingStats();
     } catch (e) {}
   }
 
@@ -357,9 +399,12 @@ const App = (() => {
     const histBtn = document.querySelector('#open-history-btn');
     if (histBtn) {
       if (g[0] === 'matching') {
-        histBtn.style.display = 'none';
+        histBtn.style.display = 'inline-flex';
+        histBtn.textContent = '📊 Thống kê';
+        histBtn.onclick = () => openMatchingStatsModal();
       } else {
         histBtn.style.display = 'inline-flex';
+        histBtn.textContent = esc(t('app.history', '📜 Lịch sử'));
         histBtn.onclick = () => openHistoryModal(g[0]);
       }
     }
@@ -1018,6 +1063,107 @@ const App = (() => {
     }
     return x;
   }
+
+  function openMatchingStatsModal() {
+    if (!state.matchingStats) loadMatchingStats();
+    const stats = state.matchingStats;
+    const body = document.querySelector('#history-modal-body');
+    const title = document.querySelector('#history-modal-title');
+    const modal = document.querySelector('#history-modal');
+    if (!body || !title || !modal) return;
+
+    title.textContent = '📊 Thống kê Nối từ (Word Matching)';
+
+    const bestTimeStr = stats.aggregates.best_time_sec !== 999999 ? 
+      `${Math.floor(stats.aggregates.best_time_sec / 60)}m ${stats.aggregates.best_time_sec % 60}s` : 'N/A';
+
+    let html = `
+      <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-bottom: 20px;">
+        <div class="stat-card" style="padding: 12px; background: rgba(0,0,0,0.02); border: 1px solid var(--border); border-radius: 6px; text-align: center;">
+          <div style="font-size: 20px; font-weight: 700; color: var(--primary);">${stats.aggregates.total_games}</div>
+          <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">Số bài đã chơi</div>
+        </div>
+        <div class="stat-card" style="padding: 12px; background: rgba(0,0,0,0.02); border: 1px solid var(--border); border-radius: 6px; text-align: center;">
+          <div style="font-size: 20px; font-weight: 700; color: var(--success);">${stats.aggregates.avg_accuracy}%</div>
+          <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">Độ chính xác TB</div>
+        </div>
+        <div class="stat-card" style="padding: 12px; background: rgba(0,0,0,0.02); border: 1px solid var(--border); border-radius: 6px; text-align: center;">
+          <div style="font-size: 20px; font-weight: 700; color: var(--primary);">${bestTimeStr}</div>
+          <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">Thời gian nhanh nhất</div>
+        </div>
+        <div class="stat-card" style="padding: 12px; background: rgba(0,0,0,0.02); border: 1px solid var(--border); border-radius: 6px; text-align: center;">
+          <div style="font-size: 20px; font-weight: 700; color: #ef4444;">${stats.aggregates.total_wrong}</div>
+          <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">Tổng số lần ghép sai</div>
+        </div>
+      </div>
+    `;
+
+    html += `<h4 style="margin: 0 0 10px; font-size:14px; font-weight:700;">📋 30 lượt chơi gần đây</h4>`;
+    if (!stats.records.length) {
+      html += `<p style="text-align: center; color: var(--text-secondary); font-style: italic; padding: 20px 0; font-size:13px;">Chưa có dữ liệu thống kê nào được ghi nhận.</p>`;
+    } else {
+      html += `<div style="max-height: 240px; overflow-y: auto; border: 1px solid var(--border); border-radius: 6px;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 13px; text-align: left;">
+          <thead>
+            <tr style="background: rgba(0,0,0,0.03); border-bottom: 1px solid var(--border);">
+              <th style="padding: 8px 12px;">Thời gian</th>
+              <th style="padding: 8px 12px;">Số cặp</th>
+              <th style="padding: 8px 12px;">Độ chính xác</th>
+              <th style="padding: 8px 12px;">Thời gian làm</th>
+              <th style="padding: 8px 12px;">Số lần sai</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${stats.records.map(r => {
+              const dt = new Date(r.time);
+              const dtStr = `${dt.getDate()}/${dt.getMonth()+1} ${String(dt.getHours()).padStart(2, '0')}:${String(dt.getMinutes()).padStart(2, '0')}`;
+              const tStr = `${Math.floor(r.elapsed_sec / 60)}m ${r.elapsed_sec % 60}s`;
+              return `
+                <tr style="border-bottom: 1px solid rgba(0,0,0,0.05);">
+                  <td style="padding: 8px 12px; color: var(--text-secondary);">${dtStr}</td>
+                  <td style="padding: 8px 12px; font-weight: 600;">${r.matched}/${r.pairs}</td>
+                  <td style="padding: 8px 12px; color: ${r.accuracy === 100 ? 'var(--success)' : 'inherit'}; font-weight: ${r.accuracy === 100 ? '700' : 'normal'};">${r.accuracy}%</td>
+                  <td style="padding: 8px 12px;">${tStr}</td>
+                  <td style="padding: 8px 12px; color: ${r.wrong > 0 ? '#ef4444' : 'inherit'};">${r.wrong}</td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>`;
+    }
+
+    html += `
+      <div style="text-align: right; margin-top: 16px;">
+        <button class="btn btn-outline" id="clear-matching-stats-btn" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.3); padding: 6px 12px; font-size: 12px; font-weight: 600; cursor:pointer;">🗑️ Xóa thống kê</button>
+      </div>
+    `;
+
+    body.innerHTML = html;
+    modal.hidden = false;
+
+    const clearBtn = body.querySelector('#clear-matching-stats-btn');
+    if (clearBtn) {
+      clearBtn.onclick = () => {
+        if (confirm('Bạn có chắc chắn muốn xóa toàn bộ dữ liệu thống kê của trò chơi Nối từ không?')) {
+          state.matchingStats = {
+            aggregates: {
+              total_games: 0,
+              total_correct: 0,
+              total_wrong: 0,
+              avg_accuracy: 0,
+              avg_time_sec: 0,
+              best_time_sec: 999999
+            },
+            records: []
+          };
+          saveMatchingStats();
+          openMatchingStatsModal();
+        }
+      };
+    }
+  }
+
   function play(id) {
     const d = document.querySelector('#play');
     let x = state.exercise;
@@ -1681,12 +1827,46 @@ const App = (() => {
       const timeStr = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
       const accuracy = totalAttempts > 0 ? Math.round((matchedCount / totalAttempts) * 100) : (matchedCount > 0 ? 100 : 0);
 
-      const historyItem = state.currentHistoryItem || {};
-      historyItem.score = matchedCount;
-      historyItem.maxScore = totalPairsCount;
-      historyItem.timeTaken = elapsedSec;
-      historyItem.accuracy = accuracy;
-      if (typeof saveHistory === 'function') saveHistory();
+      // Cập nhật thống kê tích lũy
+      if (!state.matchingStats) loadMatchingStats();
+      const stats = state.matchingStats;
+      const record = {
+        time: Date.now(),
+        pairs: totalPairsCount,
+        matched: matchedCount,
+        wrong: wrongCount,
+        attempts: totalAttempts,
+        elapsed_sec: elapsedSec,
+        accuracy: accuracy
+      };
+
+      stats.records.unshift(record);
+      if (stats.records.length > 30) stats.records.length = 30;
+
+      stats.aggregates.total_games += 1;
+      stats.aggregates.total_correct += matchedCount;
+      stats.aggregates.total_wrong += wrongCount;
+      
+      const totalAccSum = stats.records.reduce((sum, r) => sum + r.accuracy, 0);
+      stats.aggregates.avg_accuracy = Math.round(totalAccSum / stats.records.length);
+
+      const totalTimeSum = stats.records.reduce((sum, r) => sum + r.elapsed_sec, 0);
+      stats.aggregates.avg_time_sec = Math.round(totalTimeSum / stats.records.length);
+
+      if (accuracy === 100 && elapsedSec < stats.aggregates.best_time_sec) {
+        stats.aggregates.best_time_sec = elapsedSec;
+      }
+
+      saveMatchingStats();
+
+      const bestTimeStr = stats.aggregates.best_time_sec !== 999999 ? 
+        `${Math.floor(stats.aggregates.best_time_sec / 60)}m ${stats.aggregates.best_time_sec % 60}s` : 'N/A';
+
+      const statsSummaryHtml = `
+        <div class="stats-summary-box" style="margin-top: 20px; padding: 12px; border-top: 1px dashed var(--border); font-size: 13px; color: var(--text-secondary);">
+          🏆 <b>Thống kê tích lũy:</b> Đã chơi: <b>${stats.aggregates.total_games}</b> bài · Độ chính xác TB: <b>${stats.aggregates.avg_accuracy}%</b> · Nhanh nhất (100% đúng): <b>${bestTimeStr}</b>
+        </div>
+      `;
 
       d.innerHTML = `
         <div class="feedback good" style="text-align:center; padding: 24px;">
@@ -1697,7 +1877,8 @@ const App = (() => {
             <p>❌ Số lần ghép sai: <b>${wrongCount}</b> lần</p>
             <p>📊 Độ chính xác: <b>${accuracy}%</b></p>
           </div>
-          <div style="display: flex; justify-content: center; gap: 12px; flex-wrap: wrap;">
+          ${statsSummaryHtml}
+          <div style="display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; margin-top:20px;">
             <button class="btn primary" id="restart-matching-btn" style="padding: 10px 24px;">🔄 Chơi lại bài này</button>
             <button class="btn btn-outline" id="new-matching-btn" style="padding: 10px 24px;">⚡ Tạo bài nối mới</button>
           </div>
