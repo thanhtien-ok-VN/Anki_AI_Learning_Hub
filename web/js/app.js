@@ -339,7 +339,7 @@ const App = (() => {
   }
 
   function controls(id) {
-    let max = id === 'matching' ? 20 : 5, min = id === 'matching' ? 5 : 1, extra = '';
+    let max = id === 'matching' ? 20 : 5, min = id === 'matching' ? 5 : (id === 'story' ? 3 : 1), extra = '';
     if (id === 'cloze') {
       max = 1; min = 1;
       extra = '<label>' + esc(t('controls.num_blanks', 'Số blank')) + '<select id="num_blanks">' + Array.from({ length: 6 }, (_, i) => '<option ' + (i + 5 === 5 ? 'selected' : '') + '>' + (i + 5) + '</option>').join('') + '</select></label>';
@@ -2339,32 +2339,13 @@ const App = (() => {
     let title = "";
     let content = "";
     let fullTranslation = "";
-    let highlightedVocab = [];
 
     if (typeof x.story === 'object') {
       title = x.story.title || "";
       content = x.story.content || "";
       fullTranslation = x.story.full_translation || "";
-      highlightedVocab = x.story.highlighted_vocab || [];
     } else {
       content = String(x.story || "");
-    }
-
-    let vocabHtml = '';
-    if (highlightedVocab && highlightedVocab.length > 0) {
-      vocabHtml = `
-        <div style="margin-top: 12px; padding: 12px; background: rgba(14, 165, 233, 0.05); border-radius: 6px; text-align: left; border-left: 4px solid var(--primary);">
-          <b>📖 Từ vựng tiêu biểu:</b>
-          <div style="display: grid; gap: 8px; margin-top: 6px; font-size:13.5px;">
-            ${highlightedVocab.map(v => `
-              <div>
-                • <b style="color: var(--primary);">${esc(v.word)}</b>: ${esc(v.meaning_vi || v.meaning || '')} 
-                ${v.context_meaning ? `<i style="font-size: 13px; color: var(--text-secondary);">(${esc(v.context_meaning)})</i>` : ''}
-              </div>
-            `).join('')}
-          </div>
-        </div>
-      `;
     }
 
     const passageHtml = `
@@ -2376,7 +2357,6 @@ const App = (() => {
         <div class="story-passage-content" style="font-size:15px; line-height:1.6;">
           ${esc(content).replace(/\n\n/g, '<br><br>')}
         </div>
-        ${vocabHtml}
         ${fullTranslation ? `
           <details style="margin-top:12px; border-top:1px dashed var(--border); padding-top:10px;">
             <summary style="cursor:pointer; font-weight:600; color:var(--primary);">🌐 Xem bản dịch tiếng Việt</summary>

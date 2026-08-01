@@ -8,7 +8,6 @@
 
 要求：
 - 故事必须包含标题。
-- 在语境中突出显示 1-3 个目标词汇。
 - 生成 {question_count} 个问题。问题类型："detail", "inference", "vocabulary"。
 - 每个正确答案必须包含直接提取自故事中的原文引用（"evidence_quote"）。
 - 提供故事的完整越南语翻译。
@@ -19,9 +18,6 @@
     "title": "The Last Train",
     "content": "...",
     "word_count": 150,
-    "highlighted_vocab": [
-      {"word": "desperate", "meaning_vi": "tuyệt vọng", "context_meaning": "..."}
-    ],
     "full_translation": "..."
   },
   "questions": [

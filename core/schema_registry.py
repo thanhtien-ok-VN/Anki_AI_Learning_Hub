@@ -83,7 +83,6 @@ if HAS_PYDANTIC:
         title: str
         content: str
         word_count: int
-        highlighted_vocab: List[HighlightedVocab]
         full_translation: str
 
     class StoryQuestionOption(BaseModel):
@@ -284,21 +283,9 @@ RAW_DICT_SCHEMAS = {
                     "title": {"type": "STRING"},
                     "content": {"type": "STRING"},
                     "word_count": {"type": "INTEGER"},
-                    "highlighted_vocab": {
-                        "type": "ARRAY",
-                        "items": {
-                            "type": "OBJECT",
-                            "properties": {
-                                "word": {"type": "STRING"},
-                                "meaning_vi": {"type": "STRING"},
-                                "context_meaning": {"type": "STRING"}
-                            },
-                            "required": ["word", "meaning_vi", "context_meaning"]
-                        }
-                    },
                     "full_translation": {"type": "STRING"}
                 },
-                "required": ["title", "content", "word_count", "highlighted_vocab", "full_translation"]
+                "required": ["title", "content", "word_count", "full_translation"]
             },
             "questions": {
                 "type": "ARRAY",

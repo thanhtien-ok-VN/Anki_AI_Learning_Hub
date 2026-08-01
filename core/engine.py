@@ -415,7 +415,7 @@ class AIEngine:
         data.setdefault("source_lang", "vi")
         data.setdefault("target_lang", language)
         data.setdefault("word_count", 180)
-        data.setdefault("question_count", 3)
+        data.setdefault("question_count", count)
         data.setdefault("target_words", "")
         data.setdefault("focus", "grammar")
         data.setdefault("voice", "active/passive")

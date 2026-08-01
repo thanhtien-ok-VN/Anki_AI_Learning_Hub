@@ -201,21 +201,9 @@ const SCHEMAS: Record<string, any> = {
           title: { type: "string" },
           content: { type: "string" },
           word_count: { type: "integer" },
-          highlighted_vocab: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                word: { type: "string" },
-                meaning_vi: { type: "string" },
-                context_meaning: { type: "string" }
-              },
-              required: ["word", "meaning_vi", "context_meaning"]
-            }
-          },
           full_translation: { type: "string" }
         },
-        required: ["title", "content", "word_count", "highlighted_vocab", "full_translation"]
+        required: ["title", "content", "word_count", "full_translation"]
       },
       questions: {
         type: "array",
@@ -466,9 +454,6 @@ function getFallbackExercise(gamemode: string, data: any) {
         title: "Alex's Persuasive Speech",
         content,
         word_count: content.split(" ").length,
-        highlighted_vocab: [
-          { word: "articulate", meaning_vi: "diễn đạt trôi chảy, rõ ràng", context_meaning: "Cách nói rõ ràng và thu hút người nghe" }
-        ],
         full_translation: "Alex nổi tiếng với phong cách thuyết trình diễn đạt lưu loát và rõ ràng."
       },
       questions: [
