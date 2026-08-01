@@ -2911,7 +2911,16 @@ const App = (() => {
         let r;
         if (localMatch) {
           const wasHinted = state.hintedQuestions && state.hintedQuestions.has(currentRoundIdx);
-          r = { correct: !wasHinted, score: wasHinted ? 0.0 : 10.0, explanation: wasHinted ? 'Bạn đã dùng gợi ý xem đáp án.' : 'Chính xác! Bạn đã đoán đúng từ mục tiêu.' };
+          r = {
+            correct: !wasHinted,
+            score: wasHinted ? 0.0 : 10.0,
+            explanation: wasHinted ? 'Bạn đã dùng gợi ý xem đáp án.' : 'Chính xác! Bạn đã đoán đúng từ mục tiêu.',
+            guess_feedback: guessList.map(g => ({
+              guess: g,
+              accepted: g === correctWord,
+              reason_vi: g === correctWord ? (wasHinted ? 'Đoán đúng nhưng đã xem gợi ý đáp án.' : 'Chính xác! Trùng khớp hoàn toàn với đáp án mục tiêu.') : 'Không phải đáp án mục tiêu.'
+            }))
+          };
         } else {
           r=await Bridge.sendAsync('ai_grade',{
             gamemode:'taboo',
@@ -2959,30 +2968,41 @@ const App = (() => {
           html += `<p>• <b>Nhận xét:</b> ${esc(r.ai_analysis || r.explanation || r.feedback)}</p>`;
         }
         
-        if (r.accepted_phrases && r.accepted_phrases.length) {
-          html += '<hr><p><b>✅ CỤM TỪ ĐƯỢC CHẤP NHẬN:</b></p><ul>';
-          r.accepted_phrases.forEach(item => {
-            html += `<li><code>${esc(item.phrase)}</code> ➔ <i>${esc(item.explanation_vi)}</i></li>`;
-          });
-          html += '</ul>';
-        } else if (q.sample_acceptable_phrases && q.sample_acceptable_phrases.length) {
-          html += '<hr><p><b>✅ CỤM TỪ CHẤP NHẬN (MẪU):</b></p><ul>';
-          q.sample_acceptable_phrases.forEach(p => {
-            html += `<li><code>${esc(p)}</code></li>`;
+        const feedbackList = r.guess_feedback || [];
+        if (!feedbackList.length) {
+          if (r.accepted_phrases && r.accepted_phrases.length) {
+            r.accepted_phrases.forEach(item => feedbackList.push({ guess: item.phrase, accepted: true, reason_vi: item.explanation_vi }));
+          }
+          if (r.rejected_phrases && r.rejected_phrases.length) {
+            r.rejected_phrases.forEach(item => feedbackList.push({ guess: item.phrase, accepted: false, reason_vi: item.reason_vi }));
+          }
+          if (!feedbackList.length) {
+            guessList.forEach(g => {
+              const isCorrect = g === correctWord;
+              feedbackList.push({
+                guess: g,
+                accepted: isCorrect,
+                reason_vi: isCorrect ? 'Khớp đáp án mục tiêu.' : (forbidden.includes(g.toUpperCase()) ? 'Vi phạm từ cấm!' : 'Không trùng khớp hoặc không phải từ đồng nghĩa.')
+              });
+            });
+          }
+        }
+
+        const acceptedGuesses = feedbackList.filter(item => item.accepted);
+        const rejectedGuesses = feedbackList.filter(item => !item.accepted);
+
+        if (acceptedGuesses.length) {
+          html += '<hr><p><b>✅ CÁC TỪ ĐƯỢC CHẤP NHẬN:</b></p><ul>';
+          acceptedGuesses.forEach(item => {
+            html += `<li><code>${esc(item.guess)}</code> ➔ <i>${esc(item.reason_vi)}</i></li>`;
           });
           html += '</ul>';
         }
         
-        if (r.rejected_phrases && r.rejected_phrases.length) {
-          html += '<hr><p><b>❌ CỤM TỪ KHÔNG CHẤP NHẬN / BỊ CẤM:</b></p><ul>';
-          r.rejected_phrases.forEach(item => {
-            html += `<li><code>${esc(item.phrase)}</code> ➔ <span style="color:var(--error);">${esc(item.reason_vi)}</span></li>`;
-          });
-          html += '</ul>';
-        } else if (q.sample_forbidden_phrases && q.sample_forbidden_phrases.length) {
-          html += '<hr><p><b>❌ CỤM TỪ BỊ CẤM (MẪU):</b></p><ul>';
-          q.sample_forbidden_phrases.forEach(p => {
-            html += `<li><code>${esc(p)}</code></li>`;
+        if (rejectedGuesses.length) {
+          html += '<hr><p><b>❌ CÁC TỪ KHÔNG ĐƯỢC CHẤP NHẬN:</b></p><ul>';
+          rejectedGuesses.forEach(item => {
+            html += `<li><code>${esc(item.guess)}</code> ➔ <span style="color:var(--error);">${esc(item.reason_vi)}</span></li>`;
           });
           html += '</ul>';
         }

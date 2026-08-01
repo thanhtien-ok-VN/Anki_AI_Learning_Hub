@@ -139,11 +139,11 @@ Sample Forbidden/Invalid Phrases: {sample_forbidden_phrases}
 Student's Guess(es): {user_input} (which may contain multiple terms separated by commas)
 
 Task:
-1. Check if the student's guess contains any forbidden/Taboo words or variations of them. If yes, it MUST be rejected.
-2. Otherwise, check if any guess matches or is semantically close/synonymous to the Target Word. If yes, the student wins (correct=true).
-3. "accepted_phrases": List acceptable terms/synonyms of the target word with explanation in Vietnamese.
-4. "rejected_phrases": List forbidden or wrong phrases entered by the student, indicating why they are incorrect or which taboo word they violated.
-5. Explain all reviews and reasons in Vietnamese.
+1. Split the student's guesses by commas and evaluate each guessed word/phrase individually.
+2. For each guess, check if it contains any forbidden/Taboo words or variations of them. If yes, it is rejected (accepted=false), and explain which taboo word was violated.
+3. Otherwise, check if it matches or is semantically close/synonymous to the Target Word. If yes, it is accepted (accepted=true) with a positive explanation. If no, it is rejected (accepted=false) with a brief explanation why it is incorrect.
+4. Set "correct": true if AT LEAST ONE guess is accepted (accepted=true). Otherwise, set "correct": false.
+5. Explain all feedback and reasons in Vietnamese.
 
 Respond in JSON matching the exact schema below:
 {{
@@ -151,16 +151,11 @@ Respond in JSON matching the exact schema below:
     "score": 0-10,
     "ai_analysis": "Overall pedagogical feedback in Vietnamese",
     "word_definition": "Clear definition of the target word in English and Vietnamese translation",
-    "accepted_phrases": [
+    "guess_feedback": [
         {{
-            "phrase": "Guess phrase evaluated",
-            "explanation_vi": "Why this phrase is accepted"
-        }}
-    ],
-    "rejected_phrases": [
-        {{
-            "phrase": "Guess phrase evaluated",
-            "reason_vi": "Why this phrase is rejected or violates forbidden taboo words"
+            "guess": "The student's exact guess phrase",
+            "accepted": true/false,
+            "reason_vi": "Why this guess was accepted or rejected in Vietnamese"
         }}
     ]
 }}

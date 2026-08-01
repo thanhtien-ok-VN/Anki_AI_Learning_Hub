@@ -1474,9 +1474,14 @@ select.auto-filled { border-color: var(--primary); background: var(--primary-lig
 .taboo-guide-callout {
     border-left: 4px solid var(--border);
     transition: var(--transition);
+    text-align: left;
 }
 
 .taboo-guide-callout:hover {
     background: rgba(0,0,0,0.04) !important;
     border-left-color: var(--primary);
+}
+
+.taboo-card #feedback {
+    text-align: left;
 }
