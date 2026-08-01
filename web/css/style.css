@@ -1470,3 +1470,13 @@ select.auto-filled { border-color: var(--primary); background: var(--primary-lig
     padding: 0 4px;
     border-radius: 4px;
 }
+
+.taboo-guide-callout {
+    border-left: 4px solid var(--border);
+    transition: var(--transition);
+}
+
+.taboo-guide-callout:hover {
+    background: rgba(0,0,0,0.04) !important;
+    border-left-color: var(--primary);
+}

@@ -129,6 +129,7 @@ if HAS_PYDANTIC:
     class TabooRound(BaseModel):
         target_word: str
         meaning_vi: str
+        phonetic: Optional[str] = None
         taboo_words: List[str]
         clue: str
         difficulty_level: str
@@ -371,6 +372,7 @@ RAW_DICT_SCHEMAS = {
                     "properties": {
                         "target_word": {"type": "STRING"},
                         "meaning_vi": {"type": "STRING"},
+                        "phonetic": {"type": "STRING"},
                         "taboo_words": {"type": "ARRAY", "items": {"type": "STRING"}},
                         "clue": {"type": "STRING"},
                         "difficulty_level": {"type": "STRING"},

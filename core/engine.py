@@ -733,6 +733,7 @@ class AIEngine:
             prompt_data = {
                 **common,
                 "target_word": data.get("target_word", data.get("secret_word", "")),
+                "meaning_vi": data.get("meaning_vi", ""),
                 "taboo_words": data.get("taboo_words", "None"),
                 "sample_acceptable_phrases": data.get("sample_acceptable_phrases", "None"),
                 "sample_forbidden_phrases": data.get("sample_forbidden_phrases", "None"),

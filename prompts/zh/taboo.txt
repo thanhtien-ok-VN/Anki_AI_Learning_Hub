@@ -6,6 +6,7 @@
 
 要求：
 - 每个卡片定义目标单词和 5 个禁忌词（禁止在描述中使用的关联词汇）。
+- 包含目标单词的音标（IPA 格式）。
 - 用英语提供线索描述，不得使用目标词和禁忌词。
 - 越南语意思写在 `meaning_vi` 中。
 - 包含可接受和禁止的短语示例，用作 AI 评分依据。
@@ -17,6 +18,7 @@
     {
       "target_word": "Internet",
       "meaning_vi": "Mạng internet",
+      "phonetic": "/ˈɪn.tə.net/",
       "taboo_words": ["Web", "Online", "Computer", "Network", "Wifi"],
       "clue": "A global system that connects millions of devices...",
       "difficulty_level": "Medium",

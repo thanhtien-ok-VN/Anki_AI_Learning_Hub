@@ -291,6 +291,7 @@ const SCHEMAS: Record<string, any> = {
           properties: {
             target_word: { type: "string" },
             meaning_vi: { type: "string" },
+            phonetic: { type: "string" },
             taboo_words: {
               type: "array",
               items: { type: "string" }
@@ -504,6 +505,7 @@ function getFallbackExercise(gamemode: string, data: any) {
         {
           target_word: "UBIQUITOUS",
           meaning_vi: "phổ biến khắp nơi",
+          phonetic: "/juːˈbɪk.wɪ.təs/",
           taboo_words: ["EVERYWHERE", "COMMON", "FOUND", "PRESENT", "ALWAYS"],
           clue: "Describing something that seems to exist in all places at the same time, like modern technology or mobile phones.",
           difficulty_level: "Medium",
