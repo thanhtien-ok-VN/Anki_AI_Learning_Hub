@@ -50,30 +50,26 @@ class WordMatchingMode(GameModeBase):
         else:
             pairs = self.BUILTIN_PAIRS[:]
 
+        if len(pairs) < 5:
+            return {
+                "error": True,
+                "error_code": "E_NOT_ENOUGH_VOCAB",
+                "message": "Không đủ từ vựng để nối. Cần ít nhất 5 cặp từ."
+            }
+
         selected = random.sample(pairs, min(count, len(pairs)))
         game_id = str(uuid.uuid4())
-        
-        items = []
-        for i, (term, definition) in enumerate(selected):
-            pair_id = f"pair_{i+1}"
-            items.append({
-                "id": f"item_{i*2}",
-                "content": term,
-                "type": "term",
-                "pair_id": pair_id
-            })
-            items.append({
-                "id": f"item_{i*2+1}",
-                "content": definition,
-                "type": "definition",
-                "pair_id": pair_id
-            })
-            
-        random.shuffle(items)
-        
+
         return {
             "game_id": game_id,
-            "items": items,
+            "pairs": [
+                {
+                    "id": f"pair_{i+1}",
+                    "term": term,
+                    "definition": definition
+                }
+                for i, (term, definition) in enumerate(selected)
+            ],
             "config": {
                 "total_pairs": len(selected),
                 "time_limit_sec": 60

@@ -316,6 +316,10 @@ const App = (() => {
     const countLabel = id === 'matching' ? t('controls.pair_count', 'Số cặp từ') : t('controls.question_count', 'Số câu');
     const countSelect = hideCount ? '' : '<label>' + esc(countLabel) + '<select id="count">' + Array.from({ length: max - min + 1 }, (_, i) => '<option ' + ((i + min === 10 || (max < 10 && i + min === min)) ? 'selected' : '') + '>' + (i + min) + '</option>').join('') + '</select></label>';
 
+    if (id === 'matching') {
+      return '<section class="config-panel"><div class="selector-grid">' + countSelect + '</div><div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-top:12px;"><button class="btn primary" id="generate">' + esc(t('controls.generate', 'Tạo bài')) + '</button></div></section>';
+    }
+
     return '<section class="config-panel"><div class="selector-grid"><label>' + esc(t('app.language', 'Ngôn ngữ')) + '<select id="language"><option value="en">' + esc(t('app.language_en', 'English')) + '</option><option value="zh">' + esc(t('app.language_zh', '中文 (Chinese)')) + '</option></select></label><label>' + esc(t('app.level', 'Trình độ')) + '<select id="level"><option value="beginner">' + esc(t('controls.level_beginner', 'A1 Beginner')) + '</option><option value="elementary">' + esc(t('controls.level_elementary', 'A2 Elementary')) + '</option><option value="intermediate" selected>' + esc(t('controls.level_intermediate', 'B1 Intermediate')) + '</option><option value="upper_intermediate">' + esc(t('controls.level_upper_intermediate', 'B2 Upper-intermediate')) + '</option><option value="advanced">' + esc(t('controls.level_advanced', 'C1–C2 Advanced')) + '</option></select></label>' + countSelect + extra + '<label>' + esc(t('app.topic', 'Chủ đề')) + '<input id="topic" value="daily_life"></label></div><div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-top:12px;"><button class="btn primary" id="generate">' + esc(t('controls.generate', 'Tạo bài')) + '</button><button class="btn" id="cancel-gen" style="display:none; background:#ef4444; color:white; border:none; padding:10px 20px; font-weight:600;" type="button">' + esc(t('app.cancel_gen', 'Hủy tạo bài')) + '</button></div></section>';
   }
 
@@ -907,6 +911,13 @@ const App = (() => {
         if (signal.aborted) return;
       }
       if (signal.aborted) return;
+
+      if (id === 'matching' && state.pairs.length < 5) {
+        showStatus('error', t('app.matching_vocab_limit', 'Không đủ từ vựng để nối. Cần ít nhất 5 từ vựng.'));
+        setBusy(false);
+        return;
+      }
+
       let opts;
       if (optsOverride) {
         opts = optsOverride;
@@ -982,6 +993,19 @@ const App = (() => {
   /* ---- PLAY: route to renderers ---- */
   function normalizeExercise(id, x) {
     if (!x) return x;
+    if (id === 'matching' && x.items && !x.pairs) {
+      const map = {};
+      x.items.forEach(item => {
+        if (!map[item.pair_id]) map[item.pair_id] = {};
+        if (item.type === 'term') map[item.pair_id].term = item.content;
+        else if (item.type === 'definition') map[item.pair_id].definition = item.content;
+      });
+      x.pairs = Object.keys(map).map(pid => ({
+        id: pid,
+        term: map[pid].term,
+        definition: map[pid].definition
+      }));
+    }
     if (id === 'unscramble' && x.sentences && !x.questions) {
       x.questions = x.sentences;
       delete x.sentences;
