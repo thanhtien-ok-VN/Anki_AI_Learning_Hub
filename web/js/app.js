@@ -168,10 +168,6 @@ const App = (() => {
     while (activeIntervals.length > 0) {
       clearInterval(activeIntervals.pop());
     }
-    if (window._activeMatchingTimer) {
-      clearInterval(window._activeMatchingTimer);
-      window._activeMatchingTimer = null;
-    }
   };
 
   const statusState = { key: '', shownAt: 0 };
@@ -905,6 +901,7 @@ const App = (() => {
   async function generate(id, optsOverride){
     const signal = getSignal();
     try {
+      disposeCurrentGame();
       if (!optsOverride) resetGameState(id);
       setBusy(true);
       if(!state.pairs.length && !optsOverride && !await sample()) {
