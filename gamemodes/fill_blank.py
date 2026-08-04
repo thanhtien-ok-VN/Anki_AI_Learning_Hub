@@ -36,7 +36,7 @@ class FillBlankMode(GameModeBase):
             rendered_questions.append({
                 "sentence": q.get("sentence", ""),
                 "target_word": q.get("target_word", ""),
-                "meaning_vi": q.get("meaning_vi", ""),
+                "meaning": q.get("meaning", q.get("meaning_vi", "")),
                 "full_translation": q.get("full_translation", ""),
                 "options": shuffled_options,
                 "correct_index": correct_index,

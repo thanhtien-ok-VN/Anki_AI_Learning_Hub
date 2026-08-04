@@ -1,4 +1,4 @@
-Generate a word matching game (English terms to Vietnamese definitions).
+Generate a word matching game ({learn_lang} terms to {ui_lang} definitions).
 Topic: {topic}
 Pairs: {num_pairs}
 
@@ -7,6 +7,7 @@ MANDATORY: The entire content MUST revolve around the topic "{topic}".
 CRITICAL LOGIC RULE:
 - Generate an array of flattened items. 
 - Do NOT nest the term and definition. 
+- Terms (left column) MUST be in {learn_lang}. Definitions (right column) MUST be in {ui_lang}.
 - Use a shared `pair_id` (e.g., "pair_1") to link the matching term and definition. 
 - DO NOT include any `is_correct` flags.
 - Shuffle the order of the items in the output array so terms and definitions are mixed.
@@ -17,8 +18,8 @@ Output raw JSON only, no markdown formatting.
   "items": [
     {"id": "item_1", "content": "Apple", "type": "term", "pair_id": "pair_1"},
     {"id": "item_2", "content": "Banana", "type": "term", "pair_id": "pair_2"},
-    {"id": "item_3", "content": "Quả táo", "type": "definition", "pair_id": "pair_1"},
-    {"id": "item_4", "content": "Quả chuối", "type": "definition", "pair_id": "pair_2"}
+    {"id": "item_3", "content": "[definition in {ui_lang}]", "type": "definition", "pair_id": "pair_1"},
+    {"id": "item_4", "content": "[definition in {ui_lang}]", "type": "definition", "pair_id": "pair_2"}
   ],
   "config": { "total_pairs": 2, "time_limit_sec": 60 },
   "metadata": { "topic": "{topic}", "level": "{level}" }

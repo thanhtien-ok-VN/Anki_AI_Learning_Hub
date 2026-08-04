@@ -1,26 +1,26 @@
-Generate a fill-in-the-blank English exercise for a Vietnamese learner.
+Generate a fill-in-the-blank exercise for a {learn_lang} learner.
 Difficulty: {level_instruction}
 Topic: {topic}
 
 MANDATORY: The entire content MUST revolve around the topic "{topic}".
 
 Requirements:
-- Create exactly {count} fill-in-the-blank sentences. Each with ONE missing word (_____).
-- Place the blank (_____) in various positions (beginning, middle, end) of sentences, not just in the middle.
-- Vary the grammatical roles of the missing words (e.g., verbs, nouns, adjectives, adverbs, phrasal verbs, prepositions) across different sentences.
+- Create exactly {count} fill-in-the-blank sentences in {learn_lang}. Each with ONE missing word (_____). 
+- Place the blank (_____) in various positions (beginning, middle, end) of sentences.
+- Vary the grammatical roles of the missing words (verbs, nouns, adjectives, adverbs, phrasal verbs, prepositions).
 - Vary the sentence structures (active/passive voice, conditionals, relative clauses, perfect tenses, comparisons, modal verbs).
-- Provide exactly 4 options per sentence. The 3 distractors MUST be chosen from at least 2 different types in the pool below, and you MUST change the distractor type combinations across sentences (do not use the same combination for all sentences):
+- Provide exactly 4 options per sentence. The 3 distractors MUST be chosen from at least 2 different types in the pool below, and vary combinations across sentences:
   + correct (the correct word)
-  + antonym (trái nghĩa)
-  + synonym / near_synonym (từ đồng nghĩa/gần nghĩa nhưng không phù hợp sắc thái)
-  + different_word_class (cùng gốc từ nhưng khác từ loại, vd: adj/noun/verb/adv)
-  + wrong_tense (đúng từ nhưng sai thì)
-  + wrong_verb_form (sai dạng động từ, vd: V-ing/V3/V-inf)
-  + collocation_error (sai kết hợp từ)
-  + wrong_context / semantic_close (sai ngữ cảnh)
-  + related_word (từ liên quan cùng chủ đề nhưng sai nghĩa hoàn toàn)
+  + antonym
+  + synonym / near_synonym
+  + different_word_class
+  + wrong_tense
+  + wrong_verb_form
+  + collocation_error
+  + wrong_context / semantic_close
+  + related_word
 - Explain thoroughly why the correct answer fits and why distractors are wrong.
-- All explanations MUST be in Vietnamese.
+- All explanations and meanings MUST be in {ui_lang}.
 
 Output raw JSON only, no markdown formatting.
 
@@ -29,16 +29,16 @@ Output raw JSON only, no markdown formatting.
     {
       "sentence": "The project was ______ due to lack of funding.",
       "target_word": "abandoned",
-      "meaning_vi": "bị bỏ dở",
-      "full_translation": "Dự án đã bị bỏ dở do thiếu kinh phí.",
+      "meaning": "[meaning of target word in {ui_lang}]",
+      "full_translation": "[full sentence translation in {ui_lang}]",
       "options": [
-        {"word": "abandoned", "is_correct": true, "type": "correct", "reason": "..."},
-        {"word": "continued", "is_correct": false, "type": "antonym", "reason": "..."},
-        {"word": "abandoning", "is_correct": false, "type": "wrong_verb_form", "reason": "..."},
-        {"word": "lost", "is_correct": false, "type": "wrong_context", "reason": "..."}
+        {"word": "abandoned", "is_correct": true, "type": "correct", "reason": "[reason in {ui_lang}]"},
+        {"word": "continued", "is_correct": false, "type": "antonym", "reason": "[reason in {ui_lang}]"},
+        {"word": "abandoning", "is_correct": false, "type": "wrong_verb_form", "reason": "[reason in {ui_lang}]"},
+        {"word": "lost", "is_correct": false, "type": "wrong_context", "reason": "[reason in {ui_lang}]"}
       ],
-      "explanation": "...",
-      "grammar_note": "..."
+      "explanation": "[detailed explanation in {ui_lang}]",
+      "grammar_note": "[grammar note in {ui_lang}]"
     }
   ]
 }

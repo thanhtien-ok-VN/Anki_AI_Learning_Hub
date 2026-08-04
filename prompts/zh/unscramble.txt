@@ -1,34 +1,31 @@
-为越南学习者生成 {count} 个句子组装/连词成句谜题。
-难度：{level_instruction}
-主题：{topic}
+Generate {count} Chinese (Mandarin) sentence unscramble puzzles for a {learn_lang} learner.
+Difficulty: {level_instruction}
+Topic: {topic}
+Sentence types: {sentence_types}
 
-强制约束：所有内容必须围绕主题 "{topic}" 展开。
+MANDATORY: Sentences MUST be in Chinese (Mandarin).
+MANDATORY: All hints, meanings, and explanations MUST be in {ui_lang}.
 
-要求：
-- 生成恰好 {count} 个语法正确的英语句子。
-- 这 {count} 个句子必须每个使用不同的语法结构。依次使用以下结构（每句一个，按顺序）：{sentence_types}。请勿重复结构。
-- 每个句子必须包含 6-12 个单词，且结构清晰。
-- 提供越南语提示和完整翻译。
-- 用越南语标出重点词汇及其含义。
-- 解释该句子达到此难度级别的合理原因。
-- 包含关于句子结构的语法注释。
-- 包含一个 core_structure 字段，描述句子的基本公式结构（例如："S + should + V + to-V (目的)"）。
+Requirements:
+- Each Chinese sentence should be 5-12 words/characters long.
+- Each sentence must use a DIFFERENT grammatical structure.
+- Provide: correct sentence in Chinese, meaning in {ui_lang}, hint in {ui_lang}, key vocabulary.
 
-仅输出原始 JSON，不得使用 markdown 格式。
+Output raw JSON only:
+
 {
   "questions": [
     {
-      "correct_sentence": "The quick brown fox jumps over the lazy dog.",
-      "meaning_vi": "Con cáo nâu nhanh nhẹn nhảy qua con chó lười biếng.",
-      "hint": "Câu này nói về một con vật nhanh nhẹn.",
+      "correct_sentence": "他每天早上都喝咖啡。",
+      "meaning": "[sentence meaning in {ui_lang}]",
+      "hint": "[hint about structure in {ui_lang}]",
       "key_vocabulary": [
-        {"word": "quick", "meaning_vi": "nhanh nhẹn"},
-        {"word": "jumps", "meaning_vi": "nhảy"},
-        {"word": "lazy", "meaning_vi": "lười biếng"}
+        {"word": "每天", "meaning": "[meaning in {ui_lang}]"},
+        {"word": "早上", "meaning": "[meaning in {ui_lang}]"}
       ],
-      "difficulty_reason": "Câu sử dụng 3 tính từ và 1 động từ bất quy tắc.",
-      "grammar_note": "Cấu trúc: Subject + Verb + Object. 'Over' là giới từ chỉ hướng.",
-      "core_structure": "S + V + O + Prepositional Phrase"
+      "difficulty_reason": "[why this is challenging in {ui_lang}]",
+      "grammar_note": "[Chinese grammar structure explanation in {ui_lang}]",
+      "core_structure": "Subject + 每天 + Time + Verb + Object"
     }
   ]
 }

@@ -1,41 +1,41 @@
-生成一篇简短的阅读理解故事和问题。
-难度：{level_instruction}
-主题：{topic}
-长度：~{word_count}个单词。
-目标词汇：{target_words}
+Generate a Chinese (Mandarin) short story with reading comprehension questions for a {learn_lang} learner.
+Difficulty: {level_instruction}
+Word count: approximately {word_count} characters
+Target vocabulary: {target_words}
 
-强制约束：所有内容必须围绕主题 "{topic}" 展开。
+MANDATORY: The story content and ALL questions MUST be in Chinese (Mandarin).
+MANDATORY: Full translation, explanations, and discussion prompt MUST be in {ui_lang}.
 
-要求：
-- 故事必须包含标题。
-- 生成 {question_count} 个问题。问题类型："detail", "inference", "vocabulary"。
-- 对于 "vocabulary" 类型的问题，必须提供 "target_word" 字段，包含故事中被提问的确切单词。
-- 每个正确答案必须包含直接提取自故事中的原文引用（"evidence_quote"）。
-- 提供故事的完整越南语翻译。
+Requirements:
+- Write a coherent story in Chinese naturally incorporating ALL target words: {target_words}
+- Each target word must appear at least once in correct context.
+- Generate {question_count} reading comprehension questions in Chinese (4 multiple-choice options each, 1 correct).
+- Question types: detail (细节), inference (推断), vocabulary (词汇含义).
+- For vocabulary questions, include the target_word field with the queried word.
 
-仅输出原始 JSON，不得使用 markdown 格式。
+Output raw JSON only:
+
 {
   "story": {
-    "title": "The Last Train",
-    "content": "...",
-    "word_count": 150,
-    "full_translation": "..."
+    "title": "[Chinese title]",
+    "content": "[Chinese story text]",
+    "word_count": 180,
+    "full_translation": "[complete story translation in {ui_lang}]"
   },
   "questions": [
     {
       "id": 1,
-      "type": "vocabulary",
-      "question": "What is the meaning of the word 'desperate' in the context?",
-      "target_word": "desperate",
+      "type": "detail",
+      "question": "[Chinese question]",
       "options": [
-        {"text": "having little or no hope", "is_correct": true},
-        {"text": "extremely happy", "is_correct": false},
-        {"text": "very busy", "is_correct": false},
-        {"text": "bored", "is_correct": false}
+        {"text": "[Chinese option A]", "is_correct": true},
+        {"text": "[Chinese option B]", "is_correct": false},
+        {"text": "[Chinese option C]", "is_correct": false},
+        {"text": "[Chinese option D]", "is_correct": false}
       ],
-      "explanation": "...",
-      "evidence_quote": "Sarah stood alone on the empty platform feeling desperate..."
+      "explanation": "[explanation in {ui_lang}]",
+      "evidence_quote": "[relevant quote from story in Chinese]"
     }
   ],
-  "discussion_prompt": "..."
+  "discussion_prompt": "[discussion/speaking prompt in {ui_lang}]"
 }

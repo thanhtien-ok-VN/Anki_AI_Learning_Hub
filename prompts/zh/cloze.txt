@@ -1,32 +1,31 @@
-为越南学习者生成一个完形填空测试（段落缺失单词）。
-难度：{level_instruction}
-长度：~50-80个单词。
-空格数量：{num_blanks}
-主题：{topic}
+Generate a Chinese (Mandarin) Cloze test (paragraph with missing words) for a {learn_lang} learner.
+Difficulty: {level_instruction}
+Topic: {topic}
 
-强制约束：所有内容必须围绕主题 "{topic}" 展开。
+MANDATORY: The paragraph MUST be written in Chinese (Mandarin).
+MANDATORY: All hints, translations, and explanations MUST be in {ui_lang}.
 
-要求：
-- 段落必须是一篇连贯的文本。按出现顺序将缺失的单词替换为 [BLANK_1]，[BLANK_2] 等。
-- 关键约束：空格的正确答案（answer）必须完全且恰好是这几个词，每个词仅使用一次：{blank_words}。编写一篇自然包含所有这些词的连贯段落。
-- 不需要提供任何干扰项（distractors）。
-- 使用越南语提供提示和解释。
+Requirements:
+- Write a coherent Chinese paragraph ({paragraph_min_words}-{paragraph_max_words} characters).
+- Remove exactly {num_blanks} words: {blank_words}.
+- The blank answers MUST be EXACTLY these words, each used exactly once.
+- Replace each removed word with [BLANK_N] placeholder in the paragraph.
+- Provide meanings, hints, and full translation.
 
-仅输出原始 JSON，不得使用 markdown 格式。
+Output raw JSON only:
 
 {
-  "paragraph": "Yesterday, John went to the [BLANK_1] to buy some [BLANK_2]...",
+  "paragraph": "昨天，李明去___买东西...",
   "blanks": [
     {
       "id": "BLANK_1",
-      "answer": "market",
-      "meaning_vi": "chợ",
-      "hint": "Nơi mua bán thực phẩm",
-      "distractors": [],
-      "explanation": "..."
+      "answer": "超市",
+      "meaning": "[meaning in {ui_lang}]",
+      "hint": "[hint in {ui_lang}]",
+      "explanation": "[explanation in {ui_lang}]"
     }
   ],
-  "full_solution_text": "Yesterday, John went to the market to buy some...",
-  "story_translation": "Hôm qua, John đã đi chợ để mua...",
-  "context_summary": "Một đoạn văn kể về chuyến đi mua sắm của John."
+  "full_solution_text": "[complete paragraph in Chinese with all blanks filled]",
+  "story_translation": "[full paragraph translation in {ui_lang}]",
+  "context_summary": "[brief summary in {ui_lang}]"
 }

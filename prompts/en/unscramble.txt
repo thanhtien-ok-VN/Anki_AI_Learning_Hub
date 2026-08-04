@@ -1,15 +1,15 @@
-Generate {count} sentence unscramble puzzles for a Vietnamese learner.
+Generate {count} sentence unscramble puzzles for a {learn_lang} learner.
 Difficulty: {level_instruction}
 Topic: {topic}
 
 MANDATORY: The entire content MUST revolve around the topic "{topic}".
 
 Requirements:
-- Generate exactly {count} grammatically correct English sentences.
+- Generate exactly {count} grammatically correct {learn_lang} sentences.
 - The {count} sentences MUST each use a DIFFERENT grammatical structure. Use these structures (one per sentence, in order): {sentence_types}. Do NOT repeat structures.
 - Each sentence must have 6-12 words with clear structure.
-- Provide a Vietnamese hint and full translation.
-- Highlight key vocabulary with Vietnamese meanings.
+- Provide a {ui_lang} hint and full translation in {ui_lang}.
+- Highlight key vocabulary with {ui_lang} meanings.
 - Explain why this sentence has the difficulty level it has.
 - Include a grammar note about the sentence structure.
 - Include a core_structure field describing the fundamental sentence formula (e.g., "S + should + V + to-V (purpose)").
@@ -19,15 +19,15 @@ Output raw JSON only, no markdown formatting.
   "questions": [
     {
       "correct_sentence": "The quick brown fox jumps over the lazy dog.",
-      "meaning_vi": "Con cáo nâu nhanh nhẹn nhảy qua con chó lười biếng.",
-      "hint": "Câu này nói về một con vật nhanh nhẹn.",
+      "meaning": "[meaning in {ui_lang}]",
+      "hint": "[hint in {ui_lang}]",
       "key_vocabulary": [
-        {"word": "quick", "meaning_vi": "nhanh nhẹn"},
-        {"word": "jumps", "meaning_vi": "nhảy"},
-        {"word": "lazy", "meaning_vi": "lười biếng"}
+        {"word": "quick", "meaning": "[meaning in {ui_lang}]"},
+        {"word": "jumps", "meaning": "[meaning in {ui_lang}]"},
+        {"word": "lazy", "meaning": "[meaning in {ui_lang}]"}
       ],
-      "difficulty_reason": "Câu sử dụng 3 tính từ và 1 động từ bất quy tắc.",
-      "grammar_note": "Cấu trúc: Subject + Verb + Object. 'Over' là giới từ chỉ hướng.",
+      "difficulty_reason": "[difficulty reason in {ui_lang}]",
+      "grammar_note": "[grammar note in {ui_lang}]",
       "core_structure": "S + V + O + Prepositional Phrase"
     }
   ]

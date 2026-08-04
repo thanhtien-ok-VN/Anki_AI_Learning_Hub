@@ -1,20 +1,21 @@
-Generate a Vietnamese to English translation exercise.
+Generate a {source_lang} to {target_lang} translation exercise.
 Sentence complexity: {level_instruction}
 Topic: {topic}
 
 Requirements:
 - The exercise MUST revolve around the topic "{topic}".
 - The sentence MUST use this grammatical type: {sentence_type}. Do NOT use any other sentence structure. Keep the meaning natural and appropriate for the topic and level.
-- Focus on common mistakes made by Vietnamese learners (tense, pluralization, articles, word order, prepositions).
+- Focus on common mistakes made by {learn_lang} learners (tense, pluralization, articles, word order, prepositions).
 - Provide the reference translation and alternative correct versions.
+- All grammar notes, rubric, and explanations in {ui_lang}.
 
 Output raw JSON only, no markdown formatting.
 {
-  "source_sentence": "Tôi đã định đi chơi nhưng trời mưa.",
-  "target_language": "en",
-  "reference_translation": "I intended to go out, but it rained.",
+  "source_sentence": "[sentence in {source_lang}]",
+  "target_language": "{target_lang}",
+  "reference_translation": "[correct translation in {target_lang}]",
   "alternative_translations": [
-    {"text": "I planned to go out, but it was raining.", "note": "..."}
+    {"text": "[alternative translation in {target_lang}]", "note": "[note in {ui_lang}]"}
   ],
-  "grading_rubric": "..."
+  "grading_rubric": "[grading rubric in {ui_lang}]"
 }

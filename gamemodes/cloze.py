@@ -19,7 +19,7 @@ class ClozeMode(GameModeBase):
             blanks.append({
                 "id": b.get("id", f"BLANK_{i+1}"),
                 "answer": b.get("answer", ""),
-                "meaning_vi": b.get("meaning_vi", ""),
+                "meaning": b.get("meaning", b.get("meaning_vi", "")),
                 "hint": b.get("hint", ""),
                 "options": shuffled,
                 "correct_index": correct_idx,

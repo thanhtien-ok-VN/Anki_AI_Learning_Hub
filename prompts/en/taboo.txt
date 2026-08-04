@@ -8,7 +8,8 @@ Requirements:
 - For each card define the target word and 5 taboo words (highly related words that cannot be used).
 - Include a phonetic IPA transcription of the target word.
 - Provide a clue description explaining the target word without using the taboo words.
-- Include sample acceptable and forbidden phrases to guide the AI Grader.
+- Include sample acceptable and forbidden phrases to guide the AI Grader (phrases in {learn_lang}).
+- All meanings and explanations in {ui_lang}. Taboo content (target word, taboo words, clue) in {learn_lang}.
 
 Output raw JSON only, no markdown formatting.
 
@@ -16,13 +17,13 @@ Output raw JSON only, no markdown formatting.
   "rounds": [
     {
       "target_word": "Internet",
-      "meaning_vi": "Mạng internet",
+      "meaning": "[meaning in {ui_lang}]",
       "phonetic": "/ˈɪn.tə.net/",
       "taboo_words": ["Web", "Online", "Computer", "Network", "Wifi"],
       "clue": "A global system that connects millions of devices...",
       "difficulty_level": "Medium",
-      "sample_acceptable_phrases": ["Hệ thống toàn cầu", "Kết nối không dây"],
-      "sample_forbidden_phrases": ["Mạng máy tính", "Lướt web"]
+      "sample_acceptable_phrases": ["Global system", "Wireless connection"],
+      "sample_forbidden_phrases": ["Computer network", "Surf web"]
     }
   ]
 }

@@ -1,12 +1,12 @@
 import json
 import os
 
-GLOBAL_SYSTEM_INSTRUCTION = """You are an expert English teacher and curriculum designer.
+GLOBAL_SYSTEM_INSTRUCTION = """You are an expert language teacher and curriculum designer.
 CRITICAL RULES:
 1. You MUST output ONLY valid, raw JSON.
 2. DO NOT wrap the JSON in markdown code blocks (no ```json ... ```).
 3. DO NOT output any text before or after the JSON.
-4. All explanations must be deeply pedagogical, helping Vietnamese learners understand the "WHY" behind correct and incorrect answers."""
+4. All explanations must be deeply pedagogical, helping learners understand the "WHY" behind correct and incorrect answers."""
 
 
 class PromptManager:

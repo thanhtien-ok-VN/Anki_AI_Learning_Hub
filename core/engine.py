@@ -82,8 +82,8 @@ DEFAULT_SETTINGS = {
     "api_key3": "",
     "model": "auto",
     "temperature": 0.7,
-    "ui_lang": "vi",
-    "learn_lang": "en",
+    "ui_lang": "en",
+    "learn_lang": "",
     "window_width": 960,
     "window_height": 700,
 }
@@ -412,7 +412,7 @@ class AIEngine:
         data.setdefault("paragraph_min_words", 80)
         data.setdefault("paragraph_max_words", 140)
         data.setdefault("num_blanks", min(5, int(count)))
-        data.setdefault("source_lang", "vi")
+        data.setdefault("source_lang", self.settings.get("ui_lang", "en"))
         data.setdefault("target_lang", language)
         data.setdefault("word_count", 180)
         data.setdefault("question_count", count)
@@ -456,6 +456,8 @@ class AIEngine:
         prompt_data = dict(data)
         for key in ("gamemode", "language", "level", "topic", "count", "vocab_pairs"):
             prompt_data.pop(key, None)
+        prompt_data["ui_lang"] = self.settings.get("ui_lang", "en")
+        prompt_data["feedback_lang"] = self.settings.get("ui_lang", "en")
         prompt = prompt_mgr.get_prompt(
             gamemode=gamemode,
             language=language,
@@ -539,7 +541,7 @@ class AIEngine:
                             if term == target or (len(term) > 3 and term in target) or (len(target) > 3 and target in term):
                                 matched_def = defn
                                 break
-                    q["user_definition"] = matched_def if matched_def else q.get("meaning_vi", "")
+                    q["user_definition"] = matched_def if matched_def else q.get("meaning", q.get("meaning_vi", ""))
 
         if gamemode == "cloze" and not result.get("error"):
             blanks = result.get("blanks", [])
@@ -670,17 +672,17 @@ class AIEngine:
 
 
     def _handle_set_ui_lang(self, data: dict) -> dict:
-        lang = data.get("lang", "vi")
+        lang = data.get("lang", "en")
         self.settings.set("ui_lang", lang)
         log.info(f"UI language set to: {lang}")
         return {"lang": lang}
 
     def _handle_get_ui_lang(self, data: dict = None) -> dict:
-        lang = self.settings.get("ui_lang", "vi")
+        lang = self.settings.get("ui_lang", "en")
         return {"lang": lang}
 
     def _handle_get_ui_strings(self, data: dict = None) -> dict:
-        lang = self.settings.get("ui_lang", "vi")
+        lang = self.settings.get("ui_lang", "en")
         from core.i18n import load_strings
 
         strings = load_strings(lang)
@@ -689,16 +691,17 @@ class AIEngine:
     def _handle_ai_grade(self, data: dict) -> dict:
         gamemode = data.get("gamemode", "fill_blank")
         learn_lang = self.settings.get("learn_lang", "en")
+        ui_lang = self.settings.get("ui_lang", "en")
         level = data.get("level", "intermediate")
 
         from core.ai_grader import get_grader_prompt
 
-        common = {"learn_lang": learn_lang, "level": level}
+        common = {"learn_lang": learn_lang, "level": level, "feedback_lang": ui_lang}
         if gamemode == "fill_blank":
             prompt_data = {
                 **common,
                 "target_word": data.get("target_word", ""),
-                "meaning_vi": data.get("meaning_vi", ""),
+                "meaning": data.get("meaning", data.get("meaning_vi", "")),
                 "question": data.get("question", ""),
                 "expected": data.get("expected", data.get("target_word", "")),
                 "user_answer": data.get("user_answer", ""),
@@ -706,7 +709,7 @@ class AIEngine:
         elif gamemode == "translation":
             prompt_data = {
                 **common,
-                "source_lang": "Vietnamese",
+                "source_lang": ui_lang,
                 "target_lang": learn_lang,
                 "source_sentence": data.get("source_sentence", data.get("source_text", "")),
                 "reference_translation": data.get("reference_translation", data.get("expected", "")),
@@ -733,7 +736,7 @@ class AIEngine:
             prompt_data = {
                 **common,
                 "target_word": data.get("target_word", data.get("secret_word", "")),
-                "meaning_vi": data.get("meaning_vi", ""),
+                "meaning": data.get("meaning", data.get("meaning_vi", "")),
                 "taboo_words": data.get("taboo_words", "None"),
                 "sample_acceptable_phrases": data.get("sample_acceptable_phrases", "None"),
                 "sample_forbidden_phrases": data.get("sample_forbidden_phrases", "None"),

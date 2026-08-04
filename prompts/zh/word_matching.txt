@@ -1,24 +1,19 @@
-生成词汇匹配游戏（中文/英文词汇对应越南语释义）。
-主题：{topic}
-配对数量：{num_pairs}
+Generate a word matching game with Chinese (Mandarin) terms matched to {ui_lang} definitions for a {learn_lang} learner.
+Difficulty: {level_instruction}
+Topic: {topic}
 
-强制约束：所有内容必须围绕主题 "{topic}" 展开。
+MANDATORY: Terms (left column) MUST be in Chinese (Mandarin).
+MANDATORY: Definitions (right column) MUST be in {ui_lang}.
 
-核心规则：
-- 生成平铺的项目数组。
-- 使用共享的 `pair_id`（例如 "pair_1"）连接匹配的词汇和释义。
-- 不要包含 `is_correct` 标志。
-- 打乱输出数组中项目的顺序。
+Generate exactly {count} matching pairs. Each item must have a unique id and pair_id linking term to definition.
 
-仅输出原始 JSON，不得使用 markdown 格式。
+Output raw JSON only:
+
 {
-  "game_id": "uuid_random_string",
   "items": [
-    {"id": "item_1", "content": "Apple", "type": "term", "pair_id": "pair_1"},
-    {"id": "item_2", "content": "Banana", "type": "term", "pair_id": "pair_2"},
-    {"id": "item_3", "content": "Quả táo", "type": "definition", "pair_id": "pair_1"},
-    {"id": "item_4", "content": "Quả chuối", "type": "definition", "pair_id": "pair_2"}
-  ],
-  "config": { "total_pairs": 2, "time_limit_sec": 60 },
-  "metadata": { "topic": "{topic}", "level": "{level}" }
+    {"id": "item_1", "content": "苹果", "type": "term", "pair_id": "pair_1"},
+    {"id": "item_2", "content": "香蕉", "type": "term", "pair_id": "pair_2"},
+    {"id": "item_3", "content": "[definition of 苹果 in {ui_lang}]", "type": "definition", "pair_id": "pair_1"},
+    {"id": "item_4", "content": "[definition of 香蕉 in {ui_lang}]", "type": "definition", "pair_id": "pair_2"}
+  ]
 }

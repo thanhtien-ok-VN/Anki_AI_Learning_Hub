@@ -11,7 +11,8 @@ Requirements:
 - Generate {question_count} questions. Question types: "detail", "inference", "vocabulary".
 - For "vocabulary" type questions, you MUST provide a "target_word" field containing the exact word from the story being questioned.
 - EVERY correct answer MUST include an "evidence_quote" extracted directly from the story.
-- Provide full Vietnamese translation of the story.
+- Provide full translation in {ui_lang} of the story.
+- Story content and questions MUST be in {learn_lang}. Translation and discussion prompt MUST be in {ui_lang}.
 
 Output raw JSON only, no markdown formatting.
 {
@@ -19,7 +20,7 @@ Output raw JSON only, no markdown formatting.
     "title": "The Last Train",
     "content": "...",
     "word_count": 150,
-    "full_translation": "..."
+    "full_translation": "[story translation in {ui_lang}]"
   },
   "questions": [
     {
@@ -33,9 +34,9 @@ Output raw JSON only, no markdown formatting.
         {"text": "very busy", "is_correct": false},
         {"text": "bored", "is_correct": false}
       ],
-      "explanation": "...",
+      "explanation": "[explanation in {ui_lang}]",
       "evidence_quote": "Sarah stood alone on the empty platform feeling desperate..."
     }
   ],
-  "discussion_prompt": "..."
+  "discussion_prompt": "[discussion prompt in {ui_lang}]"
 }

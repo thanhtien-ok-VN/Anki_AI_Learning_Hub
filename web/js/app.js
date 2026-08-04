@@ -7,6 +7,13 @@ const App = (() => {
       const p = localStorage.getItem(PFX + 'prefs');
       if (p) Object.assign(state.userPrefs, JSON.parse(p));
     } catch (e) {}
+    // Restore ui_lang
+    try {
+      const savedUiLang = localStorage.getItem('ai_learning_hub_prefs_ui_lang');
+      if (savedUiLang && typeof Utils !== 'undefined') {
+        Utils.currentLang = savedUiLang;
+      }
+    } catch(e) {}
   }
 
   function loadMatchingStats() {
@@ -286,7 +293,7 @@ const App = (() => {
   };
   const shell = body => {
     state.busy = false;
-    root.innerHTML = `<div class="timer-bar"><span class="timer-label">${esc(t('app.title', 'AI Learning Hub'))}</span><span id="busy-label"></span><button id="close-hub" aria-label="${esc(t('app.close_hub', 'Đóng Hub'))}">${esc(t('app.close_hub', 'Đóng Hub'))}</button></div>${body}<div id="loading" class="loading-overlay" hidden><div class="spinner"></div><span id="loading-text">${esc(t('app.processing', 'Đang xử lý…'))}</span><button id="loading-cancel-btn" class="btn" style="margin-top:16px; background:#ef4444; color:white; border:none; padding:8px 20px; border-radius:6px; font-weight:600; cursor:pointer;" type="button">${esc(t('app.cancel_gen', 'Hủy tạo bài'))}</button></div>`;
+    root.innerHTML = `<div class="timer-bar"><span class="timer-label">${esc(t('app.title', 'AI Learning Hub'))}</span><span id="busy-label"></span><button id="ui-lang-btn" class="btn btn-outline" style="padding:4px 10px; font-size:0.82rem; margin-right:4px;" title="${esc(t('app.ui_lang_label', 'Giao diện'))}">${esc(t('app.ui_lang_label', 'Giao diện'))}: <span id="ui-lang-display">${esc((typeof Utils !== 'undefined' && Utils.currentLang) || 'en')}</span></button><button id="close-hub" aria-label="${esc(t('app.close_hub', 'Đóng Hub'))}">${esc(t('app.close_hub', 'Đóng Hub'))}</button></div>${body}<div id="loading" class="loading-overlay" hidden><div class="spinner"></div><span id="loading-text">${esc(t('app.processing', 'Đang xử lý…'))}</span><button id="loading-cancel-btn" class="btn" style="margin-top:16px; background:#ef4444; color:white; border:none; padding:8px 20px; border-radius:6px; font-weight:600; cursor:pointer;" type="button">${esc(t('app.cancel_gen', 'Hủy tạo bài'))}</button></div>`;
     document.querySelector('#loading').hidden = true;
   };
 
@@ -358,7 +365,7 @@ const App = (() => {
       return '<section class="config-panel"><div class="selector-grid">' + countSelect + '</div><div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-top:12px;"><button class="btn primary" id="generate">' + esc(t('controls.generate', 'Tạo bài')) + '</button></div></section>';
     }
 
-    return '<section class="config-panel"><div class="selector-grid"><label>' + esc(t('app.language', 'Ngôn ngữ')) + '<select id="language"><option value="en">' + esc(t('app.language_en', 'English')) + '</option><option value="zh">' + esc(t('app.language_zh', '中文 (Chinese)')) + '</option></select></label><label>' + esc(t('app.level', 'Trình độ')) + '<select id="level"><option value="beginner">' + esc(t('controls.level_beginner', 'A1 Beginner')) + '</option><option value="elementary">' + esc(t('controls.level_elementary', 'A2 Elementary')) + '</option><option value="intermediate" selected>' + esc(t('controls.level_intermediate', 'B1 Intermediate')) + '</option><option value="upper_intermediate">' + esc(t('controls.level_upper_intermediate', 'B2 Upper-intermediate')) + '</option><option value="advanced">' + esc(t('controls.level_advanced', 'C1–C2 Advanced')) + '</option></select></label>' + countSelect + extra + '<label>' + esc(t('app.topic', 'Chủ đề')) + '<input id="topic" value="daily_life"></label></div><div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-top:12px;"><button class="btn primary" id="generate">' + esc(t('controls.generate', 'Tạo bài')) + '</button><button class="btn" id="cancel-gen" style="display:none; background:#ef4444; color:white; border:none; padding:10px 20px; font-weight:600;" type="button">' + esc(t('app.cancel_gen', 'Hủy tạo bài')) + '</button></div></section>';
+    return '<section class="config-panel"><div class="selector-grid"><label>' + esc(t('app.language', 'Ngôn ngữ học')) + '<select id="language"><option value="">' + esc(t('controls.select_lang', '-- Chọn ngôn ngữ --')) + '</option><option value="en">' + esc(t('app.language_en', 'English')) + '</option><option value="zh">' + esc(t('app.language_zh', '中文 (Chinese)')) + '</option></select></label><label>' + esc(t('app.level', 'Trình độ')) + '<select id="level"><option value="beginner">' + esc(t('controls.level_beginner', 'A1 Beginner')) + '</option><option value="elementary">' + esc(t('controls.level_elementary', 'A2 Elementary')) + '</option><option value="intermediate" selected>' + esc(t('controls.level_intermediate', 'B1 Intermediate')) + '</option><option value="upper_intermediate">' + esc(t('controls.level_upper_intermediate', 'B2 Upper-intermediate')) + '</option><option value="advanced">' + esc(t('controls.level_advanced', 'C1–C2 Advanced')) + '</option></select></label>' + countSelect + extra + '<label>' + esc(t('app.topic', 'Chủ đề')) + '<input id="topic" value="daily_life"></label></div><div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-top:12px;"><button class="btn primary" id="generate">' + esc(t('controls.generate', 'Tạo bài')) + '</button><button class="btn" id="cancel-gen" style="display:none; background:#ef4444; color:white; border:none; padding:10px 20px; font-weight:600;" type="button">' + esc(t('app.cancel_gen', 'Hủy tạo bài')) + '</button></div></section>';
   }
 
   function game() {
@@ -400,7 +407,7 @@ const App = (() => {
     if (histBtn) {
       if (g[0] === 'matching') {
         histBtn.style.display = 'inline-flex';
-        histBtn.textContent = '📊 Thống kê';
+        histBtn.textContent = t('history.stats_title', '📊 Thống kê');
         histBtn.onclick = () => openMatchingStatsModal();
       } else {
         histBtn.style.display = 'inline-flex';
@@ -583,7 +590,7 @@ const App = (() => {
         const isCorrect = chosen === b.correct_index;
         const correctOpt = b.options[b.correct_index] || b.answer || '';
         const chosenOpt = chosen !== undefined ? b.options[chosen] : 'Chưa chọn';
-        const meaning = b.meaning_vi || b.meaning_in_vietnamese || '';
+        const meaning = b.meaning || b.meaning_in_vietnamese || '';
 
         return `
           <div style="padding:10px; border:1px solid var(--border); border-radius:var(--radius-sm); margin-bottom:10px; background:var(--bg);">
@@ -662,7 +669,7 @@ const App = (() => {
         <div class="question-card" style="margin-bottom:12px;">
           <p><b>Câu ${qIdx + 1}:</b> ${esc(q.hint || '')}</p>
           <p style="color:var(--success); font-weight:600;">➔ ${esc(q.correct_sentence)}</p>
-          ${(q.meaning_vi || q.translation || q.sentence_meaning) ? `<p style="font-size:13px; color:var(--text-secondary);">🌐 ${esc(q.meaning_vi || q.translation || q.sentence_meaning)}</p>` : ''}
+          ${(q.meaning || q.translation || q.sentence_meaning) ? `<p style="font-size:13px; color:var(--text-secondary);">🌐 ${esc(q.meaning || q.translation || q.sentence_meaning)}</p>` : ''}
         </div>
       `).join('');
     } else if (gameId === 'story' && (item.data?.story || item.data?.questions)) {
@@ -760,12 +767,33 @@ const App = (() => {
         Bridge.send('close_hub');
       };
     }
+    const uiLangBtn = document.querySelector('#ui-lang-btn');
+    if (uiLangBtn) {
+      uiLangBtn.onclick = async () => {
+        const langs = ['en', 'vi'];
+        const cur = (typeof Utils !== 'undefined' && Utils.currentLang) || 'en';
+        const next = langs[(langs.indexOf(cur) + 1) % langs.length];
+        const langNames = { 'en': 'EN', 'vi': 'VI' };
+        await Bridge.sendAsync('set_ui_lang', { lang: next });
+        if (typeof Utils !== 'undefined') {
+          Utils.currentLang = next;
+          await Utils.initI18n();
+        }
+        const display = document.querySelector('#ui-lang-display');
+        if (display) display.textContent = langNames[next] || next.toUpperCase();
+        // Save to prefs
+        const p = state.userPrefs || {};
+        p.ui_lang = next;
+        state.userPrefs = p;
+        try { localStorage.setItem('ai_learning_hub_prefs_ui_lang', next); } catch(e) {}
+      };
+    }
     const cancelBtn = document.querySelector('#loading-cancel-btn');
     if (cancelBtn) {
       cancelBtn.onclick = () => {
         abortActiveRequests();
         setBusy(false);
-        showStatus('Đã hủy thao tác.');
+        showStatus(t('app.cancelled_action', 'Đã hủy thao tác.'));
       };
     }
     const cancelGen = document.querySelector('#cancel-gen');
@@ -773,7 +801,7 @@ const App = (() => {
       cancelGen.onclick = () => {
         abortActiveRequests();
         setBusy(false);
-        showStatus('Đã hủy tạo bài.');
+        showStatus(t('app.cancelled_gen', 'Đã hủy tạo bài.'));
       };
     }
   }
@@ -912,7 +940,7 @@ const App = (() => {
     const model_id = +document.querySelector('#model').value;
     const term_field = document.querySelector('#term').value;
     const definition_field = document.querySelector('#definition').value;
-    if (!deck_id || !model_id || !term_field || !definition_field) throw Error('Hãy chọn deck, note type và hai trường.');
+    if (!deck_id || !model_id || !term_field || !definition_field) throw Error(t('app.select_fields_first', 'Hãy chọn deck, note type và hai trường.'));
     return { deck_id, model_id, term_field, definition_field, limit: +document.querySelector('#sample-limit').value || 20, excluded_pair_keys: [...state.seen], weak_words: getWeakWords() };
   }
 
@@ -927,11 +955,11 @@ const App = (() => {
     const signal = getSignal();
     try {
       const data = await Bridge.sendAsync('sample_vocab_pairs', request(), { signal });
-      if (data.exhausted) throw Error('Đã dùng hết mẫu trong vòng này. Bấm Làm mới vòng.');
+      if (data.exhausted) throw Error(t('app.round_exhausted', 'Đã dùng hết mẫu trong vòng này. Bấm Làm mới vòng.'));
       state.pairs = data.pairs || [];
       state.pairs.forEach(x => state.seen.add(x.key));
       const srcStat = document.querySelector('#source-status');
-      if (srcStat) srcStat.textContent = `Đã lấy ${data.total} cặp ngẫu nhiên.`;
+      if (srcStat) srcStat.textContent = t('app.pairs_loaded', 'Đã lấy {0} cặp ngẫu nhiên.', data.total);
       preview();
       savePrefs();
       return !!state.pairs.length;
@@ -955,7 +983,7 @@ const App = (() => {
       if (signal.aborted) return;
 
       if (id === 'matching' && state.pairs.length < 5) {
-        showStatus('error', t('app.matching_vocab_limit', 'Không đủ từ vựng để nối. Cần ít nhất 5 từ vựng.'));
+        showStatus('error', t('app.not_enough_vocab', 'Không đủ từ vựng để nối {0} cặp. Giảm số cặp hoặc thêm từ.', 5));
         setBusy(false);
         return;
       }
@@ -965,6 +993,11 @@ const App = (() => {
         opts = optsOverride;
       } else {
         const lang = document.querySelector('#language');
+        if (!lang || !lang.value) {
+          showStatus(t('app.select_lang_first', 'Hãy chọn ngôn ngữ học trước khi tạo bài.'));
+          setBusy(false);
+          return;
+        }
         const countEl = document.querySelector('#count');
         const levelEl = document.querySelector('#level');
         const topicEl = document.querySelector('#topic');
@@ -1072,7 +1105,7 @@ const App = (() => {
     const modal = document.querySelector('#history-modal');
     if (!body || !title || !modal) return;
 
-    title.textContent = '📊 Thống kê Nối từ (Word Matching)';
+    title.textContent = t('stats.title', '📊 Thống kê Nối từ (Word Matching)');
 
     const bestTimeStr = stats.aggregates.best_time_sec !== 999999 ? 
       `${Math.floor(stats.aggregates.best_time_sec / 60)}m ${stats.aggregates.best_time_sec % 60}s` : 'N/A';
@@ -1145,7 +1178,7 @@ const App = (() => {
     const clearBtn = body.querySelector('#clear-matching-stats-btn');
     if (clearBtn) {
       clearBtn.onclick = () => {
-        if (confirm('Bạn có chắc chắn muốn xóa toàn bộ dữ liệu thống kê của trò chơi Nối từ không?')) {
+        if (confirm(t('confirm.clear_stats', 'Bạn có chắc chắn muốn xóa toàn bộ dữ liệu thống kê nối từ?'))) {
           state.matchingStats = {
             aggregates: {
               total_games: 0,
@@ -1328,7 +1361,7 @@ const App = (() => {
           if (correctIdx === -1) correctIdx = q.correct_index;
           const correctOpt = q.options[correctIdx];
           const word = typeof correctOpt === 'object' ? correctOpt.word : correctOpt;
-          const translation = q.user_definition || q.meaning_vi || (typeof correctOpt === 'object' ? correctOpt.translation : '');
+          const translation = q.user_definition || q.meaning || (typeof correctOpt === 'object' ? correctOpt.translation : '');
 
           hintLevel++;
           if (hintLevel === 1) {
@@ -1485,7 +1518,7 @@ const App = (() => {
         const correctOpt = b.options[b.correct_index];
         const chosenOpt = state.answers[i] !== undefined ? b.options[state.answers[i]] : 'Chưa chọn';
         const isOk = state.answers[i] === b.correct_index;
-        const vnMeaning = (b.meaning_vi || b.meaning_in_vietnamese) ? ` (${b.meaning_vi || b.meaning_in_vietnamese})` : '';
+        const vnMeaning = (b.meaning || b.meaning_in_vietnamese) ? ` (${b.meaning || b.meaning_in_vietnamese})` : '';
 
         return `
           <div style="margin-bottom: 10px; font-size: 14px;">
@@ -1870,7 +1903,7 @@ const App = (() => {
 
       d.innerHTML = `
         <div class="feedback good" style="text-align:center; padding: 24px;">
-          <h2 style="margin-bottom:12px; color: var(--success);">🎉 Ghép đôi hoàn thành!</h2>
+          <h2 style="margin-bottom:12px; color: var(--success);">${t('matching.complete', '🎉 Ghép đôi hoàn thành!')}</h2>
           <div style="font-size:16px; margin-bottom:20px; line-height:1.6;">
             <p>⏱️ Thời gian: <b>${timeStr}</b></p>
             <p>🎯 Ghép đúng: <b>${matchedCount}/${totalPairsCount}</b> cặp từ</p>
@@ -2022,7 +2055,7 @@ const App = (() => {
           // Kịch bản 1: Đúng (Correct)
           sentenceDisplayHtml = `
             <div class="unscramble-correct-box" style="margin-top:12px; padding:14px 16px; border:2px solid var(--success); border-radius:8px; background:rgba(46, 204, 113, 0.02);">
-              <div style="font-size:12px; font-weight:700; color:white; background:var(--success); padding:3px 8px; border-radius:4px; display:inline-block; margin-bottom:8px;">🟢 ĐÚNG</div>
+              <div style="font-size:12px; font-weight:700; color:white; background:var(--success); padding:3px 8px; border-radius:4px; display:inline-block; margin-bottom:8px;">${t('unscramble.correct_mark', '🟢 ĐÚNG')}</div>
               <p style="margin:4px 0 8px; font-size:15px; font-weight:600; color:var(--success);">🎉 ${esc(feedbackObj.praise || 'Chính xác! Lựa chọn trật tự từ hoàn hảo.')}</p>
               <div style="font-size:18px; font-weight:700; color:var(--success); margin:8px 0;">
                 ✓ ${esc(q.correct_sentence)}
@@ -2038,11 +2071,11 @@ const App = (() => {
           // Kịch bản 3: Bỏ trống (Unanswered)
           sentenceDisplayHtml = `
             <div class="unscramble-unanswered-box" style="margin-top:12px; padding:14px 16px; border:2px solid var(--border); border-radius:8px; background:rgba(0,0,0,0.02);">
-              <div style="font-size:12px; font-weight:700; color:white; background:var(--text-secondary); padding:3px 8px; border-radius:4px; display:inline-block; margin-bottom:8px;">⚪ CHƯA TRẢ LỜI</div>
+              <div style="font-size:12px; font-weight:700; color:white; background:var(--text-secondary); padding:3px 8px; border-radius:4px; display:inline-block; margin-bottom:8px;">${t('unscramble.not_answered', '⚪ CHƯA TRẢ LỜI')}</div>
               <div style="font-size:18px; font-weight:700; color:var(--primary); margin:8px 0;">
                 ✅ ${esc(q.correct_sentence)}
               </div>
-              ${q.meaning_vi ? `<p style="margin:6px 0; font-size:14px;">📖 <b>Dịch nghĩa:</b> ${esc(q.meaning_vi)}</p>` : ''}
+              ${q.meaning ? `<p style="margin:6px 0; font-size:14px;">📖 <b>Dịch nghĩa:</b> ${esc(q.meaning)}</p>` : ''}
               ${q.core_structure ? `<p style="margin:6px 0; font-size:13.5px; color:var(--text-secondary);">💡 <b>Cấu trúc chính:</b> <code>${esc(q.core_structure)}</code></p>` : ''}
             </div>
           `;
@@ -2050,7 +2083,7 @@ const App = (() => {
           // Kịch bản 2: Sai (Incorrect)
           sentenceDisplayHtml = `
             <div class="unscramble-wrong-box" style="margin-top:12px; padding:14px 16px; border:2px solid #ef4444; border-radius:8px; background:rgba(239, 68, 68, 0.02);">
-              <div style="font-size:12px; font-weight:700; color:white; background:#ef4444; padding:3px 8px; border-radius:4px; display:inline-block; margin-bottom:8px;">🔴 SAI</div>
+              <div style="font-size:12px; font-weight:700; color:white; background:#ef4444; padding:3px 8px; border-radius:4px; display:inline-block; margin-bottom:8px;">${t('unscramble.wrong_mark', '🔴 SAI')}</div>
               <p style="margin:4px 0 8px; font-size:14px; font-weight:600; color:#ef4444;">⚠️ Vị trí sai: ${esc(feedbackObj.error_position || 'Trật tự các từ chưa đúng.')}</p>
               
               <div class="unscramble-compare" style="margin:10px 0; padding:10px; border-left:3px solid #ef4444; background:rgba(239,68,68,0.02); border-radius:4px;">
@@ -2376,7 +2409,7 @@ const App = (() => {
     const passageHtml = `
       <div class="story-passage-card">
         <div class="story-passage-header">
-          <span class="story-passage-title">📖 ${title ? esc(title) : 'Bài đọc hiểu (Reading Passage)'}</span>
+          <span class="story-passage-title">📖 ${title ? esc(title) : t('story.reading_passage', 'Bài đọc hiểu (Reading Passage)')}</span>
           <span class="story-passage-badge">${questions.length} câu hỏi</span>
         </div>
         <div class="story-passage-content" style="font-size:15px; line-height:1.6;">
@@ -2384,7 +2417,7 @@ const App = (() => {
         </div>
         ${fullTranslation ? `
           <details style="margin-top:12px; border-top:1px dashed var(--border); padding-top:10px;">
-            <summary style="cursor:pointer; font-weight:600; color:var(--primary);">🌐 Xem bản dịch tiếng Việt</summary>
+            <summary style="cursor:pointer; font-weight:600; color:var(--primary);">${t('story.view_translation', '🌐 Xem bản dịch')}</summary>
             <div style="margin-top:8px; font-size:14.5px; color:var(--text); line-height:1.6;">
               ${esc(fullTranslation).replace(/\n\n/g, '<br><br>')}
             </div>
@@ -2508,7 +2541,7 @@ const App = (() => {
       const accuracyPct = Math.round((score / questions.length) * 100);
       footerHtml = `
         <div class="story-result-summary fade-in">
-          <div class="story-score-title">🎉 Kết quả bài đọc hiểu</div>
+          <div class="story-score-title">${t('story.result_title', '🎉 Kết quả bài đọc hiểu')}</div>
           <div class="story-score-main">${score} / ${questions.length} câu đúng (${accuracyPct}%)</div>
           ${x.discussion_prompt ? `
             <div style="margin-top: 14px; text-align: left; padding: 14px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px;">
@@ -2865,7 +2898,7 @@ const App = (() => {
         <div id="feedback"></div>
         
         <div class="taboo-guide-callout" style="margin-top: 24px; padding: 12px; background: rgba(0,0,0,0.02); border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; line-height: 1.4; color: var(--text-secondary);">
-          💡 <b>HƯỚNG DẪN ĐOÁN TỪ (01 LẦN GỬI):</b>
+          ${t('taboo.guide_title', '💡 HƯỚNG DẪN ĐOÁN TỪ (01 LẦN GỬI):')}
           <ul style="margin: 4px 0 0 16px; padding: 0;">
             <li>Nhập nhiều từ hoặc cụm từ đoán cách nhau bằng dấu phẩy.</li>
             <li>Chỉ cần 1 trong các từ bạn nhập là đáp án đúng hoặc đồng nghĩa, bạn sẽ thắng.</li>
@@ -2887,7 +2920,7 @@ const App = (() => {
         if (hintLevel === 1) {
           textEl.innerHTML = `⭐ <b>Gợi ý 1:</b> Từ này bắt đầu bằng chữ: <code style="font-size:14px; font-weight:700;">${secretWord.charAt(0).toUpperCase()}</code>`;
         } else if (hintLevel === 2) {
-          textEl.innerHTML = `⭐ <b>Gợi ý 1:</b> Từ này bắt đầu bằng chữ: <code>${secretWord.charAt(0).toUpperCase()}</code><br>⭐ <b>Gợi ý 2:</b> Nghĩa tiếng Việt: <i>${q.meaning_vi || 'Không có'}</i>`;
+          textEl.innerHTML = `⭐ <b>Gợi ý 1:</b> Từ này bắt đầu bằng chữ: <code>${secretWord.charAt(0).toUpperCase()}</code><br>⭐ <b>Gợi ý 2:</b> Nghĩa tiếng Việt: <i>${q.meaning || 'Không có'}</i>`;
         } else if (hintLevel === 3) {
           textEl.innerHTML = `⭐ <b>Đáp án là:</b> <code>${secretWord}</code> (Bạn đã xem đáp án nên câu này không tính điểm)`;
           document.querySelector('#answer').value = secretWord;
@@ -2927,7 +2960,7 @@ const App = (() => {
             level:document.querySelector('#level').value,
             user_answer:guessInput,
             target_word:secretWord,
-            meaning_vi:q.meaning_vi || '',
+            meaning:q.meaning || '',
             taboo_words:forbidden.join(', '),
             sample_acceptable_phrases:(q.sample_acceptable_phrases || []).join(', '),
             sample_forbidden_phrases:(q.sample_forbidden_phrases || []).join(', ')
@@ -2952,12 +2985,12 @@ const App = (() => {
         const fb=document.querySelector('#feedback');
         if(!fb)return;
         
-        let html = '<div class="feedback '+(r.correct?'good':'bad')+'"><b>📊 KẾT QUẢ CHẤM ĐIỂM</b><hr>';
+        let html = '<div class="feedback '+(r.correct?'good':'bad')+'"><b>' + t('taboo.result_title', '📊 KẾT QUẢ CHẤM ĐIỂM') + '</b><hr>';
         html += `<p style="font-size: 15px;"><b>${r.correct ? '🎯 CHÍNH XÁC' : '❌ CHƯA CHÍNH XÁC'}</b></p>`;
         html += `<p>📥 <b>Danh sách từ bạn đã nhập:</b> ${guessList.map(g => `<code>${esc(g)}</code>`).join(', ') || 'Chưa nhập'}</p>`;
         html += `<p>🔑 <b>Đáp án đúng:</b> <span style="color:var(--success); font-weight:700;">${esc(secretWord.toUpperCase())}</span> ${q.phonetic ? `<code style="font-size:13.5px; color:var(--text-secondary); margin-left:6px;">${esc(q.phonetic)}</code>` : ''}</p>`;
-        if (q.meaning_vi) {
-          html += `<p>🇻🇳 <b>Dịch nghĩa:</b> ${esc(q.meaning_vi)}</p>`;
+        if (q.meaning) {
+          html += `<p>🇻🇳 <b>Dịch nghĩa:</b> ${esc(q.meaning)}</p>`;
         }
         
         if (r.ai_analysis || r.explanation || r.feedback) {

@@ -14,8 +14,8 @@ app.use(express.json({ limit: "10mb" }));
 let appSettings: Record<string, any> = {
   model: "auto",
   temperature: 0.7,
-  ui_lang: "vi",
-  learn_lang: "en",
+  ui_lang: "en",
+  learn_lang: "",
 };
 
 
@@ -87,7 +87,7 @@ const SCHEMAS: Record<string, any> = {
           properties: {
             sentence: { type: "string" },
             target_word: { type: "string" },
-            meaning_vi: { type: "string" },
+            meaning: { type: "string" },
             full_translation: { type: "string" },
             options: {
               type: "array",
@@ -105,7 +105,7 @@ const SCHEMAS: Record<string, any> = {
             explanation: { type: "string" },
             grammar_note: { type: "string" }
           },
-          required: ["sentence", "target_word", "meaning_vi", "full_translation", "options", "explanation"]
+          required: ["sentence", "target_word", "meaning", "full_translation", "options", "explanation"]
         }
       }
     },
@@ -125,7 +125,7 @@ const SCHEMAS: Record<string, any> = {
           properties: {
             id: { type: "string" },
             answer: { type: "string" },
-            meaning_vi: { type: "string" },
+            meaning: { type: "string" },
             hint: { type: "string" },
             distractors: {
               type: "array",
@@ -133,7 +133,7 @@ const SCHEMAS: Record<string, any> = {
             },
             explanation: { type: "string" }
           },
-          required: ["id", "answer", "meaning_vi", "hint", "explanation"]
+          required: ["id", "answer", "meaning", "hint", "explanation"]
         }
       }
     },
@@ -169,7 +169,7 @@ const SCHEMAS: Record<string, any> = {
           type: "object",
           properties: {
             correct_sentence: { type: "string" },
-            meaning_vi: { type: "string" },
+            meaning: { type: "string" },
             hint: { type: "string" },
             key_vocabulary: {
               type: "array",
@@ -177,16 +177,16 @@ const SCHEMAS: Record<string, any> = {
                 type: "object",
                 properties: {
                   word: { type: "string" },
-                  meaning_vi: { type: "string" }
+                  meaning: { type: "string" }
                 },
-                required: ["word", "meaning_vi"]
+                required: ["word", "meaning"]
               }
             },
             difficulty_reason: { type: "string" },
             grammar_note: { type: "string" },
             core_structure: { type: "string" }
           },
-          required: ["correct_sentence", "meaning_vi", "hint", "key_vocabulary", "difficulty_reason", "grammar_note", "core_structure"]
+          required: ["correct_sentence", "meaning", "hint", "key_vocabulary", "difficulty_reason", "grammar_note", "core_structure"]
         }
       }
     },
@@ -290,7 +290,7 @@ const SCHEMAS: Record<string, any> = {
           type: "object",
           properties: {
             target_word: { type: "string" },
-            meaning_vi: { type: "string" },
+            meaning: { type: "string" },
             phonetic: { type: "string" },
             taboo_words: {
               type: "array",
@@ -307,7 +307,7 @@ const SCHEMAS: Record<string, any> = {
               items: { type: "string" }
             }
           },
-          required: ["target_word", "meaning_vi", "taboo_words", "clue", "difficulty_level", "sample_acceptable_phrases", "sample_forbidden_phrases"]
+          required: ["target_word", "meaning", "taboo_words", "clue", "difficulty_level", "sample_acceptable_phrases", "sample_forbidden_phrases"]
         }
       }
     },
@@ -369,7 +369,7 @@ function getFallbackExercise(gamemode: string, data: any) {
       questions: Array.from({ length: count }, (_, i) => ({
         sentence: "Smartphones have become _____ in modern daily life.",
         target_word: "ubiquitous",
-        meaning_vi: "phổ biến khắp nơi",
+        meaning: "phổ biến khắp nơi",
         full_translation: "Điện thoại thông minh đã trở nên phổ biến khắp nơi trong cuộc sống hiện đại.",
         options: [
           { word: "ubiquitous", is_correct: true, type: "correct", reason: "Chính xác! 'ubiquitous' có nghĩa là phổ biến khắp nơi." },
@@ -393,7 +393,7 @@ function getFallbackExercise(gamemode: string, data: any) {
         {
           id: "BLANK_1",
           answer: "articulate",
-          meaning_vi: "diễn đạt lưu loát",
+          meaning: "diễn đạt lưu loát",
           hint: "Khả năng nói hoặc viết một cách rõ ràng và dễ hiểu",
           distractors: [],
           explanation: "'articulate' có nghĩa là diễn đạt rõ ràng, phù hợp với ngữ cảnh giao tiếp chuyên nghiệp."
@@ -401,7 +401,7 @@ function getFallbackExercise(gamemode: string, data: any) {
         {
           id: "BLANK_2",
           answer: "consensus",
-          meaning_vi: "sự đồng thuận",
+          meaning: "sự đồng thuận",
           hint: "Sự nhất trí chung của một nhóm người",
           distractors: [],
           explanation: "'consensus' là sự đồng thuận giữa các thành viên trong nhóm."
@@ -409,7 +409,7 @@ function getFallbackExercise(gamemode: string, data: any) {
         {
           id: "BLANK_3",
           answer: "pragmatic",
-          meaning_vi: "thực tế",
+          meaning: "thực tế",
           hint: "Cách tiếp cận dựa trên thực tiễn",
           distractors: [],
           explanation: "'pragmatic' là cách tiếp cận thực tế để giải quyết vấn đề."
@@ -435,11 +435,11 @@ function getFallbackExercise(gamemode: string, data: any) {
       questions: [
         {
           correct_sentence: "Technology plays an important role in modern education.",
-          meaning_vi: "Công nghệ đóng vai trò quan trọng trong giáo dục hiện đại.",
+          meaning: "Công nghệ đóng vai trò quan trọng trong giáo dục hiện đại.",
           hint: "Vai trò của công nghệ",
           key_vocabulary: [
-            { word: "education", meaning_vi: "giáo dục" },
-            { word: "important role", meaning_vi: "vai trò quan trọng" }
+            { word: "education", meaning: "giáo dục" },
+            { word: "important role", meaning: "vai trò quan trọng" }
           ],
           difficulty_reason: "Cấu trúc S-V-O cơ bản với cụm giới từ.",
           grammar_note: "Sử dụng cụm danh từ 'modern education' đứng sau giới từ 'in'.",
@@ -504,7 +504,7 @@ function getFallbackExercise(gamemode: string, data: any) {
       rounds: [
         {
           target_word: "UBIQUITOUS",
-          meaning_vi: "phổ biến khắp nơi",
+          meaning: "phổ biến khắp nơi",
           phonetic: "/juːˈbɪk.wɪ.təs/",
           taboo_words: ["EVERYWHERE", "COMMON", "FOUND", "PRESENT", "ALWAYS"],
           clue: "Describing something that seems to exist in all places at the same time, like modern technology or mobile phones.",
@@ -580,12 +580,12 @@ app.post("/api/bridge", async (req, res) => {
     if (action === "get_ui_lang") {
       return res.json({
         success: true,
-        data: { lang: appSettings.ui_lang || "vi" }
+        data: { lang: appSettings.ui_lang || "en" }
       });
     }
 
     if (action === "set_ui_lang") {
-      appSettings.ui_lang = data.lang || "vi";
+      appSettings.ui_lang = data.lang || "en";
       return res.json({
         success: true,
         data: { lang: appSettings.ui_lang }
@@ -593,7 +593,7 @@ app.post("/api/bridge", async (req, res) => {
     }
 
     if (action === "get_ui_strings") {
-      const lang = appSettings.ui_lang || "vi";
+      const lang = appSettings.ui_lang || "en";
       const filePath = path.join(process.cwd(), "lang", `${lang}.json`);
       let strings = {};
       if (fs.existsSync(filePath)) {
@@ -734,9 +734,11 @@ app.post("/api/bridge", async (req, res) => {
           ? `Mandatory vocabulary terms to feature (randomly selected ${vocabSample.length} terms): ${vocabSample.map((p: any) => `${p.term} (${p.definition})`).join("; ")}`
           : "None";
 
+        const ui_lang = appSettings.ui_lang || "en";
         const prompt = `<task>
 Generate a high-quality '${gamemode}' language exercise.
 Target Language: ${language}
+UI Language: ${ui_lang}
 Level: ${level}
 Topic: ${topic}
 Count: ${count}
@@ -749,7 +751,7 @@ ${vocabSection}
 
 <language_rule>
 - Fields containing exercise content (sentences, passages, options, target words, clues) MUST be in the TARGET LANGUAGE (${language}).
-- Fields ending with '_vi' (meaning_vi, full_translation, story_translation, explanation) MUST be in Vietnamese (Tiếng Việt).
+- Meaning, translation, and explanation fields MUST be in the UI language (${ui_lang}).
 - All other fields follow the schema specification.
 </language_rule>
 
@@ -767,7 +769,7 @@ Generate exactly ${count} items following the exact JSON schema provided in the 
 
 LANGUAGE RULES:
 1. Content in ${language}: sentences, passages, options, target words, clues, expected answers
-2. Vietnamese (_vi fields): meaning_vi, full_translation, story_translation, explanation, grammar_note, hint, context_summary
+2. UI language fields (meaning, full_translation, story_translation, explanation, grammar_note, hint, context_summary) MUST be in the UI language (${ui_lang})
 
 STRUCTURAL RULES:
 - Output ONLY raw JSON. No markdown, no backticks, no conversational text.`,
@@ -891,7 +893,7 @@ Student Answer: "${user_answer}"
 Rules:
 - Be flexible with minor punctuation or capitalization variations.
 - Assess accuracy, grammar, vocabulary fit, and natural expression.
-- Provide encouraging, clear, concise feedback in Vietnamese.`;
+- Provide encouraging, clear, concise feedback in the user's interface language.`;
 
         const response = await ai.models.generateContent({
           model: "gemini-flash-latest",
@@ -971,3 +973,4 @@ app.use((req, res) => {
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`AI Learning Hub server running at http://0.0.0.0:${PORT}`);
 });
+

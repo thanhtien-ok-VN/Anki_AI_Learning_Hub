@@ -1,4 +1,4 @@
-Generate {count} sentence transformation exercises in English.
+Generate {count} sentence transformation exercises in {learn_lang}.
 Grammar focus: {focus}
 Difficulty: {level_instruction}
 Topic: {topic}
@@ -10,6 +10,7 @@ Requirements:
 - `normalized_answer`: MUST be fully lowercase with NO punctuation (except apostrophes).
 - List common errors students make with this structure.
 - List forbidden words that must NOT appear in the answer.
+- All instructions, explanations, and grammar notes MUST be in {ui_lang}. Sentences in {learn_lang}.
 
 Output raw JSON only, no markdown formatting.
 
@@ -17,16 +18,16 @@ Output raw JSON only, no markdown formatting.
   "questions": [
     {
       "original": "She is too young to drive.",
-      "prompt": "Viết lại câu dùng 'so... that'",
+      "prompt": "Rewrite using 'so... that'",
       "expected_answer": "She is so young that she cannot drive.",
       "normalized_answer": "she is so young that she cannot drive",
       "acceptable_variations": [
-        {"text": "She's so young that she can't drive.", "note": "Contraction OK"}
+        {"text": "She's so young that she can't drive.", "note": "[note in {ui_lang}]"}
       ],
       "forbidden_words": ["too"],
       "grammar_rule": "so + adj + that + clause...",
       "common_errors": [
-        {"error": "She is so young that she can drive.", "feedback": "Missing negation..."}
+        {"error": "She is so young that she can drive.", "feedback": "[feedback in {ui_lang}]"}
       ]
     }
   ]

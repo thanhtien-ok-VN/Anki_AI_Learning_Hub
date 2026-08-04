@@ -4,7 +4,7 @@ import os
 ADDON_PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LANG_DIR = os.path.join(ADDON_PATH, "lang")
 
-DEFAULT_LANG = "vi"
+DEFAULT_LANG = "en"
 _cache = {}
 
 

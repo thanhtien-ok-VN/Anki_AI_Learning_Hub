@@ -1,33 +1,32 @@
-生成 {count} 个句型转换/改写句子练习。
-句型焦点：{focus}
-难度：{level_instruction}
-主题：{topic}
+Generate {count} Chinese (Mandarin) sentence transformation exercises for a {learn_lang} learner.
+Difficulty: {level_instruction}
+Focus: {focus}
 
-强制约束：所有内容必须围绕主题 "{topic}" 展开。
+MANDATORY: All sentences MUST be in Chinese (Mandarin).
+MANDATORY: All instructions, transformation prompts, grammar explanations, and notes MUST be in {ui_lang}.
 
-要求：
-- 每个练习提供原始句子和转换提示。
-- `normalized_answer` 必须是完全小写且无标点（撇号除外）。
-- 用越南语列出学生常犯错误。
-- 列出禁止在答案中出现的违禁词汇。
+For each exercise:
+- An original Chinese sentence
+- A transformation instruction in {ui_lang}
+- A hint word in Chinese
+- The expected correct answer in Chinese
+- The grammar rule explained in {ui_lang}
+- Common errors listed in {ui_lang}
 
-仅输出原始 JSON，不得使用 markdown 格式。
+Output raw JSON only:
 
 {
   "questions": [
     {
-      "original": "She is too young to drive.",
-      "prompt": "Viết lại câu dùng 'so... that'",
-      "expected_answer": "She is so young that she cannot drive.",
-      "normalized_answer": "she is so young that she cannot drive",
-      "acceptable_variations": [
-        {"text": "She's so young that she can't drive.", "note": "Contraction OK"}
-      ],
-      "forbidden_words": ["too"],
-      "grammar_rule": "so + adj + that + clause...",
-      "common_errors": [
-        {"error": "She is so young that she can drive.", "feedback": "Missing negation..."}
-      ]
+      "original": "他很聪明，所以通过了考试。",
+      "prompt": "[transformation instruction in {ui_lang}]",
+      "hint_word": "因为",
+      "expected_answer": "因为他很聪明，所以通过了考试。",
+      "normalized_answer": "因为他很聪明,所以通过了考试。",
+      "acceptable_variations": ["[alternative correct answer in Chinese]"],
+      "forbidden_words": [],
+      "grammar_rule": "[grammar rule explanation in {ui_lang}]",
+      "common_errors": ["[common mistake description in {ui_lang}]"]
     }
   ]
 }

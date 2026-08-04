@@ -1,20 +1,21 @@
-提供一个越南语到英语的翻译练习。
-主题：{topic}
-句子复杂度：{level_instruction}
+Generate a {source_lang} to Chinese (Mandarin) translation exercise for a {learn_lang} learner.
+Difficulty: {level_instruction}
+Topic: {topic}
+Sentence type: {sentence_type}
 
-要求：
-- 练习内容必须围绕主题 "{topic}"。
-- 该句子必须使用此语法类型：{sentence_type}。请勿使用任何其他句式结构。保持语义自然，并符合主题和所选水平。
-- 重点关注越南学习者常犯的错误（时态、复数、冠词、词序、介词）。
-- 提供参考翻译和其他正确的备选版本。
+MANDATORY: Source sentence in {source_lang}. Target translation in Chinese (Mandarin).
+MANDATORY: All grammar notes, explanations, and rubric MUST be in {ui_lang}.
 
-仅输出原始 JSON，不得使用 markdown 格式。
+Focus on:
+- Common translation challenges (measure words, aspect markers, topic-comment structure, particles)
+- Natural Chinese expression, not word-for-word translation
+
+Output raw JSON only:
+
 {
-  "source_sentence": "Tôi đã định đi chơi nhưng trời mưa.",
-  "target_language": "en",
-  "reference_translation": "I intended to go out, but it rained.",
-  "alternative_translations": [
-    {"text": "I planned to go out, but it was raining.", "note": "..."}
-  ],
-  "grading_rubric": "..."
+  "source_sentence": "[sentence in {source_lang}]",
+  "target_language": "zh",
+  "reference_translation": "[correct Chinese translation]",
+  "alternative_translations": ["[alternative correct Chinese translation]"],
+  "grading_rubric": "[evaluation criteria in {ui_lang}]"
 }

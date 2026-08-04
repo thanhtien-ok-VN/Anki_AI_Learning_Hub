@@ -1,29 +1,31 @@
-生成 {count} 个禁忌词（Taboo）游戏卡片。
-目标概念：{topic}
-难度：{level_instruction}
+Generate {count} Taboo word-guessing rounds in Chinese (Mandarin) for a {learn_lang} learner.
+Difficulty: {level_instruction}
+Topic: {topic}
 
-强制约束：所有内容必须围绕主题 "{topic}" 展开。
+MANDATORY: Target words, taboo words, and AI clue descriptions MUST be in Chinese (Mandarin).
+MANDATORY: Meanings and explanations MUST be in {ui_lang}.
 
-要求：
-- 每个卡片定义目标单词和 5 个禁忌词（禁止在描述中使用的关联词汇）。
-- 包含目标单词的音标（IPA 格式）。
-- 用英语提供线索描述，不得使用目标词和禁忌词。
-- 越南语意思写在 `meaning_vi` 中。
-- 包含可接受和禁止的短语示例，用作 AI 评分依据。
+For each round:
+- A Chinese target word (the secret word the student guesses)
+- 4-5 Chinese taboo words (forbidden words the student cannot use)
+- An AI clue description in Chinese WITHOUT using taboo words
+- Phonetic (pinyin) of the target word
+- Meaning of target word in {ui_lang}
+- Sample acceptable and forbidden guess phrases in Chinese
 
-仅输出原始 JSON，不得使用 markdown 格式。
+Output raw JSON only:
 
 {
   "rounds": [
     {
-      "target_word": "Internet",
-      "meaning_vi": "Mạng internet",
-      "phonetic": "/ˈɪn.tə.net/",
-      "taboo_words": ["Web", "Online", "Computer", "Network", "Wifi"],
-      "clue": "A global system that connects millions of devices...",
-      "difficulty_level": "Medium",
-      "sample_acceptable_phrases": ["Hệ thống toàn cầu", "Kết nối không dây"],
-      "sample_forbidden_phrases": ["Mạng máy tính", "Lướt web"]
+      "target_word": "电脑",
+      "meaning": "[meaning in {ui_lang}]",
+      "phonetic": "diàn nǎo",
+      "taboo_words": ["计算机", "屏幕", "键盘", "鼠标"],
+      "clue": "[AI description in Chinese without taboo words]",
+      "difficulty_level": "medium",
+      "sample_acceptable_phrases": ["[Chinese phrase]", "[Chinese phrase]"],
+      "sample_forbidden_phrases": ["[Chinese phrase that uses a taboo word]"]
     }
   ]
 }

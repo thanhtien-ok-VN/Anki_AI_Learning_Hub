@@ -18,7 +18,7 @@ if HAS_PYDANTIC:
     class FillBlankQuestion(BaseModel):
         sentence: str
         target_word: str
-        meaning_vi: str
+        meaning: str
         full_translation: str
         options: List[FillBlankOption]  # exactly 4
         explanation: str
@@ -32,7 +32,7 @@ if HAS_PYDANTIC:
     class ClozeBlank(BaseModel):
         id: str                    # "BLANK_1", "BLANK_2"
         answer: str
-        meaning_vi: str
+        meaning: str
         hint: str
         distractors: List[str] = []
         explanation: str
@@ -59,11 +59,11 @@ if HAS_PYDANTIC:
     # ===================== 4. UNSCRAMBLE =====================
     class UnscrambleVocab(BaseModel):
         word: str
-        meaning_vi: str
+        meaning: str
 
     class UnscrambleSentence(BaseModel):
         correct_sentence: str
-        meaning_vi: str
+        meaning: str
         hint: str
         key_vocabulary: List[UnscrambleVocab]
         difficulty_reason: str
@@ -76,7 +76,7 @@ if HAS_PYDANTIC:
     # ===================== 6. STORY =====================
     class HighlightedVocab(BaseModel):
         word: str
-        meaning_vi: str
+        meaning: str
         context_meaning: str
 
     class StoryContent(BaseModel):
@@ -128,7 +128,7 @@ if HAS_PYDANTIC:
     # ===================== 8. TABOO =====================
     class TabooRound(BaseModel):
         target_word: str
-        meaning_vi: str
+        meaning: str
         phonetic: Optional[str] = None
         taboo_words: List[str]
         clue: str
@@ -173,7 +173,7 @@ RAW_DICT_SCHEMAS = {
                     "properties": {
                         "sentence": {"type": "STRING"},
                         "target_word": {"type": "STRING"},
-                        "meaning_vi": {"type": "STRING"},
+                        "meaning": {"type": "STRING"},
                         "full_translation": {"type": "STRING"},
                         "options": {
                             "type": "ARRAY",
@@ -192,7 +192,7 @@ RAW_DICT_SCHEMAS = {
                         "grammar_note": {"type": "STRING"},
                         "user_definition": {"type": "STRING"}
                     },
-                    "required": ["sentence", "target_word", "meaning_vi", "full_translation", "options", "explanation"]
+                    "required": ["sentence", "target_word", "meaning", "full_translation", "options", "explanation"]
                 }
             }
         },
@@ -209,12 +209,12 @@ RAW_DICT_SCHEMAS = {
                     "properties": {
                         "id": {"type": "STRING"},
                         "answer": {"type": "STRING"},
-                        "meaning_vi": {"type": "STRING"},
+                        "meaning": {"type": "STRING"},
                         "hint": {"type": "STRING"},
                         "distractors": {"type": "ARRAY", "items": {"type": "STRING"}},
                         "explanation": {"type": "STRING"}
                     },
-                    "required": ["id", "answer", "meaning_vi", "hint", "explanation"]
+                    "required": ["id", "answer", "meaning", "hint", "explanation"]
                 }
             },
             "full_solution_text": {"type": "STRING"},
@@ -253,7 +253,7 @@ RAW_DICT_SCHEMAS = {
                     "type": "OBJECT",
                     "properties": {
                         "correct_sentence": {"type": "STRING"},
-                        "meaning_vi": {"type": "STRING"},
+                        "meaning": {"type": "STRING"},
                         "hint": {"type": "STRING"},
                         "key_vocabulary": {
                             "type": "ARRAY",
@@ -261,16 +261,16 @@ RAW_DICT_SCHEMAS = {
                                 "type": "OBJECT",
                                 "properties": {
                                     "word": {"type": "STRING"},
-                                    "meaning_vi": {"type": "STRING"}
+                                    "meaning": {"type": "STRING"}
                                 },
-                                "required": ["word", "meaning_vi"]
+                                "required": ["word", "meaning"]
                             }
                         },
                         "difficulty_reason": {"type": "STRING"},
                         "grammar_note": {"type": "STRING"},
                         "core_structure": {"type": "STRING"}
                     },
-                    "required": ["correct_sentence", "meaning_vi", "hint", "key_vocabulary", "difficulty_reason", "grammar_note", "core_structure"]
+                    "required": ["correct_sentence", "meaning", "hint", "key_vocabulary", "difficulty_reason", "grammar_note", "core_structure"]
                 }
             }
         },
@@ -371,7 +371,7 @@ RAW_DICT_SCHEMAS = {
                     "type": "OBJECT",
                     "properties": {
                         "target_word": {"type": "STRING"},
-                        "meaning_vi": {"type": "STRING"},
+                        "meaning": {"type": "STRING"},
                         "phonetic": {"type": "STRING"},
                         "taboo_words": {"type": "ARRAY", "items": {"type": "STRING"}},
                         "clue": {"type": "STRING"},
@@ -379,7 +379,7 @@ RAW_DICT_SCHEMAS = {
                         "sample_acceptable_phrases": {"type": "ARRAY", "items": {"type": "STRING"}},
                         "sample_forbidden_phrases": {"type": "ARRAY", "items": {"type": "STRING"}}
                     },
-                    "required": ["target_word", "meaning_vi", "taboo_words", "clue", "difficulty_level", "sample_acceptable_phrases", "sample_forbidden_phrases"]
+                    "required": ["target_word", "meaning", "taboo_words", "clue", "difficulty_level", "sample_acceptable_phrases", "sample_forbidden_phrases"]
                 }
             }
         },
