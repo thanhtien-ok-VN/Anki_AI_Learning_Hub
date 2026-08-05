@@ -584,6 +584,26 @@ app.post("/api/bridge", async (req, res) => {
       });
     }
 
+    if (action === "get_supported_languages") {
+      return res.json({
+        success: true,
+        data: {
+          languages: [
+            { code: "en", names: { en: "English", vi: "Tiếng Anh" }, native: "English" },
+            { code: "zh", names: { en: "Chinese", vi: "Tiếng Trung" }, native: "中文" },
+            { code: "ja", names: { en: "Japanese", vi: "Tiếng Nhật" }, native: "日本語" },
+            { code: "ko", names: { en: "Korean", vi: "Tiếng Hàn" }, native: "한국어" },
+            { code: "fr", names: { en: "French", vi: "Tiếng Pháp" }, native: "Français" },
+            { code: "de", names: { en: "German", vi: "Tiếng Đức" }, native: "Deutsch" },
+            { code: "es", names: { en: "Spanish", vi: "Tiếng Tây Ban Nha" }, native: "Español" },
+            { code: "it", names: { en: "Italian", vi: "Tiếng Ý" }, native: "Italiano" },
+            { code: "ru", names: { en: "Russian", vi: "Tiếng Nga" }, native: "Русский" },
+            { code: "hi", names: { en: "Hindi", vi: "Tiếng Ấn Độ" }, native: "हिन्दी" }
+          ]
+        }
+      });
+    }
+
     if (action === "set_ui_lang") {
       appSettings.ui_lang = data.lang || "en";
       return res.json({
@@ -844,9 +864,14 @@ STRUCTURAL RULES:
         console.error(`[Server] Gemini API error for ${gamemode}:`, err);
         const fallback = getFallbackExercise(gamemode, data);
         const isQuotaError = err?.status === 429 || String(err?.message || "").includes("429") || String(err?.message || "").includes("quota");
+        const uiLang = appSettings.ui_lang || "en";
         const reasonMsg = isQuotaError
-          ? "Đã vượt quá hạn ngạch AI (429 Rate Limit). Đang tự động chuyển sang bài tập mẫu."
-          : "Lỗi kết nối Gemini AI. Đang tự động chuyển sang bài tập mẫu.";
+          ? (uiLang === "vi"
+              ? "Đã vượt quá hạn ngạch AI (429 Rate Limit). Đang tự động chuyển sang bài tập mẫu."
+              : "AI quota limit exceeded (429 Rate Limit). Automatically switching to sample exercise.")
+          : (uiLang === "vi"
+              ? "Lỗi kết nối Gemini AI. Đang tự động chuyển sang bài tập mẫu."
+              : "Gemini AI connection error. Automatically switching to sample exercise.");
         return res.json({
           success: true,
           data: {
@@ -876,11 +901,22 @@ STRUCTURAL RULES:
           data: {
             correct: isCorrect,
             score: isExactMatch ? 100 : (isCorrect ? 85 : 40),
-            explanation: isExactMatch
-              ? "Xuất sắc! Câu trả lời hoàn toàn chính xác."
-              : isCorrect
-                ? `Khá tốt! Đáp án gợi ý: '${targetAns}'`
-                : `Cần cải thiện. Đáp án chính xác: '${targetAns}'`
+            explanation: (() => {
+              const uiLang = appSettings.ui_lang || "en";
+              if (uiLang === "vi") {
+                return isExactMatch
+                  ? "Xuất sắc! Câu trả lời hoàn toàn chính xác."
+                  : isCorrect
+                    ? `Khá tốt! Đáp án gợi ý: '${targetAns}'`
+                    : `Cần cải thiện. Đáp án chính xác: '${targetAns}'`;
+              } else {
+                return isExactMatch
+                  ? "Excellent! The answer is completely correct."
+                  : isCorrect
+                    ? `Good job! Suggested answer: '${targetAns}'`
+                    : `Needs improvement. Correct answer: '${targetAns}'`;
+              }
+            })()
           }
         });
       }
@@ -919,7 +955,8 @@ Rules:
         try {
           result = JSON.parse(response.text || "{}");
         } catch (_) {
-          result = { correct: true, score: 90, explanation: "Đã nhận và lưu câu trả lời." };
+          const uiLang = appSettings.ui_lang || "en";
+          result = { correct: true, score: 90, explanation: uiLang === "vi" ? "Đã nhận và lưu câu trả lời." : "Answer received and recorded." };
         }
 
         result = sanitizeAiOutput(result);
@@ -936,9 +973,18 @@ Rules:
           data: {
             correct: isPartial,
             score: isPartial ? 80 : 40,
-            explanation: isPartial
-              ? `Câu trả lời khá sát. Đáp án gợi ý: '${targetAns}'`
-              : `Đáp án gợi ý: '${targetAns}'`
+            explanation: (() => {
+              const uiLang = appSettings.ui_lang || "en";
+              if (uiLang === "vi") {
+                return isPartial
+                  ? `Câu trả lời khá sát. Đáp án gợi ý: '${targetAns}'`
+                  : `Đáp án gợi ý: '${targetAns}'`;
+              } else {
+                return isPartial
+                  ? `Very close answer. Suggested answer: '${targetAns}'`
+                  : `Suggested answer: '${targetAns}'`;
+              }
+            })()
           }
         });
       }

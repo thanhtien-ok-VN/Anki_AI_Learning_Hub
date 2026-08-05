@@ -220,9 +220,15 @@ def open_settings():
     lang_row.addWidget(learn_lang_lbl)
     i18n_widgets.append((learn_lang_lbl, "settings.learn_lang"))
 
+    from core.languages import SUPPORTED_LANGUAGES
     learn_lang_cb = QComboBox()
-    learn_lang_cb.addItems(["en", "zh"])
-    learn_lang_cb.setCurrentText(s.get("learn_lang", "en"))
+    for lang in SUPPORTED_LANGUAGES:
+        name = f"{lang['native']} ({lang['names'].get(current_ui_lang, lang['native'])})"
+        learn_lang_cb.addItem(name, lang["code"])
+    
+    idx = learn_lang_cb.findData(s.get("learn_lang", "en"))
+    if idx != -1:
+        learn_lang_cb.setCurrentIndex(idx)
     lang_row.addWidget(learn_lang_cb)
     layout.addLayout(lang_row)
 
@@ -304,7 +310,7 @@ def open_settings():
             s.set("model", model_cb.currentText())
             s.set("temperature", temp_spin.value())
             s.set("ui_lang", ui_lang_cb.currentText())
-            s.set("learn_lang", learn_lang_cb.currentText())
+            s.set("learn_lang", learn_lang_cb.currentData())
             try:
                 mw.ai_engine._reset_api_client()
             except Exception as ex:

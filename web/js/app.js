@@ -353,6 +353,20 @@ const App = (() => {
     return `<section class="config-panel source-panel"><h3>${esc(t('source.title', 'Nguồn từ vựng Anki'))}</h3><label>${esc(t('source.search', 'Tìm deck'))} <input id="deck-search" placeholder="${esc(t('source.search_placeholder', 'Gõ một phần tên deck…'))}"></label><select id="deck" class="deck-list" size="7"></select><div class="selector-grid"><label>${esc(t('source.note_type', 'Note type'))}<select id="model"><option>${esc(t('source.select_deck_first', 'Chọn deck'))}</option></select></label><label>${esc(t('source.term', 'Thuật ngữ'))}<select id="term"><option>${esc(t('source.select_notetype_first', 'Chọn note type'))}</option></select></label><label>${esc(t('source.definition', 'Định nghĩa'))}<select id="definition"><option>${esc(t('source.select_notetype_first', 'Chọn note type'))}</option></select></label></div><div class="config-row"><label>${esc(t('source.sample_count', 'Số từ mẫu'))} <input id="sample-limit" type="number" value="20" min="1" max="50"></label><button id="sample" class="btn btn-outline">${esc(t('source.get_samples', 'Lấy mẫu'))}</button><button id="reset-samples" class="btn btn-outline">${esc(t('source.reset_round', 'Làm mới vòng'))}</button></div><p id="source-status" class="source-status">${esc(t('source.status', 'Mẫu được chọn ngẫu nhiên, không lặp trong phiên Hub.'))}</p><details id="sample-preview"><summary>${esc(t('source.preview_empty', 'Chưa có mẫu để xem'))}</summary><ol id="sample-list"></ol></details></section>`;
   }
 
+  function buildLanguageOptionsHtml() {
+    const uiLang = state.userPrefs.ui_lang || 'en';
+    const learnLang = state.userPrefs.language || '';
+    const langs = state.supportedLanguages || [
+      { code: "en", names: { en: "English", vi: "Tiếng Anh" }, native: "English" },
+      { code: "zh", names: { en: "Chinese", vi: "Tiếng Trung" }, native: "中文" }
+    ];
+    return langs.map(lang => {
+      const displayName = lang.names[uiLang] || lang.native || lang.code;
+      const selected = lang.code === learnLang ? 'selected' : '';
+      return `<option value="${lang.code}" ${selected}>${esc(displayName)}</option>`;
+    }).join('');
+  }
+
   function controls(id) {
     let max = id === 'matching' ? 50 : 10, min = id === 'matching' ? 5 : (id === 'story' ? 3 : 1), extra = '';
     if (id === 'cloze') {
@@ -373,7 +387,7 @@ const App = (() => {
       return '<section class="config-panel"><div class="selector-grid">' + countSelect + '</div><div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-top:12px;"><button class="btn primary" id="generate">' + esc(t('controls.generate', 'Tạo bài')) + '</button></div></section>';
     }
 
-    return '<section class="config-panel"><div class="selector-grid"><label>' + esc(t('app.language', 'Ngôn ngữ học')) + '<select id="language"><option value="">' + esc(t('controls.select_lang', '-- Chọn ngôn ngữ --')) + '</option><option value="en">' + esc(t('app.language_en', 'English')) + '</option><option value="zh">' + esc(t('app.language_zh', '中文 (Chinese)')) + '</option></select></label><label>' + esc(t('app.level', 'Trình độ')) + '<select id="level"><option value="beginner">' + esc(t('controls.level_beginner', 'A1 Beginner')) + '</option><option value="elementary">' + esc(t('controls.level_elementary', 'A2 Elementary')) + '</option><option value="intermediate" selected>' + esc(t('controls.level_intermediate', 'B1 Intermediate')) + '</option><option value="upper_intermediate">' + esc(t('controls.level_upper_intermediate', 'B2 Upper-intermediate')) + '</option><option value="advanced">' + esc(t('controls.level_advanced', 'C1–C2 Advanced')) + '</option></select></label>' + countSelect + extra + '<label>' + esc(t('app.topic', 'Chủ đề')) + '<input id="topic" value="daily_life"></label></div><div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-top:12px;"><button class="btn primary" id="generate">' + esc(t('controls.generate', 'Tạo bài')) + '</button><button class="btn" id="cancel-gen" style="display:none; background:#ef4444; color:white; border:none; padding:10px 20px; font-weight:600;" type="button">' + esc(t('app.cancel_gen', 'Hủy tạo bài')) + '</button></div></section>';
+    return '<section class="config-panel"><div class="selector-grid"><label>' + esc(t('app.language', 'Ngôn ngữ học')) + '<select id="language"><option value="">' + esc(t('controls.select_lang', '-- Chọn ngôn ngữ --')) + '</option>' + buildLanguageOptionsHtml() + '</select></label><label>' + esc(t('app.level', 'Trình độ')) + '<select id="level"><option value="beginner">' + esc(t('controls.level_beginner', 'A1 Beginner')) + '</option><option value="elementary">' + esc(t('controls.level_elementary', 'A2 Elementary')) + '</option><option value="intermediate" selected>' + esc(t('controls.level_intermediate', 'B1 Intermediate')) + '</option><option value="upper_intermediate">' + esc(t('controls.level_upper_intermediate', 'B2 Upper-intermediate')) + '</option><option value="advanced">' + esc(t('controls.level_advanced', 'C1–C2 Advanced')) + '</option></select></label>' + countSelect + extra + '<label>' + esc(t('app.topic', 'Chủ đề')) + '<input id="topic" value="daily_life"></label></div><div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-top:12px;"><button class="btn primary" id="generate">' + esc(t('controls.generate', 'Tạo bài')) + '</button><button class="btn" id="cancel-gen" style="display:none; background:#ef4444; color:white; border:none; padding:10px 20px; font-weight:600;" type="button">' + esc(t('app.cancel_gen', 'Hủy tạo bài')) + '</button></div></section>';
   }
 
   function game() {
@@ -499,7 +513,7 @@ const App = (() => {
     const items = q.options.map((opt, idx) => {
       let word = typeof opt === 'object' ? opt.word : opt;
       let isAns = typeof opt === 'object' ? opt.is_correct : (idx === q.correct_index);
-      let reason = typeof opt === 'object' ? opt.reason : (details[idx]?.reason || (isAns ? (q.explanation_short || 'Từ phù hợp ngữ cảnh câu.') : 'Phương án gây nhiễu.'));
+      let reason = typeof opt === 'object' ? opt.reason : (details[idx]?.reason || (isAns ? (q.explanation_short || t('feedback.correct_context_fallback', 'Từ phù hợp ngữ cảnh câu.')) : t('feedback.distractor_fallback', 'Phương án gây nhiễu.')));
       let tr = typeof opt === 'object' ? '' : (details[idx]?.translation || optTrans[idx] || '');
 
       const isUserChoice = idx === chosen;
@@ -507,17 +521,17 @@ const App = (() => {
 
       let badgeBg = isAns ? '#d1fae5' : (isUserChoice ? '#fee2e2' : 'var(--bg)');
       let badgeColor = isAns ? '#047857' : (isUserChoice ? '#b91c1c' : 'var(--text-secondary)');
-      let badgeLabel = isAns ? '✓ Đáp án đúng' : (isUserChoice ? '✕ Bạn chọn' : 'Từ gây nhiễu');
+      let badgeLabel = isAns ? t('feedback.badge_correct', '✓ Đáp án đúng') : (isUserChoice ? t('feedback.badge_chosen', '✕ Bạn chọn') : t('feedback.badge_distractor', 'Từ gây nhiễu'));
       let borderColor = isAns ? 'var(--success)' : (isUserChoice ? 'var(--error)' : 'var(--border)');
 
       return `
         <div style="padding:10px 12px; border-left:4px solid ${borderColor}; background:var(--bg); border-radius:4px; margin-bottom:8px; text-align:left;">
           <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px; margin-bottom:4px;">
             <span style="font-size:14px;"><b>${letter}. ${esc(word)}</b> ${tr ? `<span style="color:var(--text-secondary); font-size:13px;">— ${esc(tr)}</span>` : ''}</span>
-            <span style="font-size:11px; padding:2px 8px; border-radius:10px; font-weight:600; background:${badgeBg}; color:${badgeColor}; border:1px solid ${borderColor};">${badgeLabel}</span>
+            <span style="font-size:11px; padding:2px 8px; border-radius:10px; font-weight:600; background:${badgeBg}; color:${badgeColor}; border:1px solid ${borderColor};">${esc(badgeLabel)}</span>
           </div>
           <div style="font-size:13px; color:var(--text); line-height:1.4;">
-            <b>Lý do:</b> ${esc(reason)}
+            <b>${esc(t('feedback.reason_label_short', 'Lý do'))}:</b> ${esc(reason)}
           </div>
         </div>
       `;
@@ -525,7 +539,7 @@ const App = (() => {
 
     return `
       <div style="margin-top:14px; text-align:left;">
-        <b style="font-size:14px;">📊 Phân tích chi tiết các lựa chọn:</b>
+        <b style="font-size:14px;">📊 ${esc(t('feedback.options_analysis_title', 'Phân tích chi tiết các lựa chọn'))}:</b>
         <div style="margin-top:8px;">
           ${items}
         </div>
@@ -1275,26 +1289,26 @@ const App = (() => {
         feedbackHtml = `
           <div class="feedback ${isCorrect ? 'good' : 'bad'}" style="margin-top:16px; padding:16px; border-radius:8px;">
             <div style="font-weight:700; font-size:16px; margin-bottom:12px; color:${isCorrect ? 'var(--success)' : 'var(--error)'};">
-              ${isCorrect ? 'Chính xác! ✓' : 'Chưa đúng ✕'}
+              ${isCorrect ? esc(t('feedback.exact', 'Chính xác! ✓')) : esc(t('feedback.incorrect_fill_blank', 'Chưa đúng ✕'))}
             </div>
             
             <div style="margin-bottom:10px;">
-              <b>🌐 Dịch câu hoàn chỉnh:</b>
+              <b>🌐 ${esc(t('feedback.full_sentence_translation', 'Dịch câu hoàn chỉnh'))}:</b>
               <div style="margin-top:4px; padding:10px 12px; background:rgba(0,0,0,0.03); border-radius:6px; font-size:13.5px; line-height:1.5;">
-                ${esc(q.full_translation || q.sentence_translation || q.full_sentence_translation || 'Không có bản dịch')}
+                ${esc(q.full_translation || q.sentence_translation || q.full_sentence_translation || t('feedback.no_translation', 'Không có bản dịch'))}
               </div>
             </div>
 
             <div style="margin-bottom:10px;">
-              <b>💡 Lý do chọn:</b>
+              <b>💡 ${esc(t('feedback.reason_choice', 'Lý do chọn'))}:</b>
               <div style="margin-top:4px; padding:10px 12px; background:rgba(0,0,0,0.03); border-radius:6px; font-size:13.5px; line-height:1.5;">
-                ${esc(q.explanation || q.explanation_short || 'Không có giải thích')}
+                ${esc(q.explanation || q.explanation_short || t('feedback.no_explanation', 'Không có giải thích'))}
               </div>
             </div>
 
             ${q.grammar_note ? `
             <div style="margin-bottom:10px;">
-              <b>📌 Ghi chú ngữ pháp:</b>
+              <b>📌 ${esc(t('feedback.grammar_rule', 'Ghi chú ngữ pháp'))}:</b>
               <div style="margin-top:4px; padding:10px 12px; background:rgba(0,0,0,0.03); border-radius:6px; font-size:13.5px; line-height:1.5;">
                 ${esc(q.grammar_note)}
               </div>
@@ -1427,7 +1441,7 @@ const App = (() => {
   /* ---- CLOZE: paragraph with selects + top word bank ---- */
   function renderCloze(x) {
     const d = document.querySelector('#play');
-    if (!x?.blanks?.length) { d.innerHTML = '<div class="empty-state"><p>Không có dữ liệu điền từ.</p></div>'; return; }
+    if (!x?.blanks?.length) { d.innerHTML = `<div class="empty-state"><p>${esc(t('cloze.no_data', 'Không có dữ liệu điền từ.'))}</p></div>`; return; }
     const isGraded = !!state.isGraded;
     const gameId = state.route;
 
@@ -1454,7 +1468,7 @@ const App = (() => {
 
     const wordBankHtml = `
       <div class="word-bank-box">
-        <div class="word-bank-title">Danh sách từ để chọn (${sortedWords.length} từ)</div>
+        <div class="word-bank-title">${esc(t('cloze.word_bank_title', 'Danh sách từ để chọn ({0} từ)', sortedWords.length))}</div>
         <div class="word-bank-chips">
           ${sortedWords.map(w => `<span class="word-chip-static">${esc(w)}</span>`).join('')}
         </div>
@@ -1524,18 +1538,18 @@ const App = (() => {
     if (isGraded) {
       const explanations = x.blanks.map((b, i) => {
         const correctOpt = b.options[b.correct_index];
-        const chosenOpt = state.answers[i] !== undefined ? b.options[state.answers[i]] : 'Chưa chọn';
+        const chosenOpt = state.answers[i] !== undefined ? b.options[state.answers[i]] : t('cloze.not_selected', 'Chưa chọn');
         const isOk = state.answers[i] === b.correct_index;
         const vnMeaning = (b.meaning || b.meaning_in_vietnamese) ? ` (${b.meaning || b.meaning_in_vietnamese})` : '';
 
         return `
           <div style="margin-bottom: 10px; font-size: 14px;">
-            <b>[${i + 1}]</b> <span style="color: ${isOk ? 'var(--success)' : 'var(--error)'}; font-weight:600;">${isOk ? '✓ Đúng' : '✕ Sai'}</span>
-            — Đáp án: <b style="color: var(--success);">${esc(correctOpt)}</b>${esc(vnMeaning)}
-            ${!isOk ? `<span style="color: var(--text-secondary);">(Bạn chọn: ${esc(chosenOpt)})</span>` : ''}
-            ${b.hint ? `<div style="font-size: 13px; color: var(--text-secondary); margin-top: 2px;">💡 Gợi ý: ${esc(b.hint)}</div>` : ''}
+            <b>[${i + 1}]</b> <span style="color: ${isOk ? 'var(--success)' : 'var(--error)'}; font-weight:600;">${isOk ? esc(t('feedback.badge_correct_short', '✓ Đúng')) : esc(t('feedback.badge_wrong_short', '✕ Sai'))}</span>
+            — ${esc(t('feedback.answer_label_short', 'Đáp án'))}: <b style="color: var(--success);">${esc(correctOpt)}</b>${esc(vnMeaning)}
+            ${!isOk ? `<span style="color: var(--text-secondary);">(${esc(t('feedback.you_chose', 'Bạn chọn'))}: ${esc(chosenOpt)})</span>` : ''}
+            ${b.hint ? `<div style="font-size: 13px; color: var(--text-secondary); margin-top: 2px;">💡 ${esc(t('feedback.hint_label', 'Gợi ý'))}: ${esc(b.hint)}</div>` : ''}
             <div style="font-size: 13px; color: var(--text-secondary); margin-top: 2px;">
-              💡 Giải thích: ${esc(b.explanation || b.explanation_short || '')}
+              💡 ${esc(t('feedback.explanation_label', 'Giải thích'))}: ${esc(b.explanation || b.explanation_short || '')}
             </div>
           </div>
         `;
@@ -1543,15 +1557,15 @@ const App = (() => {
 
       const transHtml = (x.story_translation || x.paragraph_translation || x.sentence_meaning)
         ? `<div style="margin-top:12px; padding-top:10px; border-top:1px dashed var(--border); font-size:14px;">
-             <b>🌐 Dịch đoạn văn:</b> ${esc(x.story_translation || x.paragraph_translation || x.sentence_meaning)}
-             ${x.context_summary ? `<br><b>📝 Tóm tắt ngữ cảnh:</b> ${esc(x.context_summary)}` : ''}
-             ${x.full_solution_text ? `<br><b>📖 Đoạn văn hoàn chỉnh:</b> ${esc(x.full_solution_text)}` : ''}
+             <b>🌐 ${esc(t('cloze.paragraph_translation', 'Dịch đoạn văn'))}:</b> ${esc(x.story_translation || x.paragraph_translation || x.sentence_meaning)}
+             ${x.context_summary ? `<br><b>📝 ${esc(t('cloze.context_summary', 'Tóm tắt ngữ cảnh'))}:</b> ${esc(x.context_summary)}` : ''}
+             ${x.full_solution_text ? `<br><b>📖 ${esc(t('cloze.completed_paragraph', 'Đoạn văn hoàn chỉnh'))}:</b> ${esc(x.full_solution_text)}` : ''}
            </div>`
         : '';
 
       feedbackHtml = `
         <div class="feedback ${score === x.blanks.length ? 'good' : 'bad'}" style="margin-top:20px;">
-          <h3 style="margin-bottom:12px; text-align:center;">Kết quả: ${score}/${x.blanks.length} câu đúng</h3>
+          <h3 style="margin-bottom:12px; text-align:center;">${esc(t('feedback.grading_result', 'Kết quả: {0}/{1} câu đúng', score, x.blanks.length))}</h3>
           ${explanations}
           ${transHtml}
         </div>
@@ -2129,7 +2143,7 @@ const App = (() => {
       }
 
       // Đề bài (các từ xáo trộn nối bằng " / ")
-      const rawPromptText = `<b>Đề bài:</b> ${q.shuffled_words.join(' / ')}`;
+      const rawPromptText = `<b>${esc(t('unscramble.prompt', 'Đề bài'))}:</b> ${q.shuffled_words.join(' / ')}`;
 
       // Khung hiển thị câu đang ghép/câu đúng nổi bật theo 3 kịch bản
       let sentenceDisplayHtml = '';
@@ -2145,7 +2159,7 @@ const App = (() => {
               </div>
               ${feedbackObj.highlight ? `
                 <p style="margin:8px 0 0; font-size:13.5px; color:var(--text-secondary); line-height:1.4;">
-                  💡 <b>Điểm sáng:</b> ${esc(feedbackObj.highlight)}
+                  💡 <b>${esc(t('unscramble.highlight', 'Điểm sáng'))}:</b> ${esc(feedbackObj.highlight)}
                 </p>
               ` : ''}
             </div>
@@ -2158,8 +2172,8 @@ const App = (() => {
               <div style="font-size:18px; font-weight:700; color:var(--primary); margin:8px 0;">
                 ✅ ${esc(q.correct_sentence)}
               </div>
-              ${q.meaning ? `<p style="margin:6px 0; font-size:14px;">📖 <b>Dịch nghĩa:</b> ${esc(q.meaning)}</p>` : ''}
-              ${q.core_structure ? `<p style="margin:6px 0; font-size:13.5px; color:var(--text-secondary);">💡 <b>Cấu trúc chính:</b> <code>${esc(q.core_structure)}</code></p>` : ''}
+              ${q.meaning ? `<p style="margin:6px 0; font-size:14px;">📖 <b>${esc(t('taboo.definition_label', 'Dịch nghĩa'))}:</b> ${esc(q.meaning)}</p>` : ''}
+              ${q.core_structure ? `<p style="margin:6px 0; font-size:13.5px; color:var(--text-secondary);">💡 <b>${esc(t('unscramble.core_structure', 'Cấu trúc chính'))}:</b> <code>${esc(q.core_structure)}</code></p>` : ''}
             </div>
           `;
         } else {
@@ -2167,16 +2181,16 @@ const App = (() => {
           sentenceDisplayHtml = `
             <div class="unscramble-wrong-box" style="margin-top:12px; padding:14px 16px; border:2px solid #ef4444; border-radius:8px; background:rgba(239, 68, 68, 0.02);">
               <div style="font-size:12px; font-weight:700; color:white; background:#ef4444; padding:3px 8px; border-radius:4px; display:inline-block; margin-bottom:8px;">${t('unscramble.wrong_mark', '🔴 SAI')}</div>
-              <p style="margin:4px 0 8px; font-size:14px; font-weight:600; color:#ef4444;">⚠️ Vị trí sai: ${esc(feedbackObj.error_position || 'Trật tự các từ chưa đúng.')}</p>
+              <p style="margin:4px 0 8px; font-size:14px; font-weight:600; color:#ef4444;">⚠️ ${esc(t('unscramble.wrong_position', 'Vị trí sai'))}: ${esc(feedbackObj.error_position || t('unscramble.word_order_incorrect', 'Trật tự các từ chưa đúng.'))}</p>
               
               <div class="unscramble-compare" style="margin:10px 0; padding:10px; border-left:3px solid #ef4444; background:rgba(239,68,68,0.02); border-radius:4px;">
-                <p style="margin:2px 0; font-size:13.5px;">❌ <b>Câu của bạn:</b> <span style="color:#ef4444; font-weight:600;">${esc(chosen.join(' '))}</span></p>
-                <p style="margin:2px 0; font-size:13.5px;">✅ <b>Đáp án đúng:</b> <span style="color:var(--success); font-weight:600;">${esc(q.correct_sentence)}</span></p>
+                <p style="margin:2px 0; font-size:13.5px;">❌ <b>${esc(t('feedback.your_answer', 'Câu của bạn'))}:</b> <span style="color:#ef4444; font-weight:600;">${esc(chosen.join(' '))}</span></p>
+                <p style="margin:2px 0; font-size:13.5px;">✅ <b>${esc(t('feedback.expected_answer', 'Đáp án đúng'))}:</b> <span style="color:var(--success); font-weight:600;">${esc(q.correct_sentence)}</span></p>
               </div>
 
               ${feedbackObj.rule ? `
                 <p style="margin:8px 0 0; font-size:13.5px; color:var(--text-secondary); line-height:1.4;">
-                  💡 <b>Giải thích:</b> ${esc(feedbackObj.rule)}
+                  💡 <b>${esc(t('unscramble.explanation_label', 'Giải thích'))}:</b> ${esc(feedbackObj.rule)}
                 </p>
               ` : ''}
             </div>
@@ -2185,7 +2199,7 @@ const App = (() => {
       } else {
         sentenceDisplayHtml = `
           <div class="unscramble-sentence-box" id="sentence-box-${i}" style="min-height:58px; padding:12px 16px; border:2px dashed var(--border); border-radius:8px; display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:12px; background:rgba(0,0,0,0.01); transition:all 0.2s;">
-            <span style="color:var(--text-secondary); font-style:italic;">Bấm hoặc kéo các từ bên dưới vào đây...</span>
+            <span style="color:var(--text-secondary); font-style:italic;">${esc(t('unscramble.drag_instruction', 'Bấm hoặc kéo các từ bên dưới vào đây...'))}</span>
           </div>
         `;
       }
@@ -2437,7 +2451,7 @@ const App = (() => {
     const d = document.querySelector('#play');
     if (!d) return;
     if (!x || !x.story) {
-      d.innerHTML = '<div class="empty-state"><p>Không có dữ liệu bài đọc.</p></div>';
+      d.innerHTML = `<div class="empty-state"><p>${esc(t('story.no_data', 'Không có dữ liệu bài đọc.'))}</p></div>`;
       return;
     }
 
@@ -2493,7 +2507,7 @@ const App = (() => {
       <div class="story-passage-card">
         <div class="story-passage-header">
           <span class="story-passage-title">📖 ${title ? esc(title) : t('story.reading_passage', 'Bài đọc hiểu (Reading Passage)')}</span>
-          <span class="story-passage-badge">${questions.length} câu hỏi</span>
+          <span class="story-passage-badge">${esc(t('story.questions_count', '{0} câu hỏi', questions.length))}</span>
         </div>
         <div class="story-passage-content" style="font-size:15px; line-height:1.6;">
           ${highlightWords(content, targetWords).replace(/\n\n/g, '<br><br>')}
@@ -2514,7 +2528,7 @@ const App = (() => {
         <div class="story-container">
           ${passageHtml}
           <div class="feedback bad" style="margin-top:20px; padding:16px; border-radius:8px;">
-            <p style="margin:0;"><b>⚠️ Không thể tạo câu hỏi tự động:</b> Rất tiếc, hệ thống không thể khởi tạo bộ câu hỏi đọc hiểu cho bài này. Vui lòng đọc nội dung trên hoặc bấm <b>"Tạo bài"</b> để tạo bài đọc mới.</p>
+            <p style="margin:0;">${t('story.no_questions_generated', '<b>⚠️ Không thể tạo câu hỏi tự động:</b> Rất tiếc, hệ thống không thể khởi tạo bộ câu hỏi đọc hiểu cho bài này. Vui lòng đọc nội dung trên hoặc bấm <b>\"Tạo bài\"</b> để tạo bài đọc mới.')}</p>
           </div>
         </div>
       `;
@@ -2563,7 +2577,7 @@ const App = (() => {
           <div class="story-evidence-box">
             <span class="story-box-icon">📌</span>
             <div>
-              <b>Dẫn chứng trong bài đọc:</b>
+              <b>${esc(t('story.evidence_quote', 'Dẫn chứng trong bài đọc'))}:</b>
               <div class="story-quote-text">"${esc(quoteText)}"</div>
             </div>
           </div>
@@ -2573,7 +2587,7 @@ const App = (() => {
           <div class="story-explanation-box">
             <span class="story-box-icon">💡</span>
             <div>
-              <b>Giải thích đáp án:</b>
+              <b>${esc(t('feedback.explanation_label', 'Giải thích đáp án'))}:</b>
               <div class="story-exp-text">${esc(q.explanation)}</div>
             </div>
           </div>
@@ -2593,11 +2607,11 @@ const App = (() => {
 
       if (isGraded) {
         if (chosen === undefined) {
-          qStatusBadge = `<span class="q-badge unselected">Chưa làm</span>`;
+          qStatusBadge = `<span class="q-badge unselected">${esc(t('story.not_done', 'Chưa làm'))}</span>`;
         } else if (chosen === correctIdx) {
-          qStatusBadge = `<span class="q-badge correct">✓ Đúng</span>`;
+          qStatusBadge = `<span class="q-badge correct">${esc(t('feedback.badge_correct_short', '✓ Đúng'))}</span>`;
         } else {
-          qStatusBadge = `<span class="q-badge wrong">✕ Sai</span>`;
+          qStatusBadge = `<span class="q-badge wrong">${esc(t('feedback.badge_wrong_short', '✕ Sai'))}</span>`;
         }
       }
 
@@ -2606,7 +2620,7 @@ const App = (() => {
       return `
         <div class="story-question-card ${isGraded ? (chosen === correctIdx ? 'correct-border' : 'wrong-border') : ''}">
           <div class="story-q-header">
-            <span class="story-q-number">Câu ${i + 1}/${questions.length} ${typeBadge}</span>
+            <span class="story-q-number">${esc(t('story.question_counter', 'Câu {0}/{1}', i + 1, questions.length))} ${typeBadge}</span>
             ${qStatusBadge}
           </div>
           <p class="story-q-text">${esc(q.question)}</p>
@@ -2625,16 +2639,16 @@ const App = (() => {
       footerHtml = `
         <div class="story-result-summary fade-in">
           <div class="story-score-title">${t('story.result_title', '🎉 Kết quả bài đọc hiểu')}</div>
-          <div class="story-score-main">${score} / ${questions.length} câu đúng (${accuracyPct}%)</div>
+          <div class="story-score-main">${esc(t('story.score_summary', '{0} / {1} câu đúng ({2}%)', score, questions.length, accuracyPct))}</div>
           ${x.discussion_prompt ? `
             <div style="margin-top: 14px; text-align: left; padding: 14px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px;">
-              <b>💬 Gợi ý thảo luận/nói:</b>
+              <b>💬 ${esc(t('story.discussion_prompt', 'Gợi ý thảo luận/nói'))}:</b>
               <p style="margin: 6px 0 0 0; font-style: italic; font-size:14px; line-height:1.5;">${esc(x.discussion_prompt)}</p>
             </div>
           ` : ''}
           <div class="story-actions">
-            <button class="btn primary" id="story-retry-btn">🔄 Làm lại bài này</button>
-            <button class="btn btn-outline" id="story-new-btn">⚡ Tạo bài đọc mới</button>
+            <button class="btn primary" id="story-retry-btn">${esc(t('story.retry_btn', '🔄 Làm lại bài này'))}</button>
+            <button class="btn btn-outline" id="story-new-btn">${esc(t('story.new_btn', '⚡ Tạo bài đọc mới'))}</button>
           </div>
         </div>
       `;
@@ -2741,21 +2755,21 @@ const App = (() => {
         
         // Hiển thị Đánh giá chung
         if (typeof r.score !== 'undefined') {
-          const lv = r.level || (r.correct ? 'Đạt' : 'Cần cải thiện');
+          const lv = r.level || (r.correct ? t('feedback.grade_pass', 'Đạt') : t('feedback.grade_improve', 'Cần cải thiện'));
           html += `<div class="overall-grade" style="margin-top:10px; padding:10px; background:rgba(0,0,0,0.02); border-radius:6px; border-left:4px solid ${r.correct?'var(--success)':'var(--error)'}">
-            <p style="margin: 0;">📊 <b>${esc(t('feedback.overall_grade', 'ĐÁNH GIÁ CHUNG'))}:</b> Điểm số: <span style="font-size:16px; font-weight:700; color:${r.correct?'var(--success)':'var(--error)'}">${r.score}/10</span> (${esc(lv)})</p>
+            <p style="margin: 0;">📊 <b>${esc(t('feedback.overall_grade', 'ĐÁNH GIÁ CHUNG'))}:</b> ${esc(t('feedback.score_label', 'Điểm số'))}: <span style="font-size:16px; font-weight:700; color:${r.correct?'var(--success)':'var(--error)'}">${r.score}/10</span> (${esc(lv)})</p>
           </div>`;
         }
         
         // Hiển thị Phân tích lỗi
         if (r.errors && r.errors.length) {
-          html += '<hr><p><b>🔍 ' + esc(t('feedback.error_analysis', 'PHÂN TÍCH LỖI:')) + '</b></p>';
+          html += '<hr><p><b>🔍 ' + esc(t('feedback.detailed_error_analysis', 'PHÂN TÍCH LỖI:')) + '</b></p>';
           r.errors.forEach(err => {
             if (typeof err === 'object' && err.name) {
               html += `<div class="error-item" style="margin-bottom:12px; padding:8px 12px; border-left:3px solid var(--error); background:rgba(239, 68, 68, 0.02); border-radius:4px;">
-                <p style="margin:2px 0;">🔴 <b>Lỗi:</b> ${esc(err.name)}</p>
-                <p style="margin:2px 0; padding-left:14px; font-size:13px;">❌ <b>Lỗi sai:</b> <span style="color:var(--error);">${esc(err.wrong)}</span> ➔ <b>Vì sao sai:</b> <i>${esc(err.reason)}</i></p>
-                <p style="margin:2px 0; padding-left:14px; font-size:13px;">💡 <b>Gợi ý sửa:</b> <span style="color:var(--success); font-weight:600;">${esc(err.suggestion)}</span> ➔ <b>Vì sao sửa:</b> <i>${esc(err.why)}</i></p>
+                <p style="margin:2px 0;">🔴 <b>${esc(t('feedback.error_label', 'Lỗi'))}:</b> ${esc(err.name)}</p>
+                <p style="margin:2px 0; padding-left:14px; font-size:13px;">❌ <b>${esc(t('feedback.wrong_label', 'Lỗi sai'))}:</b> <span style="color:var(--error);">${esc(err.wrong)}</span> ➔ <b>${esc(t('feedback.reason_label', 'Vì sao sai'))}:</b> <i>${esc(err.reason)}</i></p>
+                <p style="margin:2px 0; padding-left:14px; font-size:13px;">💡 <b>${esc(t('feedback.suggestion_label', 'Gợi ý sửa'))}:</b> <span style="color:var(--success); font-weight:600;">${esc(err.suggestion)}</span> ➔ <b>${esc(t('feedback.fix_label', 'Vì sao sửa'))}:</b> <i>${esc(err.why)}</i></p>
               </div>`;
             } else {
               html += `<p>• ${esc(err)}</p>`;
@@ -2769,10 +2783,10 @@ const App = (() => {
         if (r.suggested_answers) {
           html += '<hr><p><b>✅ ' + esc(t('feedback.suggested_answers_title', 'ĐÁP ÁN GỢI Ý:')) + '</b></p>';
           if (r.suggested_answers.common) {
-            html += `<p style="margin:4px 0;">• <b>Thông thường (Common):</b> <span style="color:var(--success); font-weight:600;">${esc(r.suggested_answers.common)}</span></p>`;
+            html += `<p style="margin:4px 0;">• <b>${esc(t('feedback.common_translation', 'Thông thường (Common)'))}:</b> <span style="color:var(--success); font-weight:600;">${esc(r.suggested_answers.common)}</span></p>`;
           }
           if (r.suggested_answers.advanced) {
-            html += `<p style="margin:4px 0;">• <b>Nâng cao (Advanced):</b> <span style="color:var(--success); font-weight:600;">${esc(r.suggested_answers.advanced)}</span></p>`;
+            html += `<p style="margin:4px 0;">• <b>${esc(t('feedback.advanced_translation', 'Nâng cao (Advanced)'))}:</b> <span style="color:var(--success); font-weight:600;">${esc(r.suggested_answers.advanced)}</span></p>`;
           }
         } else {
           html += '<p>' + esc(t('feedback.answer_label', 'Đáp án: {0}', targetText)) + '</p>';
@@ -2870,7 +2884,7 @@ const App = (() => {
         let r;
         const wasHinted = state.hintedQuestions && state.hintedQuestions.has(0);
         if (isCorrect) {
-          r = { correct: !wasHinted, score: wasHinted ? 0.0 : 10.0, explanation: wasHinted ? 'Bạn đã dùng gợi ý xem đáp án.' : 'Chính xác! Câu trả lời của bạn trùng khớp với đáp án chuẩn.' };
+          r = { correct: !wasHinted, score: wasHinted ? 0.0 : 10.0, explanation: wasHinted ? t('feedback.hinted_explanation', 'Bạn đã dùng gợi ý xem đáp án.') : t('feedback.exact_match_explanation', 'Chính xác! Câu trả lời của bạn trùng khớp với đáp án chuẩn.') };
         } else {
           r=await Bridge.sendAsync('ai_grade',{
             gamemode:'sentence_transform',
@@ -2894,22 +2908,22 @@ const App = (() => {
         let html = '';
         if (r.correct) {
           html += '<div class="feedback good"><b>🎉 ' + esc(t('feedback.exact', 'Chính xác!')) + '</b>';
-          html += `<p style="margin-top:10px;">• <b>Câu trả lời của bạn:</b> <span style="color:var(--success); font-weight:600;">${esc(ansVal)}</span></p>`;
+          html += `<p style="margin-top:10px;">• <b>${esc(t('feedback.your_answer', 'Câu trả lời của bạn'))}:</b> <span style="color:var(--success); font-weight:600;">${esc(ansVal)}</span></p>`;
           if (r.explanation) {
             html += `<p style="color:var(--text-secondary); font-size:13px; margin:4px 0;"><i>(${esc(r.explanation)})</i></p>`;
           }
         } else {
           html += '<div class="feedback bad"><b>❌ ' + esc(t('feedback.needs_improvement', 'Chưa chính xác rồi!')) + '</b>';
-          html += `<p style="margin-top:10px;">• <b>Câu trả lời của bạn:</b> <span style="color:var(--error); font-weight:600;">${esc(ansVal)}</span></p>`;
-          html += `<p>• <b>Đáp án chuẩn:</b> <span style="color:var(--success); font-weight:600;">${esc(expectedText)}</span></p>`;
+          html += `<p style="margin-top:10px;">• <b>${esc(t('feedback.your_answer', 'Câu trả lời của bạn'))}:</b> <span style="color:var(--error); font-weight:600;">${esc(ansVal)}</span></p>`;
+          html += `<p>• <b>${esc(t('feedback.expected_answer', 'Đáp án chuẩn'))}:</b> <span style="color:var(--success); font-weight:600;">${esc(expectedText)}</span></p>`;
           
           // Phân tích lỗi chi tiết 4 bước từ AI
           if (r.specific_error || r.why_wrong || r.how_to_fix || r.why_fix) {
-            html += `<hr><p><b>🔍 Phân tích chi tiết lỗi sai:</b></p>
+            html += `<hr><p><b>🔍 ${esc(t('feedback.detailed_error_analysis', 'Phân tích chi tiết lỗi sai'))}:</b></p>
             <div class="error-item" style="margin-bottom:12px; padding:8px 12px; border-left:3px solid var(--error); background:rgba(239, 68, 68, 0.02); border-radius:4px;">
-              <p style="margin:2px 0;">🔴 <b>Lỗi:</b> ${esc(r.specific_error || 'Lỗi cấu trúc/Từ vựng')}</p>
-              <p style="margin:2px 0; padding-left:14px; font-size:13px;">❌ <b>Lỗi sai:</b> <span style="color:var(--error);">${esc(ansVal)}</span> ➔ <b>Vì sao sai:</b> <i>${esc(r.why_wrong || 'Chưa biến đổi đúng cấu trúc ngữ pháp yêu cầu')}</i></p>
-              <p style="margin:2px 0; padding-left:14px; font-size:13px;">💡 <b>Cách sửa:</b> <span style="color:var(--success); font-weight:600;">${esc(r.how_to_fix || expectedText)}</span> ➔ <b>Vì sao sửa:</b> <i>${esc(r.why_fix || 'Đảm bảo đúng quy tắc biến đổi câu')}</i></p>
+              <p style="margin:2px 0;">🔴 <b>${esc(t('feedback.error_label', 'Lỗi'))}:</b> ${esc(r.specific_error || t('feedback.grammar_vocab_error', 'Lỗi cấu trúc/Từ vựng'))}</p>
+              <p style="margin:2px 0; padding-left:14px; font-size:13px;">❌ <b>${esc(t('feedback.wrong_label', 'Lỗi sai'))}:</b> <span style="color:var(--error);">${esc(ansVal)}</span> ➔ <b>${esc(t('feedback.reason_label', 'Vì sao sai'))}:</b> <i>${esc(r.why_wrong || t('feedback.grammar_structure_error', 'Chưa biến đổi đúng cấu trúc ngữ pháp yêu cầu'))}</i></p>
+              <p style="margin:2px 0; padding-left:14px; font-size:13px;">💡 <b>${esc(t('feedback.suggestion_label', 'Cách sửa'))}:</b> <span style="color:var(--success); font-weight:600;">${esc(r.how_to_fix || expectedText)}</span> ➔ <b>${esc(t('feedback.fix_label', 'Vì sao sửa'))}:</b> <i>${esc(r.why_fix || t('feedback.rule_fix_error', 'Đảm bảo đúng quy tắc biến đổi câu'))}</i></p>
             </div>`;
           } else if (r.explanation || r.feedback) {
             html += `<p>${esc(r.explanation || r.feedback)}</p>`;
@@ -2918,12 +2932,12 @@ const App = (() => {
 
         const grammar = q.grammar_rule || r.grammar_rule;
         if (grammar) {
-          html += '<hr><p><b>📌 Quy tắc ngữ pháp:</b> ' + esc(grammar) + '</p>';
+          html += '<hr><p><b>📌 ' + esc(t('feedback.grammar_rule', 'Quy tắc ngữ pháp')) + ':</b> ' + esc(grammar) + '</p>';
         }
 
         const variations = q.acceptable_variations || r.acceptable_variations;
         if (variations && variations.length) {
-          html += '<p>✅ <b>Các biến thể đúng khác:</b></p><ul>';
+          html += '<p>✅ <b>' + esc(t('feedback.acceptable_variations', 'Các biến thể đúng khác')) + ':</b></p><ul>';
           variations.forEach(v => {
             const txt = typeof v === 'object' ? v.text : v;
             const note = typeof v === 'object' ? v.note : '';
@@ -3001,11 +3015,11 @@ const App = (() => {
         textEl.style.display = 'block';
         hintLevel++;
         if (hintLevel === 1) {
-          textEl.innerHTML = `⭐ <b>Gợi ý 1:</b> Từ này bắt đầu bằng chữ: <code style="font-size:14px; font-weight:700;">${secretWord.charAt(0).toUpperCase()}</code>`;
+          textEl.innerHTML = `⭐ <b>${esc(t('taboo.hint_1', 'Gợi ý 1'))}:</b> ${esc(t('taboo.starts_with_letter', 'Từ này bắt đầu bằng chữ'))}: <code style="font-size:14px; font-weight:700;">${secretWord.charAt(0).toUpperCase()}</code>`;
         } else if (hintLevel === 2) {
-          textEl.innerHTML = `⭐ <b>Gợi ý 1:</b> Từ này bắt đầu bằng chữ: <code>${secretWord.charAt(0).toUpperCase()}</code><br>⭐ <b>Gợi ý 2:</b> Nghĩa tiếng Việt: <i>${q.meaning || 'Không có'}</i>`;
+          textEl.innerHTML = `⭐ <b>${esc(t('taboo.hint_1', 'Gợi ý 1'))}:</b> ${esc(t('taboo.starts_with_letter', 'Từ này bắt đầu bằng chữ'))}: <code>${secretWord.charAt(0).toUpperCase()}</code><br>⭐ <b>${esc(t('taboo.hint_2', 'Gợi ý 2'))}:</b> ${esc(t('taboo.meaning_hint', 'Nghĩa'))}: <i>${q.meaning || t('feedback.no_explanation', 'Không có')}</i>`;
         } else if (hintLevel === 3) {
-          textEl.innerHTML = `⭐ <b>Đáp án là:</b> <code>${secretWord}</code> (Bạn đã xem đáp án nên câu này không tính điểm)`;
+          textEl.innerHTML = `⭐ <b>${esc(t('taboo.answer_is', 'Đáp án là'))}:</b> <code>${secretWord}</code> (${esc(t('taboo.hint_penalty_note', 'Bạn đã xem đáp án nên câu này không tính điểm'))})`;
           document.querySelector('#answer').value = secretWord;
           if (!state.hintedQuestions) state.hintedQuestions = new Set();
           state.hintedQuestions.add(currentRoundIdx);
@@ -3030,11 +3044,11 @@ const App = (() => {
           r = {
             correct: !wasHinted,
             score: wasHinted ? 0.0 : 10.0,
-            explanation: wasHinted ? 'Bạn đã dùng gợi ý xem đáp án.' : 'Chính xác! Bạn đã đoán đúng từ mục tiêu.',
+            explanation: wasHinted ? t('feedback.hinted_explanation', 'Bạn đã dùng gợi ý xem đáp án.') : t('taboo.correct_guess_explanation', 'Chính xác! Bạn đã đoán đúng từ mục tiêu.'),
             guess_feedback: guessList.map(g => ({
               guess: g,
               accepted: g === correctWord,
-              reason_vi: g === correctWord ? (wasHinted ? 'Đoán đúng nhưng đã xem gợi ý đáp án.' : 'Chính xác! Trùng khớp hoàn toàn với đáp án mục tiêu.') : 'Không phải đáp án mục tiêu.'
+              reason_vi: g === correctWord ? (wasHinted ? t('taboo.correct_but_hinted', 'Đoán đúng nhưng đã xem gợi ý đáp án.') : t('taboo.exact_target_match', 'Chính xác! Trùng khớp hoàn toàn với đáp án mục tiêu.')) : t('taboo.not_target', 'Không phải đáp án mục tiêu.')
             }))
           };
         } else {
@@ -3069,19 +3083,19 @@ const App = (() => {
         if(!fb)return;
         
         let html = '<div class="feedback '+(r.correct?'good':'bad')+'"><b>' + t('taboo.result_title', '📊 KẾT QUẢ CHẤM ĐIỂM') + '</b><hr>';
-        html += `<p style="font-size: 15px;"><b>${r.correct ? '🎯 CHÍNH XÁC' : '❌ CHƯA CHÍNH XÁC'}</b></p>`;
-        html += `<p>📥 <b>Danh sách từ bạn đã nhập:</b> ${guessList.map(g => `<code>${esc(g)}</code>`).join(', ') || 'Chưa nhập'}</p>`;
-        html += `<p>🔑 <b>Đáp án đúng:</b> <span style="color:var(--success); font-weight:700;">${esc(secretWord.toUpperCase())}</span> ${q.phonetic ? `<code style="font-size:13.5px; color:var(--text-secondary); margin-left:6px;">${esc(q.phonetic)}</code>` : ''}</p>`;
+        html += `<p style="font-size: 15px;"><b>${r.correct ? esc(t('taboo.correct', '🎯 CHÍNH XÁC')) : esc(t('taboo.incorrect', '❌ CHƯA CHÍNH XÁC'))}</b></p>`;
+        html += `<p>📥 <b>${esc(t('taboo.your_guesses', 'Danh sách từ bạn đã nhập'))}:</b> ${guessList.map(g => `<code>${esc(g)}</code>`).join(', ') || esc(t('taboo.not_entered', 'Chưa nhập'))}</p>`;
+        html += `<p>🔑 <b>${esc(t('feedback.expected_answer', 'Đáp án đúng'))}:</b> <span style="color:var(--success); font-weight:700;">${esc(secretWord.toUpperCase())}</span> ${q.phonetic ? `<code style="font-size:13.5px; color:var(--text-secondary); margin-left:6px;">${esc(q.phonetic)}</code>` : ''}</p>`;
         if (q.meaning) {
-          html += `<p>🇻🇳 <b>Dịch nghĩa:</b> ${esc(q.meaning)}</p>`;
+          html += `<p>🌐 <b>${esc(t('taboo.definition_label', 'Dịch nghĩa'))}:</b> ${esc(q.meaning)}</p>`;
         }
         
         if (r.ai_analysis || r.explanation || r.feedback) {
-          html += '<hr><p><b>💡 PHÂN TÍCH TỪ AI:</b></p>';
+          html += '<hr><p><b>💡 ' + esc(t('taboo.ai_analysis_label', 'PHÂN TÍCH TỪ AI')) + ':</b></p>';
           if (r.word_definition) {
-            html += `<p>• <b>Nghĩa gốc:</b> ${esc(r.word_definition)}</p>`;
+            html += `<p>• <b>${esc(t('taboo.word_definition_label', 'Nghĩa gốc'))}:</b> ${esc(r.word_definition)}</p>`;
           }
-          html += `<p>• <b>Nhận xét:</b> ${esc(r.ai_analysis || r.explanation || r.feedback)}</p>`;
+          html += `<p>• <b>${esc(t('taboo.comment_label', 'Nhận xét'))}:</b> ${esc(r.ai_analysis || r.explanation || r.feedback)}</p>`;
         }
         
         const feedbackList = r.guess_feedback || [];
@@ -3098,7 +3112,7 @@ const App = (() => {
               feedbackList.push({
                 guess: g,
                 accepted: isCorrect,
-                reason_vi: isCorrect ? 'Khớp đáp án mục tiêu.' : (forbidden.includes(g.toUpperCase()) ? 'Vi phạm từ cấm!' : 'Không trùng khớp hoặc không phải từ đồng nghĩa.')
+                reason_vi: isCorrect ? t('taboo.matched_target', 'Khớp đáp án mục tiêu.') : (forbidden.includes(g.toUpperCase()) ? t('taboo.taboo_violation', 'Vi phạm từ cấm!') : t('taboo.no_match', 'Không trùng khớp hoặc không phải từ đồng nghĩa.'))
               });
             });
           }
@@ -3108,7 +3122,7 @@ const App = (() => {
         const rejectedGuesses = feedbackList.filter(item => !item.accepted);
 
         if (acceptedGuesses.length) {
-          html += '<hr><p><b>✅ CÁC TỪ ĐƯỢC CHẤP NHẬN:</b></p><ul>';
+          html += '<hr><p><b>✅ ' + esc(t('taboo.accepted_words', 'CÁC TỪ ĐƯỢC CHẤP NHẬN')) + ':</b></p><ul>';
           acceptedGuesses.forEach(item => {
             html += `<li><code>${esc(item.guess)}</code> ➔ <i>${esc(item.reason_vi)}</i></li>`;
           });
@@ -3116,7 +3130,7 @@ const App = (() => {
         }
         
         if (rejectedGuesses.length) {
-          html += '<hr><p><b>❌ CÁC TỪ KHÔNG ĐƯỢC CHẤP NHẬN:</b></p><ul>';
+          html += '<hr><p><b>❌ ' + esc(t('taboo.rejected_words', 'CÁC TỪ KHÔNG ĐƯỢC CHẤP NHẬN')) + ':</b></p><ul>';
           rejectedGuesses.forEach(item => {
             html += `<li><code>${esc(item.guess)}</code> ➔ <span style="color:var(--error);">${esc(item.reason_vi)}</span></li>`;
           });
@@ -3234,6 +3248,15 @@ const App = (() => {
       }
     } catch (e) {
       console.warn("Failed to load prefs from Python:", e);
+    }
+
+    try {
+      const langsData = await Bridge.sendAsync('get_supported_languages');
+      if (langsData && langsData.languages) {
+        state.supportedLanguages = langsData.languages;
+      }
+    } catch (e) {
+      console.warn("Failed to load supported languages:", e);
     }
 
     render();

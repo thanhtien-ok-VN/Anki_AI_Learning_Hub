@@ -49,6 +49,13 @@ class PromptManager:
         kwargs["level_instruction"] = level_instruction
         
         # Safely replace known placeholders in prompt without failing on raw JSON braces
+        from core.languages import get_language_name
+        kwargs["learn_lang"] = get_language_name(language)
+        if "ui_lang" in kwargs:
+            kwargs["ui_lang"] = get_language_name(kwargs["ui_lang"])
+        if "feedback_lang" in kwargs:
+            kwargs["feedback_lang"] = get_language_name(kwargs["feedback_lang"])
+
         rendered = GLOBAL_SYSTEM_INSTRUCTION + "\n\n" + prompt
         for k, v in kwargs.items():
             placeholder = f"{{{k}}}"
