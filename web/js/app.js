@@ -1001,7 +1001,7 @@ const App = (() => {
         opts = optsOverride;
       } else {
         const lang = document.querySelector('#language');
-        if (!lang || !lang.value) {
+        if (id !== 'matching' && (!lang || !lang.value)) {
           showStatus(t('app.select_lang_first', 'Hãy chọn ngôn ngữ học trước khi tạo bài.'));
           setBusy(false);
           return;
