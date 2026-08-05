@@ -1690,85 +1690,151 @@ const App = (() => {
       return activeMeanings.filter(s => s && wordPairIds.has(s.pairId)).map(s => s.pairId);
     }
 
+    function getHalfCompletePairs() {
+      const activeWordIds = new Set(activeWords.filter(Boolean).map(s => s.pairId));
+      const activeMeaningIds = new Set(activeMeanings.filter(Boolean).map(s => s.pairId));
+      
+      const halfWords = []; // word is on screen, meaning is not
+      const halfMeanings = []; // meaning is on screen, word is not
+      
+      pairs.forEach(p => {
+        if (matchedPairIds.has(p.id)) return;
+        const wOn = activeWordIds.has(p.id);
+        const mOn = activeMeaningIds.has(p.id);
+        if (wOn && !mOn) {
+          halfWords.push(p);
+        } else if (mOn && !wOn) {
+          halfMeanings.push(p);
+        }
+      });
+      return { halfWords, halfMeanings };
+    }
+
     // Initialize the 5-slot screen
     function initBoard() {
       matchedPairIds.clear();
       activeWords = new Array(SLOT_COUNT).fill(null);
       activeMeanings = new Array(SLOT_COUNT).fill(null);
 
-      // K guaranteed matching pairs (at least 2-3 pairs)
-      const k = Math.min(Math.min(3, Math.ceil(SLOT_COUNT / 2)), pairs.length);
+      // Invariant: G = min(4, pairs.length)
+      const G = Math.min(4, pairs.length);
       const shuffledPairs = [...pairs].sort(() => Math.random() - 0.5);
-      const guaranteedPairs = shuffledPairs.slice(0, k);
+      const guaranteed = shuffledPairs.slice(0, G);
 
       const leftIndices = [0, 1, 2, 3, 4].sort(() => Math.random() - 0.5);
       const rightIndices = [0, 1, 2, 3, 4].sort(() => Math.random() - 0.5);
 
-      for (let i = 0; i < k; i++) {
-        const p = guaranteedPairs[i];
+      for (let i = 0; i < G; i++) {
+        const p = guaranteed[i];
         activeWords[leftIndices[i]] = { pairId: p.id, word: p.word };
         activeMeanings[rightIndices[i]] = { pairId: p.id, meaning: p.meaning };
       }
 
-      // Fill remaining empty left slots with distractor words
-      const remainingWordPairs = getUnplacedWordPairs().sort(() => Math.random() - 0.5);
+      // Collect empty slots
+      const emptyLefts = [];
+      const emptyRights = [];
       for (let i = 0; i < SLOT_COUNT; i++) {
-        if (!activeWords[i] && remainingWordPairs.length > 0) {
-          const p = remainingWordPairs.pop();
-          activeWords[i] = { pairId: p.id, word: p.word };
+        if (!activeWords[i]) emptyLefts.push(i);
+        if (!activeMeanings[i]) emptyRights.push(i);
+      }
+
+      // Fill remaining empty slots with disjoint half-pairs from the pool
+      const pool = shuffledPairs.slice(G);
+      const shuffledPool = [...pool].sort(() => Math.random() - 0.5);
+
+      // Place words on left
+      for (let i = 0; i < emptyLefts.length; i++) {
+        if (i < shuffledPool.length) {
+          const p = shuffledPool[i];
+          activeWords[emptyLefts[i]] = { pairId: p.id, word: p.word };
         }
       }
 
-      // Fill remaining empty right slots with distractor meanings
-      const remainingMeaningPairs = getUnplacedMeaningPairs().sort(() => Math.random() - 0.5);
-      for (let i = 0; i < SLOT_COUNT; i++) {
-        if (!activeMeanings[i] && remainingMeaningPairs.length > 0) {
-          const p = remainingMeaningPairs.pop();
-          activeMeanings[i] = { pairId: p.id, meaning: p.meaning };
+      // Place meanings on right, offset by emptyLefts.length to ensure disjointness
+      for (let i = 0; i < emptyRights.length; i++) {
+        const poolIdx = i + emptyLefts.length;
+        if (poolIdx < shuffledPool.length) {
+          const p = shuffledPool[poolIdx];
+          activeMeanings[emptyRights[i]] = { pairId: p.id, meaning: p.meaning };
         }
       }
     }
 
     // Refill slots after a successful match
     function refillSlots(emptyLeftIdx, emptyRightIdx) {
-      const matchesOnScreen = getMatchedPairsOnScreen();
-
-      if (matchesOnScreen.length > 0) {
-        // Normal refill from unplaced pool
-        const availWords = getUnplacedWordPairs().sort(() => Math.random() - 0.5);
-        let leftPairId = null;
-        if (availWords.length > 0) {
-          const p = availWords[0];
-          leftPairId = p.id;
-          activeWords[emptyLeftIdx] = { pairId: p.id, word: p.word };
+      const { halfWords, halfMeanings } = getHalfCompletePairs();
+      
+      const shufHalfWords = [...halfWords].sort(() => Math.random() - 0.5);
+      const shufHalfMeanings = [...halfMeanings].sort(() => Math.random() - 0.5);
+      
+      // Case A: Complete a word already on screen by placing its meaning on right
+      // Fill the left slot with a fully unplaced word
+      if (shufHalfWords.length > 0) {
+        const C = shufHalfWords[0];
+        const unplaced = getFullyUnplacedPairs().sort(() => Math.random() - 0.5);
+        if (unplaced.length > 0) {
+          const D = unplaced[0];
+          activeWords[emptyLeftIdx] = { pairId: D.id, word: D.word };
+          activeMeanings[emptyRightIdx] = { pairId: C.id, meaning: C.meaning };
+          return;
         }
-
-        let availMeanings = getUnplacedMeaningPairs();
-        if (leftPairId) {
-          availMeanings = availMeanings.filter(m => m.id !== leftPairId);
+      }
+      
+      // Case B: Complete a meaning already on screen by placing its word on left
+      // Fill the right slot with a fully unplaced meaning
+      if (shufHalfMeanings.length > 0) {
+        const C = shufHalfMeanings[0];
+        const unplaced = getFullyUnplacedPairs().sort(() => Math.random() - 0.5);
+        if (unplaced.length > 0) {
+          const D = unplaced[0];
+          activeWords[emptyLeftIdx] = { pairId: C.id, word: C.word };
+          activeMeanings[emptyRightIdx] = { pairId: D.id, meaning: D.meaning };
+          return;
         }
-        if (availMeanings.length === 0) {
-          availMeanings = getUnplacedMeaningPairs();
+      }
+      
+      // Case C: No fully unplaced pairs left, but we have both half-word and half-meaning on screen.
+      // Pair them up to refill without creating identical match (A != B).
+      if (shufHalfWords.length > 0 && shufHalfMeanings.length > 0) {
+        const A = shufHalfWords[0];
+        const B = shufHalfMeanings[0];
+        if (A.id !== B.id) {
+          activeWords[emptyLeftIdx] = { pairId: B.id, word: B.word };
+          activeMeanings[emptyRightIdx] = { pairId: A.id, meaning: A.meaning };
+          return;
         }
-        availMeanings.sort(() => Math.random() - 0.5);
-        if (availMeanings.length > 0) {
-          const p = availMeanings[0];
-          activeMeanings[emptyRightIdx] = { pairId: p.id, meaning: p.meaning };
-        }
-      } else {
-        // Forced refill (no match on screen - "bị tắc"): force a full matching pair onto screen
-        const unplacedBoth = getFullyUnplacedPairs().sort(() => Math.random() - 0.5);
-        if (unplacedBoth.length > 0) {
-          const forcedPair = unplacedBoth[0];
-          activeWords[emptyLeftIdx] = { pairId: forcedPair.id, word: forcedPair.word };
-          activeMeanings[emptyRightIdx] = { pairId: forcedPair.id, meaning: forcedPair.meaning };
-        } else {
-          // Fallback if no full pair left, fill individually from available
-          const availWords = getUnplacedWordPairs();
-          if (availWords.length > 0) activeWords[emptyLeftIdx] = { pairId: availWords[0].id, word: availWords[0].word };
-          const availMeanings = getUnplacedMeaningPairs();
-          if (availMeanings.length > 0) activeMeanings[emptyRightIdx] = { pairId: availMeanings[0].id, meaning: availMeanings[0].meaning };
-        }
+      }
+      
+      // Case D: Draw two different fully unplaced pairs C and D
+      const unplaced = getFullyUnplacedPairs().sort(() => Math.random() - 0.5);
+      if (unplaced.length >= 2) {
+        const C = unplaced[0];
+        const D = unplaced[1];
+        activeWords[emptyLeftIdx] = { pairId: C.id, word: C.word };
+        activeMeanings[emptyRightIdx] = { pairId: D.id, meaning: D.meaning };
+        return;
+      }
+      
+      // Case E: Fallback for queue exhaustion
+      const availWords = getUnplacedWordPairs().sort(() => Math.random() - 0.5);
+      let leftPairId = null;
+      if (availWords.length > 0) {
+        const p = availWords[0];
+        leftPairId = p.id;
+        activeWords[emptyLeftIdx] = { pairId: p.id, word: p.word };
+      }
+      
+      let availMeanings = getUnplacedMeaningPairs();
+      if (leftPairId) {
+        availMeanings = availMeanings.filter(m => m.id !== leftPairId);
+      }
+      if (availMeanings.length === 0) {
+        availMeanings = getUnplacedMeaningPairs();
+      }
+      availMeanings.sort(() => Math.random() - 0.5);
+      if (availMeanings.length > 0) {
+        const p = availMeanings[0];
+        activeMeanings[emptyRightIdx] = { pairId: p.id, meaning: p.meaning };
       }
     }
 
