@@ -95,17 +95,45 @@ def open_settings():
 
     # ===== API Keys =====
     _section("settings.api_keys")
+
+    # API key count spinbox
+    count_row = QHBoxLayout()
+    count_lbl = QLabel(_add_i18n_key("settings.api_key_count"))
+    count_row.addWidget(count_lbl)
+    i18n_widgets.append((count_lbl, "settings.api_key_count"))
+
+    # Determine dynamic count
+    active_keys_count = len([k for k in s.get_api_keys() if k])
+    default_count = max(1, min(10, active_keys_count))
+    if default_count < 3 and not s.get("api_key_count"):
+        default_count = 3
+    api_key_count = s.get("api_key_count", default_count)
+
+    num_keys_spin = QSpinBox()
+    num_keys_spin.setRange(1, 10)
+    num_keys_spin.setValue(api_key_count)
+    num_keys_spin.setFixedWidth(50)
+    count_row.addWidget(num_keys_spin)
+    count_row.addStretch()
+    layout.addLayout(count_row)
+
     key_inputs = []
     key_statuses = []
     key_labels = []
-    for idx, label_key in enumerate(["settings.primary_key", "settings.fallback2", "settings.fallback3"]):
+    key_rows = []
+
+    stored_keys = s.get_api_keys()  # length 10
+
+    for idx in range(10):
         row = QHBoxLayout()
-        lbl = QLabel(_add_i18n_key(label_key))
+        label_key = "settings.primary_key" if idx == 0 else ("settings.key_n", idx + 1)
+        
+        lbl_text = _add_i18n_key("settings.primary_key") if idx == 0 else _add_i18n_key("settings.key_n").replace("{0}", str(idx + 1))
+        lbl = QLabel(lbl_text)
         row.addWidget(lbl)
         i18n_widgets.append((lbl, label_key))
 
-        key_name = "api_key" if idx == 0 else f"api_key{idx+1}"
-        inp = QLineEdit(s.get(key_name, ""))
+        inp = QLineEdit(stored_keys[idx])
         inp.setEchoMode(QLineEdit.EchoMode.Password)
         inp.setPlaceholderText(f"Gemini API key #{idx+1}")
         inp.textChanged.connect(lambda text, i=idx: key_statuses[i].setText(""))
@@ -130,9 +158,24 @@ def open_settings():
         test_btn.setFixedWidth(50)
         test_btn.clicked.connect(lambda checked, k=inp, st=status_label: _test_key(k.text().strip(), st))
         row.addWidget(test_btn)
+        
         layout.addLayout(row)
         key_inputs.append(inp)
         key_labels.append(lbl)
+        key_rows.append((lbl, inp, status_label, show_btn, test_btn))
+
+    def update_key_visibility():
+        count = num_keys_spin.value()
+        for i, (lbl, inp, status_lbl, show_btn, test_btn) in enumerate(key_rows):
+            visible = i < count
+            lbl.setVisible(visible)
+            inp.setVisible(visible)
+            status_lbl.setVisible(visible)
+            show_btn.setVisible(visible)
+            test_btn.setVisible(visible)
+
+    num_keys_spin.valueChanged.connect(update_key_visibility)
+    update_key_visibility()
 
     # ===== Model =====
     _section("settings.model")
@@ -192,7 +235,10 @@ def open_settings():
     def _retranslate(lang_code: str):
         strings = load_strings(lang_code)
         for widget, key in i18n_widgets:
-            text = strings.get(key, key)
+            if isinstance(key, tuple):
+                text = strings.get(key[0], key[0]).replace("{0}", str(key[1]))
+            else:
+                text = strings.get(key, key)
             if isinstance(widget, QCheckBox):
                 widget.setText(text)
             else:
@@ -223,7 +269,6 @@ def open_settings():
         def on_done(future):
             try:
                 res = future.result()
-                # Check if dialog has not been destroyed and widget is still valid
                 if status_label and not status_label.isHidden():
                     if res.get("ok"):
                         status_label.setText("OK")
@@ -247,10 +292,15 @@ def open_settings():
     # ===== Accept =====
     def on_accept():
         try:
-            keys = [inp.text().strip() for inp in key_inputs]
-            s.set("api_key", keys[0])
-            s.set("api_key2", keys[1])
-            s.set("api_key3", keys[2])
+            count = num_keys_spin.value()
+            s.set("api_key_count", count)
+            # Save visible keys, clear hidden keys
+            for i in range(10):
+                val = key_inputs[i].text().strip() if i < count else ""
+                s.set(f"api_key{i+1}", val)
+            # Backward compatibility
+            s.set("api_key", key_inputs[0].text().strip() if count > 0 else "")
+            
             s.set("model", model_cb.currentText())
             s.set("temperature", temp_spin.value())
             s.set("ui_lang", ui_lang_cb.currentText())

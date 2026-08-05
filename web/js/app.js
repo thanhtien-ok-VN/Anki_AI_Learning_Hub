@@ -346,7 +346,7 @@ const App = (() => {
   }
 
   function controls(id) {
-    let max = id === 'matching' ? 20 : 5, min = id === 'matching' ? 5 : (id === 'story' ? 3 : 1), extra = '';
+    let max = id === 'matching' ? 50 : 10, min = id === 'matching' ? 5 : (id === 'story' ? 3 : 1), extra = '';
     if (id === 'cloze') {
       max = 1; min = 1;
       extra = '<label>' + esc(t('controls.num_blanks', 'Số blank')) + '<select id="num_blanks">' + Array.from({ length: 6 }, (_, i) => '<option ' + (i + 5 === 5 ? 'selected' : '') + '>' + (i + 5) + '</option>').join('') + '</select></label>';
@@ -983,7 +983,7 @@ const App = (() => {
       if (signal.aborted) return;
 
       if (id === 'matching' && state.pairs.length < 5) {
-        showStatus('error', t('app.not_enough_vocab', 'Không đủ từ vựng để nối {0} cặp. Giảm số cặp hoặc thêm từ.', 5));
+        showStatus(t('app.not_enough_vocab', 'Không đủ từ vựng để nối {0} cặp. Giảm số cặp hoặc thêm từ.', 5));
         setBusy(false);
         return;
       }
@@ -2275,7 +2275,7 @@ const App = (() => {
       if (gradeBtn) {
         gradeBtn.onclick = async () => {
           try {
-            setBusy(true, 'Đang chấm bài bằng AI...');
+            setBusy(true, t('unscramble.grading', 'Đang chấm bài bằng AI...'));
             const signal = getSignal();
             
             for (let i = 0; i < x.questions.length; i++) {

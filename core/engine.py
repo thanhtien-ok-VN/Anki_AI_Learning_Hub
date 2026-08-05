@@ -78,8 +78,17 @@ SETTINGS_PATH = os.path.join(ADDON_PATH, "user_files", "settings.json")
 
 DEFAULT_SETTINGS = {
     "api_key": "",
+    "api_key1": "",
     "api_key2": "",
     "api_key3": "",
+    "api_key4": "",
+    "api_key5": "",
+    "api_key6": "",
+    "api_key7": "",
+    "api_key8": "",
+    "api_key9": "",
+    "api_key10": "",
+    "api_key_count": 3,
     "model": "auto",
     "temperature": 0.7,
     "ui_lang": "en",
@@ -89,14 +98,14 @@ DEFAULT_SETTINGS = {
 }
 
 GAME_LIMITS = {
-    "fill_blank": (1, 5),
-    "translation": (1, 5),
-    "unscramble": (1, 5),
-    "sentence_transform": (1, 5),
-    "taboo": (1, 5),
-    "cloze": (1, 5),
-    "matching": (3, 12),
-    "story": (3, 5),
+    "fill_blank": (1, 10),
+    "translation": (1, 10),
+    "unscramble": (1, 10),
+    "sentence_transform": (1, 10),
+    "taboo": (1, 10),
+    "cloze": (1, 10),
+    "matching": (5, 50),
+    "story": (3, 10),
 }
 
 
@@ -135,11 +144,25 @@ class SettingsManager:
             log.info(f"Setting changed: {key}", {"old": old, "new": value})
 
     def get_api_keys(self) -> list[str]:
-        return [
-            self.get("api_key", "").strip(),
-            self.get("api_key2", "").strip(),
-            self.get("api_key3", "").strip(),
-        ]
+        keys = []
+        for i in range(1, 11):
+            val = self.get(f"api_key{i}", "").strip()
+            keys.append(val)
+        
+        # Backward compatibility
+        if not keys[0]:
+            old_key = self.get("api_key", "").strip()
+            if old_key:
+                keys[0] = old_key
+        if not keys[1]:
+            old_key2 = self.get("api_key2", "").strip()
+            if old_key2:
+                keys[1] = old_key2
+        if not keys[2]:
+            old_key3 = self.get("api_key3", "").strip()
+            if old_key3:
+                keys[2] = old_key3
+        return keys
 
     def get_active_keys(self) -> list[str]:
         return [k for k in self.get_api_keys() if k]
@@ -218,7 +241,9 @@ class AIEngine:
             keys = self.settings.get_active_keys()
             if keys:
                 self._api_client = GeminiClient(
-                    keys, self.settings.get("model", "auto")
+                    keys,
+                    self.settings.get("model", "auto"),
+                    ui_lang=self.settings.get("ui_lang", "en")
                 )
         return self._api_client
 
@@ -252,6 +277,7 @@ class AIEngine:
             self._api_client = GeminiClient(
                 self.settings.get_active_keys(),
                 self.settings.get("model", "auto"),
+                ui_lang=self.settings.get("ui_lang", "en")
             )
         log.info(
             "AIEngine started",
@@ -674,6 +700,8 @@ class AIEngine:
     def _handle_set_ui_lang(self, data: dict) -> dict:
         lang = data.get("lang", "en")
         self.settings.set("ui_lang", lang)
+        if self._api_client:
+            self._api_client.ui_lang = lang
         log.info(f"UI language set to: {lang}")
         return {"lang": lang}
 
