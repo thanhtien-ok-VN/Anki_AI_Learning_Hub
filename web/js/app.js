@@ -98,7 +98,10 @@ const App = (() => {
     if (l) p.level = l.value;
     if (c) p.count = c.value;
     if (tp) p.topic = tp.value;
-    if (lg) p.language = lg.value;
+    if (lg) {
+      p.language = lg.value; // legacy local preference for existing sessions
+      p.learn_lang = lg.value;
+    }
     if (nb) p.num_blanks = nb.value;
     if (fs) p.focus = fs.value;
     if (sl) p.sample_limit = sl.value;
@@ -125,7 +128,7 @@ const App = (() => {
     const tp = document.querySelector('#topic');
     if (tp && p.topic) tp.value = p.topic;
     const lg = document.querySelector('#language');
-    if (lg && p.language) lg.value = p.language;
+    if (lg && (p.learn_lang || p.language)) lg.value = p.learn_lang || p.language;
     const nb = document.querySelector('#num_blanks');
     if (nb && p.num_blanks) nb.value = p.num_blanks;
     const fs = document.querySelector('#focus');
@@ -354,12 +357,9 @@ const App = (() => {
   }
 
   function buildLanguageOptionsHtml() {
-    const uiLang = state.userPrefs.ui_lang || 'en';
-    const learnLang = state.userPrefs.language || '';
-    const langs = state.supportedLanguages || [
-      { code: "en", names: { en: "English", vi: "Tiếng Anh" }, native: "English" },
-      { code: "zh", names: { en: "Chinese", vi: "Tiếng Trung" }, native: "中文" }
-    ];
+    const uiLang = (typeof Utils !== 'undefined' && Utils.currentLang) || state.userPrefs.ui_lang || 'en';
+    const learnLang = state.userPrefs.learn_lang || state.userPrefs.language || 'en';
+    const langs = state.supportedLanguages || [];
     return langs.map(lang => {
       const displayName = lang.names[uiLang] || lang.native || lang.code;
       const selected = lang.code === learnLang ? 'selected' : '';
@@ -387,7 +387,7 @@ const App = (() => {
       return '<section class="config-panel"><div class="selector-grid">' + countSelect + '</div><div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-top:12px;"><button class="btn primary" id="generate">' + esc(t('controls.generate', 'Tạo bài')) + '</button></div></section>';
     }
 
-    return '<section class="config-panel"><div class="selector-grid"><label>' + esc(t('app.language', 'Ngôn ngữ học')) + '<select id="language"><option value="">' + esc(t('controls.select_lang', '-- Chọn ngôn ngữ --')) + '</option>' + buildLanguageOptionsHtml() + '</select></label><label>' + esc(t('app.level', 'Trình độ')) + '<select id="level"><option value="beginner">' + esc(t('controls.level_beginner', 'A1 Beginner')) + '</option><option value="elementary">' + esc(t('controls.level_elementary', 'A2 Elementary')) + '</option><option value="intermediate" selected>' + esc(t('controls.level_intermediate', 'B1 Intermediate')) + '</option><option value="upper_intermediate">' + esc(t('controls.level_upper_intermediate', 'B2 Upper-intermediate')) + '</option><option value="advanced">' + esc(t('controls.level_advanced', 'C1–C2 Advanced')) + '</option></select></label>' + countSelect + extra + '<label>' + esc(t('app.topic', 'Chủ đề')) + '<input id="topic" value="daily_life"></label></div><div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-top:12px;"><button class="btn primary" id="generate">' + esc(t('controls.generate', 'Tạo bài')) + '</button><button class="btn" id="cancel-gen" style="display:none; background:#ef4444; color:white; border:none; padding:10px 20px; font-weight:600;" type="button">' + esc(t('app.cancel_gen', 'Hủy tạo bài')) + '</button></div></section>';
+    return '<section class="config-panel"><div class="selector-grid"><label>' + esc(t('app.language', 'Learning language')) + '<select id="language">' + buildLanguageOptionsHtml() + '</select></label><label>' + esc(t('app.level', 'Level')) + '<select id="level"><option value="beginner">' + esc(t('controls.level_beginner', 'A1 Beginner')) + '</option><option value="elementary">' + esc(t('controls.level_elementary', 'A2 Elementary')) + '</option><option value="intermediate" selected>' + esc(t('controls.level_intermediate', 'B1 Intermediate')) + '</option><option value="upper_intermediate">' + esc(t('controls.level_upper_intermediate', 'B2 Upper-intermediate')) + '</option><option value="advanced">' + esc(t('controls.level_advanced', 'C1–C2 Advanced')) + '</option></select></label>' + countSelect + extra + '<label>' + esc(t('app.topic', 'Topic')) + '<input id="topic" value="daily_life"></label></div><div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-top:12px;"><button class="btn primary" id="generate">' + esc(t('controls.generate', 'Generate')) + '</button><button class="btn" id="cancel-gen" style="display:none; background:#ef4444; color:white; border:none; padding:10px 20px; font-weight:600;" type="button">' + esc(t('app.cancel_gen', 'Cancel generation')) + '</button></div></section>';
   }
 
   function game() {
@@ -792,7 +792,7 @@ const App = (() => {
     const uiLangBtn = document.querySelector('#ui-lang-btn');
     if (uiLangBtn) {
       uiLangBtn.onclick = async () => {
-        const langs = ['en', 'vi'];
+        const langs = state.uiLanguages || ['en', 'vi'];
         const cur = (typeof Utils !== 'undefined' && Utils.currentLang) || 'en';
         const next = langs[(langs.indexOf(cur) + 1) % langs.length];
         const langNames = { 'en': 'EN', 'vi': 'VI' };
@@ -886,10 +886,18 @@ const App = (() => {
     const slEl = document.querySelector('#sample-limit');
     if (slEl) slEl.oninput = () => savePrefs();
 
-    ['#language', '#level', '#count', '#num_blanks', '#focus'].forEach(sel => {
+    ['#level', '#count', '#num_blanks', '#focus'].forEach(sel => {
       const el = document.querySelector(sel);
       if (el) el.onchange = () => savePrefs();
     });
+    const languageEl = document.querySelector('#language');
+    if (languageEl) languageEl.onchange = async () => {
+      const result = await Bridge.sendAsync('set_learn_lang', { lang: languageEl.value });
+      const learnLang = result && result.learn_lang ? result.learn_lang : languageEl.value;
+      state.userPrefs.learn_lang = learnLang;
+      state.userPrefs.language = learnLang;
+      savePrefs();
+    };
 
     const topicEl = document.querySelector('#topic');
     if (topicEl) topicEl.oninput = () => savePrefs();
@@ -3048,7 +3056,7 @@ const App = (() => {
             guess_feedback: guessList.map(g => ({
               guess: g,
               accepted: g === correctWord,
-              reason_vi: g === correctWord ? (wasHinted ? t('taboo.correct_but_hinted', 'Đoán đúng nhưng đã xem gợi ý đáp án.') : t('taboo.exact_target_match', 'Chính xác! Trùng khớp hoàn toàn với đáp án mục tiêu.')) : t('taboo.not_target', 'Không phải đáp án mục tiêu.')
+              reason: g === correctWord ? (wasHinted ? t('taboo.correct_but_hinted', 'Correct, but you viewed the answer hint.') : t('taboo.exact_target_match', 'Correct! Matches target word exactly.')) : t('taboo.not_target', 'Not the target word.')
             }))
           };
         } else {
@@ -3101,10 +3109,10 @@ const App = (() => {
         const feedbackList = r.guess_feedback || [];
         if (!feedbackList.length) {
           if (r.accepted_phrases && r.accepted_phrases.length) {
-            r.accepted_phrases.forEach(item => feedbackList.push({ guess: item.phrase, accepted: true, reason_vi: item.explanation_vi }));
+            r.accepted_phrases.forEach(item => feedbackList.push({ guess: item.phrase, accepted: true, reason: item.explanation || item.explanation_vi || item.reason }));
           }
           if (r.rejected_phrases && r.rejected_phrases.length) {
-            r.rejected_phrases.forEach(item => feedbackList.push({ guess: item.phrase, accepted: false, reason_vi: item.reason_vi }));
+            r.rejected_phrases.forEach(item => feedbackList.push({ guess: item.phrase, accepted: false, reason: item.reason || item.reason_vi || item.explanation }));
           }
           if (!feedbackList.length) {
             guessList.forEach(g => {
@@ -3112,7 +3120,7 @@ const App = (() => {
               feedbackList.push({
                 guess: g,
                 accepted: isCorrect,
-                reason_vi: isCorrect ? t('taboo.matched_target', 'Khớp đáp án mục tiêu.') : (forbidden.includes(g.toUpperCase()) ? t('taboo.taboo_violation', 'Vi phạm từ cấm!') : t('taboo.no_match', 'Không trùng khớp hoặc không phải từ đồng nghĩa.'))
+                reason: isCorrect ? t('taboo.matched_target', 'Matches target word.') : (forbidden.includes(g.toUpperCase()) ? t('taboo.taboo_violation', 'Taboo word violation!') : t('taboo.no_match', 'No match or not a synonym.'))
               });
             });
           }
@@ -3124,7 +3132,7 @@ const App = (() => {
         if (acceptedGuesses.length) {
           html += '<hr><p><b>✅ ' + esc(t('taboo.accepted_words', 'CÁC TỪ ĐƯỢC CHẤP NHẬN')) + ':</b></p><ul>';
           acceptedGuesses.forEach(item => {
-            html += `<li><code>${esc(item.guess)}</code> ➔ <i>${esc(item.reason_vi)}</i></li>`;
+            html += `<li><code>${esc(item.guess)}</code> ➔ <i>${esc(item.reason || item.reason_vi || '')}</i></li>`;
           });
           html += '</ul>';
         }
@@ -3132,7 +3140,7 @@ const App = (() => {
         if (rejectedGuesses.length) {
           html += '<hr><p><b>❌ ' + esc(t('taboo.rejected_words', 'CÁC TỪ KHÔNG ĐƯỢC CHẤP NHẬN')) + ':</b></p><ul>';
           rejectedGuesses.forEach(item => {
-            html += `<li><code>${esc(item.guess)}</code> ➔ <span style="color:var(--error);">${esc(item.reason_vi)}</span></li>`;
+            html += `<li><code>${esc(item.guess)}</code> ➔ <span style="color:var(--error);">${esc(item.reason || item.reason_vi || '')}</span></li>`;
           });
           html += '</ul>';
         }
@@ -3242,18 +3250,19 @@ const App = (() => {
     }
 
     try {
+      const settings = await Bridge.sendAsync('get_settings');
+      if (settings && Object.keys(settings).length) Object.assign(state.userPrefs, settings);
       const p = await Bridge.sendAsync('load_prefs');
-      if (p && Object.keys(p).length) {
-        Object.assign(state.userPrefs, p);
-      }
-    } catch (e) {
-      console.warn("Failed to load prefs from Python:", e);
-    }
+      if (p && Object.keys(p).length) Object.assign(state.userPrefs, p);
+      state.userPrefs.learn_lang = (settings && settings.learn_lang) || state.userPrefs.learn_lang || state.userPrefs.language || 'en';
+      state.userPrefs.language = state.userPrefs.learn_lang;
+    } catch (e) { console.warn("Failed to load language settings:", e); }
 
     try {
       const langsData = await Bridge.sendAsync('get_supported_languages');
-      if (langsData && langsData.languages) {
-        state.supportedLanguages = langsData.languages;
+      if (langsData && langsData.learn_languages) {
+        state.supportedLanguages = langsData.learn_languages;
+        state.uiLanguages = langsData.ui_languages || ['en', 'vi'];
       }
     } catch (e) {
       console.warn("Failed to load supported languages:", e);

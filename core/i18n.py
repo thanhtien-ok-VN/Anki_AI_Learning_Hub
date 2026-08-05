@@ -1,6 +1,8 @@
 import json
 import os
 
+from core.languages import valid_ui_lang
+
 ADDON_PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LANG_DIR = os.path.join(ADDON_PATH, "lang")
 
@@ -9,6 +11,7 @@ _cache = {}
 
 
 def load_strings(lang: str) -> dict:
+    lang = valid_ui_lang(lang)
     if lang in _cache:
         return _cache[lang]
     path = os.path.join(LANG_DIR, f"{lang}.json")

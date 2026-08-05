@@ -11,7 +11,6 @@ class GameModeBase(ABC):
     name: str = ""
     display_name: str = ""
     icon: str = ""
-    supported_languages: list = ["en", "zh"]
 
     def __init__(self, api_client: GeminiClient, prompt_mgr: PromptManager):
         self.api = api_client

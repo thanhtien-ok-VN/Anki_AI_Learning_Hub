@@ -22,8 +22,7 @@ class PromptManager:
         **kwargs,
     ) -> str:
         filename = f"{gamemode}.txt"
-        lang_dir = os.path.join(self.prompts_dir, language)
-        filepath = os.path.join(lang_dir, filename)
+        filepath = os.path.join(self.prompts_dir, "common", filename)
 
         prompt = self._load(filepath)
         if not prompt:
@@ -87,7 +86,7 @@ class PromptManager:
     def _default_prompt(self, gamemode: str) -> str:
         prompts = {
             "fill_blank": (
-                "Generate {count} fill-in-the-blank sentences in {language}.\n"
+                "Generate {count} fill-in-the-blank sentences in {learn_lang}.\n"
                 "Level: {level_instruction}\n"
                 "Topic: {topic}\n"
                 "Each sentence has ONE blank (_____). Place the blank at various positions. Provide exactly 4 options (1 correct + 3 distractors).\n"
@@ -95,7 +94,7 @@ class PromptManager:
                 "Output valid JSON matching the provided schema."
             ),
             "cloze": (
-                "Write a coherent paragraph in {language} ({paragraph_min_words}-{paragraph_max_words} words).\n"
+                "Write a coherent paragraph in {learn_lang} ({paragraph_min_words}-{paragraph_max_words} words).\n"
                 "Level: {level_instruction}\n"
                 "Topic: {topic}\n"
                 "Then remove {num_blanks} words. The blank answers MUST be EXACTLY these words, each used exactly once: {blank_words}.\n"
@@ -111,7 +110,7 @@ class PromptManager:
                 "Output valid JSON matching the provided schema."
             ),
             "unscramble": (
-                "Generate exactly {count} grammatically correct sentences in {language}.\n"
+                "Generate exactly {count} grammatically correct sentences in {learn_lang}.\n"
                 "Level: {level_instruction}\n"
                 "Topic: {topic}\n"
                 "Each sentence should be 6-12 words long. The {count} sentences MUST each use a DIFFERENT grammatical structure: {sentence_types}.\n"
@@ -119,7 +118,7 @@ class PromptManager:
                 "Output valid JSON matching the provided schema."
             ),
             "story": (
-                "Write a short story in {language} ({word_count} words) that naturally incorporates "
+                "Write a short story in {learn_lang} ({word_count} words) that naturally incorporates "
                 "ALL of these target words: {target_words}\n"
                 "Level: {level_instruction}\n"
                 "Each target word must appear at least once and be used in its correct context.\n"
@@ -128,7 +127,7 @@ class PromptManager:
                 "Output valid JSON matching the provided schema."
             ),
             "sentence_transform": (
-                "Generate {count} sentence transformation exercises in English.\n"
+                "Generate {count} sentence transformation exercises in {learn_lang}.\n"
                 "Focus: {focus} ({voice}/conditional/reported/comparative)\n"
                 "Level: {level_instruction}\n"
                 "For each exercise provide:\n"
@@ -140,7 +139,7 @@ class PromptManager:
                 "Output valid JSON matching the provided schema."
             ),
             "taboo": (
-                "Generate {count} Taboo rounds in {language}.\n"
+                "Generate {count} Taboo rounds in {learn_lang}.\n"
                 "Level: {level_instruction}\n"
                 "Topic: {topic}\n"
                 "For each round provide:\n"
@@ -152,5 +151,5 @@ class PromptManager:
         }
         return prompts.get(
             gamemode,
-            "Generate content in {language}. Level: {level_instruction}. Output valid JSON matching the schema.",
+            "Generate content in {learn_lang}. Support fields must be in {ui_lang}. Level: {level_instruction}. Output valid JSON matching the schema.",
         )

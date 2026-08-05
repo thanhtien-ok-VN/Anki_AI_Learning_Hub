@@ -1,0 +1,2 @@
+Generate {count} fill-in-the-blank questions in {learn_lang}. Level: {level_instruction}; topic: {topic}.
+Sentences, target words, and options must be in {learn_lang}. Meanings, translations, option reasons, explanations, and grammar notes must be in {ui_lang}. Output only JSON matching the schema.

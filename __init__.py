@@ -72,7 +72,7 @@ def open_settings():
         mw.ai_engine.start()
 
     s = mw.ai_engine.settings
-    current_ui_lang = s.get("ui_lang", "vi")
+    current_ui_lang = s.get("ui_lang", "en")
 
     dialog = QDialog(mw)
     dialog.setWindowTitle(t("settings.title", current_ui_lang))
@@ -211,8 +211,9 @@ def open_settings():
     lang_row.addWidget(ui_lang_lbl)
     i18n_widgets.append((ui_lang_lbl, "settings.ui_lang"))
 
+    from core.languages import SUPPORTED_LANGUAGES, UI_LANGUAGES
     ui_lang_cb = QComboBox()
-    ui_lang_cb.addItems(["vi", "en"])
+    ui_lang_cb.addItems(UI_LANGUAGES)
     ui_lang_cb.setCurrentText(current_ui_lang)
     lang_row.addWidget(ui_lang_cb)
 
@@ -220,7 +221,6 @@ def open_settings():
     lang_row.addWidget(learn_lang_lbl)
     i18n_widgets.append((learn_lang_lbl, "settings.learn_lang"))
 
-    from core.languages import SUPPORTED_LANGUAGES
     learn_lang_cb = QComboBox()
     for lang in SUPPORTED_LANGUAGES:
         name = f"{lang['native']} ({lang['names'].get(current_ui_lang, lang['native'])})"
@@ -251,6 +251,14 @@ def open_settings():
                 widget.setText(text)
         temp_spin.setToolTip(strings.get("settings.temperature_tip", "").replace("\\n", "\n"))
         dialog.setWindowTitle(strings.get("settings.title", "Settings"))
+        selected = learn_lang_cb.currentData()
+        learn_lang_cb.blockSignals(True)
+        learn_lang_cb.clear()
+        for item in SUPPORTED_LANGUAGES:
+            label = f"{item['native']} ({item['names'].get(lang_code, item['native'])})"
+            learn_lang_cb.addItem(label, item["code"])
+        learn_lang_cb.setCurrentIndex(max(0, learn_lang_cb.findData(selected)))
+        learn_lang_cb.blockSignals(False)
 
     ui_lang_cb.currentTextChanged.connect(_retranslate)
 

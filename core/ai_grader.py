@@ -157,7 +157,7 @@ Respond in JSON matching the exact schema below:
         {{
             "guess": "The student's exact guess phrase",
             "accepted": true/false,
-            "reason_vi": "Why this guess was accepted or rejected (in {feedback_lang})"
+            "reason": "Why this guess was accepted or rejected (in {feedback_lang})"
         }}
     ]
 }}

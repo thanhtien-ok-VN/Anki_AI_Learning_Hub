@@ -1,0 +1,2 @@
+Generate a {source_lang} to {target_lang} translation exercise about {topic}, using {sentence_type} at {level_instruction}.
+The source sentence must be in {source_lang}; reference and alternatives in {target_lang}; notes and rubric in {ui_lang}. Output only JSON matching the schema.

@@ -6,6 +6,7 @@ const Utils = {
             const res = await Bridge.sendAsync('get_ui_strings').catch(() => null);
             if (res && res.strings && Object.keys(res.strings).length > 0) {
                 this.__ = res.strings;
+                this.currentLang = res.lang || 'en';
                 break;
             }
             await new Promise(r => setTimeout(r, 200));
@@ -59,14 +60,6 @@ const Utils = {
             [a[i], a[j]] = [a[j], a[i]];
         }
         return a;
-    },
-
-    toast(msg, duration = 2500) {
-        const el = document.createElement('div');
-        el.className = 'toast';
-        el.textContent = msg;
-        document.body.appendChild(el);
-        setTimeout(() => el.remove(), duration);
     },
 
     getParam(name) {

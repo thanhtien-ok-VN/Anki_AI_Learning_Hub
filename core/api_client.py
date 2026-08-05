@@ -186,7 +186,7 @@ class GeminiClient:
 
     def _try_keys(self, payload: dict, max_retries: int, base_delay: float, progress_callback: Optional[Callable[[str], None]] = None) -> dict:
         if not self.keys:
-            return self._err(EC["NO_KEYS"], "No API keys configured. Set at least one in Settings.")
+            return self._err(EC["NO_KEYS"], t("app.ai_no_keys", lang=self.ui_lang))
 
         has_schema = "response_schema" in payload.get("generationConfig", {})
         last_error = ""
@@ -308,11 +308,11 @@ class GeminiClient:
                         break
 
         if final_code == EC["RATE_LIMIT"]:
-            message = "AI is temporarily busy. Please try again later."
+            message = t("app.ai_rate_limited", lang=self.ui_lang)
         elif final_code == EC["INTERNAL_ERROR"]:
-            message = "The AI request could not be completed."
+            message = t("app.ai_internal_error", lang=self.ui_lang)
         else:
-            message = "AI is temporarily unavailable. Please try again later."
+            message = t("app.ai_unavailable", lang=self.ui_lang)
         return self._err(final_code, message, last_error)
 
     def generate_structured(

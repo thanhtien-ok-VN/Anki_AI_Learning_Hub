@@ -24,7 +24,7 @@ class WordUnscrambleMode(GameModeBase):
                         s.get("correct_sentence", "").split()
                     ),
                     "hint": s.get("hint", ""),
-                    "meaning": s.get("meaning", s.get("meaning_vi", "")),
+                    "meaning": s.get("meaning", ""),
                     "key_vocabulary": s.get("key_vocabulary", []),
                     "difficulty_reason": s.get("difficulty_reason", ""),
                     "grammar_note": s.get("grammar_note", ""),

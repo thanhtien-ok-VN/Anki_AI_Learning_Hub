@@ -1,0 +1,1 @@
+Generate word matching items in {learn_lang}. Terms must be in {learn_lang}; definitions and explanatory support must be in {ui_lang}. Output only JSON matching the schema.

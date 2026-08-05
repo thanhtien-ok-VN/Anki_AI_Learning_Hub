@@ -12,7 +12,7 @@ class TabooMode(GameModeBase):
             "rounds": [
                 {
                     "target_word": r.get("target_word", ""),
-                    "meaning": r.get("meaning", r.get("meaning_vi", "")),
+                    "meaning": r.get("meaning", ""),
                     "phonetic": r.get("phonetic", ""),
                     "taboo_words": r.get("taboo_words", []),
                     "clue": r.get("clue", ""),

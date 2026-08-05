@@ -9,6 +9,8 @@ from aqt.qt import *
 from aqt.utils import tooltip
 
 from core.logger import log
+from core.language_normalizer import normalize_language_fields
+from core.languages import DEFAULT_LEARN_LANG, DEFAULT_UI_LANG, bridge_languages, valid_learn_lang, valid_ui_lang
 
 import re
 
@@ -91,8 +93,8 @@ DEFAULT_SETTINGS = {
     "api_key_count": 3,
     "model": "auto",
     "temperature": 0.7,
-    "ui_lang": "en",
-    "learn_lang": "",
+    "ui_lang": DEFAULT_UI_LANG,
+    "learn_lang": DEFAULT_LEARN_LANG,
     "window_width": 960,
     "window_height": 700,
 }
@@ -121,6 +123,8 @@ class SettingsManager:
                 with open(self.path, "r", encoding="utf-8") as f:
                     loaded = json.load(f)
                     self.data.update(loaded)
+                self.data["ui_lang"] = valid_ui_lang(self.data.get("ui_lang"))
+                self.data["learn_lang"] = valid_learn_lang(self.data.get("learn_lang"))
                 log.debug(
                     f"Settings loaded from {self.path}", {"key_count": len(self.data)}
                 )
@@ -331,8 +335,10 @@ class AIEngine:
                 "get_source_fields": self._handle_get_source_fields,
                 "sample_vocab_pairs": self._handle_sample_vocab_pairs,
                 "set_ui_lang": self._handle_set_ui_lang,
+                "set_learn_lang": self._handle_set_learn_lang,
                 "get_ui_lang": self._handle_get_ui_lang,
                 "get_ui_strings": self._handle_get_ui_strings,
+                "get_supported_languages": self._handle_get_supported_languages,
                 "ai_grade": self._handle_ai_grade,
                 "close_hub": self._handle_close_hub,
             }
@@ -380,9 +386,10 @@ class AIEngine:
             }
 
     def _handle_generate(self, data: dict) -> dict:
-        data = dict(data or {})
+        data = normalize_language_fields(dict(data or {}))
         gamemode = data.get("gamemode", "fill_blank")
-        language = data.get("language", self.settings.get("learn_lang", "en"))
+        language = valid_learn_lang(data.get("language"), self.settings.get("learn_lang", DEFAULT_LEARN_LANG))
+        data["language"] = language
         level = data.get("level", "intermediate")
         topic = data.get("topic", "daily_life")
         minimum, maximum = GAME_LIMITS.get(gamemode, (1, 5))
@@ -567,7 +574,7 @@ class AIEngine:
                             if term == target or (len(term) > 3 and term in target) or (len(target) > 3 and target in term):
                                 matched_def = defn
                                 break
-                    q["user_definition"] = matched_def if matched_def else q.get("meaning", q.get("meaning_vi", ""))
+                    q["user_definition"] = matched_def if matched_def else q.get("meaning", "")
 
         if gamemode == "cloze" and not result.get("error"):
             blanks = result.get("blanks", [])
@@ -585,6 +592,7 @@ class AIEngine:
                     "message": "Đáp án cloze phải đúng các từ đã chọn. Vui lòng thử lại.",
                 }
 
+        result = normalize_language_fields(result)
         if gm and not result.get("error"):
             rendered = gm.render_ui_data(result)
             if rendered:
@@ -592,12 +600,16 @@ class AIEngine:
 
 
         # Recursively sanitize all HTML content in result before returning
-        result = sanitize_dict(result)
+        result = sanitize_dict(normalize_language_fields(result))
         return result
 
     def _handle_save_settings(self, data: dict) -> dict:
         changed_keys = []
         for key, value in data.items():
+            if key == "ui_lang":
+                value = valid_ui_lang(value, self.settings.get("ui_lang", DEFAULT_UI_LANG))
+            elif key == "learn_lang":
+                value = valid_learn_lang(value, self.settings.get("learn_lang", DEFAULT_LEARN_LANG))
             self.settings.set(key, value)
             changed_keys.append(key)
         if any(k.startswith("api_key") for k in data):
@@ -698,28 +710,38 @@ class AIEngine:
 
 
     def _handle_set_ui_lang(self, data: dict) -> dict:
-        lang = data.get("lang", "en")
+        lang = valid_ui_lang(data.get("lang"), self.settings.get("ui_lang", DEFAULT_UI_LANG))
         self.settings.set("ui_lang", lang)
         if self._api_client:
             self._api_client.ui_lang = lang
         log.info(f"UI language set to: {lang}")
-        return {"lang": lang}
+        return {"ui_lang": lang, "lang": lang}
+
+    def _handle_set_learn_lang(self, data: dict) -> dict:
+        lang = valid_learn_lang(data.get("lang"), self.settings.get("learn_lang", DEFAULT_LEARN_LANG))
+        self.settings.set("learn_lang", lang)
+        log.info(f"Learning language set to: {lang}")
+        return {"learn_lang": lang}
 
     def _handle_get_ui_lang(self, data: dict = None) -> dict:
-        lang = self.settings.get("ui_lang", "en")
+        lang = valid_ui_lang(self.settings.get("ui_lang"))
         return {"lang": lang}
 
     def _handle_get_ui_strings(self, data: dict = None) -> dict:
-        lang = self.settings.get("ui_lang", "en")
+        lang = valid_ui_lang(self.settings.get("ui_lang"))
         from core.i18n import load_strings
 
         strings = load_strings(lang)
         return {"strings": strings, "lang": lang}
 
+    def _handle_get_supported_languages(self, data: dict = None) -> dict:
+        return bridge_languages()
+
     def _handle_ai_grade(self, data: dict) -> dict:
+        data = normalize_language_fields(dict(data or {}))
         gamemode = data.get("gamemode", "fill_blank")
-        learn_lang = self.settings.get("learn_lang", "en")
-        ui_lang = self.settings.get("ui_lang", "en")
+        learn_lang = valid_learn_lang(self.settings.get("learn_lang"))
+        ui_lang = valid_ui_lang(self.settings.get("ui_lang"))
         level = data.get("level", "intermediate")
 
         from core.ai_grader import get_grader_prompt
@@ -729,7 +751,7 @@ class AIEngine:
             prompt_data = {
                 **common,
                 "target_word": data.get("target_word", ""),
-                "meaning": data.get("meaning", data.get("meaning_vi", "")),
+                "meaning": data.get("meaning", ""),
                 "question": data.get("question", ""),
                 "expected": data.get("expected", data.get("target_word", "")),
                 "user_answer": data.get("user_answer", ""),
@@ -764,7 +786,7 @@ class AIEngine:
             prompt_data = {
                 **common,
                 "target_word": data.get("target_word", data.get("secret_word", "")),
-                "meaning": data.get("meaning", data.get("meaning_vi", "")),
+                "meaning": data.get("meaning", ""),
                 "taboo_words": data.get("taboo_words", "None"),
                 "sample_acceptable_phrases": data.get("sample_acceptable_phrases", "None"),
                 "sample_forbidden_phrases": data.get("sample_forbidden_phrases", "None"),
@@ -788,7 +810,7 @@ class AIEngine:
         )
         if result.get("error"):
             return result
-        return sanitize_dict(result)
+        return sanitize_dict(normalize_language_fields(result))
 
     def _handle_close_hub(self, data: dict = None) -> dict:
         from aqt import mw

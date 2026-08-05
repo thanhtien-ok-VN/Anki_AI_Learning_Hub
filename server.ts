@@ -15,8 +15,15 @@ let appSettings: Record<string, any> = {
   model: "auto",
   temperature: 0.7,
   ui_lang: "en",
-  learn_lang: "",
+  learn_lang: "en",
 };
+
+const languageRegistry = JSON.parse(fs.readFileSync(path.join(process.cwd(), "lang", "languages.json"), "utf-8"));
+const uiLanguages: string[] = languageRegistry.ui_languages;
+const learnLanguages: Array<{ code: string; names: Record<string, string>; native: string }> = languageRegistry.learn_languages;
+const learnLanguageCodes = new Set(learnLanguages.map((item) => item.code));
+const validUiLang = (value: unknown, fallback = "en") => typeof value === "string" && uiLanguages.includes(value) ? value : fallback;
+const validLearnLang = (value: unknown, fallback = "en") => typeof value === "string" && learnLanguageCodes.has(value) ? value : fallback;
 
 
 
@@ -348,6 +355,9 @@ function sanitizeAiOutput<T>(data: T): T {
     for (const key of Object.keys(data as object)) {
       cleanObj[key] = sanitizeAiOutput((data as Record<string, any>)[key]);
     }
+    for (const [legacy, neutral] of Object.entries({ meaning_vi: "meaning", reason_vi: "reason", explanation_vi: "explanation" })) {
+      if (!cleanObj[neutral] && cleanObj[legacy]) cleanObj[neutral] = cleanObj[legacy];
+    }
     return cleanObj as T;
   }
   return data;
@@ -565,12 +575,15 @@ app.post("/api/bridge", async (req, res) => {
     if (action === "get_settings") {
       return res.json({
         success: true,
-        data: appSettings
+        data: { ...appSettings, ui_lang: validUiLang(appSettings.ui_lang), learn_lang: validLearnLang(appSettings.learn_lang) }
       });
     }
 
     if (action === "save_settings") {
-      Object.assign(appSettings, data);
+      const next = { ...data };
+      if ("ui_lang" in next) next.ui_lang = validUiLang(next.ui_lang, validUiLang(appSettings.ui_lang));
+      if ("learn_lang" in next) next.learn_lang = validLearnLang(next.learn_lang, validLearnLang(appSettings.learn_lang));
+      Object.assign(appSettings, next);
       return res.json({
         success: true,
         data: { saved: Object.keys(data) }
@@ -588,32 +601,27 @@ app.post("/api/bridge", async (req, res) => {
       return res.json({
         success: true,
         data: {
-          languages: [
-            { code: "en", names: { en: "English", vi: "Tiếng Anh" }, native: "English" },
-            { code: "zh", names: { en: "Chinese", vi: "Tiếng Trung" }, native: "中文" },
-            { code: "ja", names: { en: "Japanese", vi: "Tiếng Nhật" }, native: "日本語" },
-            { code: "ko", names: { en: "Korean", vi: "Tiếng Hàn" }, native: "한국어" },
-            { code: "fr", names: { en: "French", vi: "Tiếng Pháp" }, native: "Français" },
-            { code: "de", names: { en: "German", vi: "Tiếng Đức" }, native: "Deutsch" },
-            { code: "es", names: { en: "Spanish", vi: "Tiếng Tây Ban Nha" }, native: "Español" },
-            { code: "it", names: { en: "Italian", vi: "Tiếng Ý" }, native: "Italiano" },
-            { code: "ru", names: { en: "Russian", vi: "Tiếng Nga" }, native: "Русский" },
-            { code: "hi", names: { en: "Hindi", vi: "Tiếng Ấn Độ" }, native: "हिन्दी" }
-          ]
+          ui_languages: uiLanguages,
+          learn_languages: learnLanguages
         }
       });
     }
 
     if (action === "set_ui_lang") {
-      appSettings.ui_lang = data.lang || "en";
+      appSettings.ui_lang = validUiLang(data.lang, validUiLang(appSettings.ui_lang));
       return res.json({
         success: true,
-        data: { lang: appSettings.ui_lang }
+        data: { lang: appSettings.ui_lang, ui_lang: appSettings.ui_lang }
       });
     }
 
+    if (action === "set_learn_lang") {
+      appSettings.learn_lang = validLearnLang(data.lang, validLearnLang(appSettings.learn_lang));
+      return res.json({ success: true, data: { learn_lang: appSettings.learn_lang } });
+    }
+
     if (action === "get_ui_strings") {
-      const lang = appSettings.ui_lang || "en";
+      const lang = validUiLang(appSettings.ui_lang);
       const filePath = path.join(process.cwd(), "lang", `${lang}.json`);
       let strings = {};
       if (fs.existsSync(filePath)) {
@@ -687,7 +695,7 @@ app.post("/api/bridge", async (req, res) => {
       const gamemode = data.gamemode || "fill_blank";
       const rawCount = Number(data.count) || 5;
       const count = Math.max(1, Math.min(rawCount, 15)); // Clamp between 1 and 15
-      const language = String(data.language || "en").substring(0, 20);
+      const language = validLearnLang(data.language, validLearnLang(appSettings.learn_lang));
       const level = String(data.level || "intermediate").substring(0, 30);
       const topic = String(data.topic || "daily_life").substring(0, 100);
       const vocabPairs = Array.isArray(data.vocab_pairs) ? data.vocab_pairs : [];
@@ -722,16 +730,7 @@ app.post("/api/bridge", async (req, res) => {
       // Check Gemini API
       const ai = getAiClient();
       if (!ai) {
-        console.warn(`[Server] GEMINI_API_KEY missing - returning rich fallback exercise for ${gamemode}`);
-        const fallback = getFallbackExercise(gamemode, data);
-        return res.json({
-          success: true,
-          data: {
-            ...fallback,
-            is_fallback: true,
-            fallback_reason: "Chưa cấu hình GEMINI_API_KEY. Đang sử dụng bài tập mẫu."
-          }
-        });
+        return res.json({ success: false, data: {}, error_code: "E_NO_KEYS", message: "AI generation is unavailable." });
       }
 
       // Generate via Gemini API
@@ -804,7 +803,7 @@ STRUCTURAL RULES:
         try {
           parsed = JSON.parse(response.text || "{}");
         } catch (_) {
-          parsed = getFallbackExercise(gamemode, data);
+          return res.json({ success: false, data: {}, error_code: "E_API_ERROR", message: "AI returned an invalid response." });
         }
 
         // Sanitize AI Output to prevent XSS
@@ -862,23 +861,9 @@ STRUCTURAL RULES:
         });
       } catch (err: any) {
         console.error(`[Server] Gemini API error for ${gamemode}:`, err);
-        const fallback = getFallbackExercise(gamemode, data);
         const isQuotaError = err?.status === 429 || String(err?.message || "").includes("429") || String(err?.message || "").includes("quota");
-        const uiLang = appSettings.ui_lang || "en";
-        const reasonMsg = isQuotaError
-          ? (uiLang === "vi"
-              ? "Đã vượt quá hạn ngạch AI (429 Rate Limit). Đang tự động chuyển sang bài tập mẫu."
-              : "AI quota limit exceeded (429 Rate Limit). Automatically switching to sample exercise.")
-          : (uiLang === "vi"
-              ? "Lỗi kết nối Gemini AI. Đang tự động chuyển sang bài tập mẫu."
-              : "Gemini AI connection error. Automatically switching to sample exercise.");
         return res.json({
-          success: true,
-          data: {
-            ...fallback,
-            is_fallback: true,
-            fallback_reason: reasonMsg
-          }
+          success: false, data: {}, error_code: isQuotaError ? "E_RATE_LIMIT" : "E_API_ERROR", message: "AI request could not be completed."
         });
       }
     }
@@ -893,7 +878,10 @@ STRUCTURAL RULES:
 
       const ai = getAiClient();
 
-      if (!ai || isExactMatch) {
+      if (!ai) {
+        return res.json({ success: false, data: {}, error_code: "E_NO_KEYS", message: "AI grading is unavailable." });
+      }
+      if (isExactMatch) {
         const isCorrect = isExactMatch || (tNorm.length > 0 && (uNorm.includes(tNorm) || tNorm.includes(uNorm)));
 
         return res.json({
@@ -922,14 +910,16 @@ STRUCTURAL RULES:
       }
 
       try {
-        const prompt = `Evaluate student response for exercise type '${gamemode}':
+        const prompt = `Evaluate student response for exercise type '${gamemode}'.
+Learning language: ${validLearnLang(appSettings.learn_lang)}
+Interface/feedback language: ${validUiLang(appSettings.ui_lang)}
 Target/Expected Answer: "${targetAns}"
 Student Answer: "${user_answer}"
 
 Rules:
 - Be flexible with minor punctuation or capitalization variations.
 - Assess accuracy, grammar, vocabulary fit, and natural expression.
-- Provide encouraging, clear, concise feedback in the user's interface language.`;
+- Provide encouraging, clear, concise feedback entirely in ${validUiLang(appSettings.ui_lang)}.`;
 
         const response = await ai.models.generateContent({
           model: "gemini-flash-latest",
@@ -955,8 +945,7 @@ Rules:
         try {
           result = JSON.parse(response.text || "{}");
         } catch (_) {
-          const uiLang = appSettings.ui_lang || "en";
-          result = { correct: true, score: 90, explanation: uiLang === "vi" ? "Đã nhận và lưu câu trả lời." : "Answer received and recorded." };
+          return res.json({ success: false, data: {}, error_code: "E_API_ERROR", message: "AI grading returned an invalid response." });
         }
 
         result = sanitizeAiOutput(result);
@@ -967,26 +956,7 @@ Rules:
         });
       } catch (err: any) {
         console.error("[Server] Error during ai_grade:", err?.message || err);
-        const isPartial = tNorm.length > 0 && (uNorm.includes(tNorm) || tNorm.includes(uNorm));
-        return res.json({
-          success: true,
-          data: {
-            correct: isPartial,
-            score: isPartial ? 80 : 40,
-            explanation: (() => {
-              const uiLang = appSettings.ui_lang || "en";
-              if (uiLang === "vi") {
-                return isPartial
-                  ? `Câu trả lời khá sát. Đáp án gợi ý: '${targetAns}'`
-                  : `Đáp án gợi ý: '${targetAns}'`;
-              } else {
-                return isPartial
-                  ? `Very close answer. Suggested answer: '${targetAns}'`
-                  : `Suggested answer: '${targetAns}'`;
-              }
-            })()
-          }
-        });
+        return res.json({ success: false, data: {}, error_code: "E_API_ERROR", message: "AI grading could not be completed." });
       }
     }
 
