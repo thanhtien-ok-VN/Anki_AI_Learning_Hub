@@ -256,10 +256,17 @@ const App = (() => {
     }
     message.textContent = typeof error === 'string' ? error : bridgeMessage(error);
     banner.hidden = false;
+
+    // Auto-hide after 8 seconds to allow enough reading time
+    if (statusState.timeoutId) {
+      clearTimeout(statusState.timeoutId);
+    }
+    statusState.timeoutId = setTimeout(() => {
+      clearStatus();
+    }, 8000);
   };
 
   const showBridgeFailure = error => showStatus(error);
-  window.addEventListener('aihub:bridge-success', clearStatus);
   document.querySelector('#status-banner-close')?.addEventListener('click', clearStatus);
 
   const getWeakWords = () => {
@@ -298,6 +305,7 @@ const App = (() => {
   };
 
   function setBusy(on, text = t('app.generating', 'Đang tạo bài…')) {
+    if (on) clearStatus();
     state.busy = on;
     const e = document.querySelector('#loading');
     if (e) {
