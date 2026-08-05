@@ -1736,12 +1736,21 @@ const App = (() => {
       if (matchesOnScreen.length > 0) {
         // Normal refill from unplaced pool
         const availWords = getUnplacedWordPairs().sort(() => Math.random() - 0.5);
+        let leftPairId = null;
         if (availWords.length > 0) {
           const p = availWords[0];
+          leftPairId = p.id;
           activeWords[emptyLeftIdx] = { pairId: p.id, word: p.word };
         }
 
-        const availMeanings = getUnplacedMeaningPairs().sort(() => Math.random() - 0.5);
+        let availMeanings = getUnplacedMeaningPairs();
+        if (leftPairId) {
+          availMeanings = availMeanings.filter(m => m.id !== leftPairId);
+        }
+        if (availMeanings.length === 0) {
+          availMeanings = getUnplacedMeaningPairs();
+        }
+        availMeanings.sort(() => Math.random() - 0.5);
         if (availMeanings.length > 0) {
           const p = availMeanings[0];
           activeMeanings[emptyRightIdx] = { pairId: p.id, meaning: p.meaning };
