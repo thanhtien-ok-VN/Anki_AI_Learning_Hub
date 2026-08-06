@@ -1,3 +1,4 @@
+import threading
 import json
 import os
 import time
@@ -13,6 +14,8 @@ from core.language_normalizer import normalize_language_fields
 from core.languages import DEFAULT_LEARN_LANG, DEFAULT_UI_LANG, bridge_languages, valid_learn_lang, valid_ui_lang
 
 import re
+
+ADDON_PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # ──────────────────────────────────────────────────────────────
 # SECTION 1: Module-level helpers
@@ -107,12 +110,17 @@ class AIEngine:
     def __init__(self):
         self.settings = SettingsManager()
         self.timer = SessionTimer()
+        self.cancel_event = threading.Event()
         self._api_client = None
         self._prompt_mgr = None
         self._gamemode_cache = {}
 
         self.timer.tick.connect(self._on_timer_tick)
         gui_hooks.profile_will_close.append(self._on_profile_close)
+
+    def cancel_current_task(self):
+        self.cancel_event.set()
+        log.info("Cancel current task event set")
 
     def _send_progress(self, text: str):
         from aqt import mw
@@ -135,7 +143,8 @@ class AIEngine:
                 self._api_client = GeminiClient(
                     keys,
                     self.settings.get("model", "auto"),
-                    ui_lang=self.settings.get("ui_lang", "en")
+                    ui_lang=self.settings.get("ui_lang", "en"),
+                    cancel_event=self.cancel_event
                 )
         return self._api_client
 
