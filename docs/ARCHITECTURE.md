@@ -1,171 +1,142 @@
-# AI Learning Hub — Architecture Guide
+# AI Learning Hub — Complete System Architecture & Component Map
 
-This document describes the internal architecture of AI Learning Hub for developers and researchers who want to understand, extend, or modify the add-on.
+Document version: 2.0 | Last updated: 2026-08-07
 
-## System Overview
+This document provides a comprehensive architectural sitemap and component responsibilities matrix for the `Anki_AI_Learning_Hub` add-on codebase.
 
-AI Learning Hub has a single production engine (Python/Anki) and a web SPA frontend (vanilla JS). There is no Node.js or separate backend server required.
+---
 
-```
-Anki Application
-    └── AI Learning Hub (Python add-on)
-            ├── Qt UI Layer    (__init__.py → ui/main_window.py)
-            ├── Engine Layer   (core/engine.py)
-            ├── Gamemode Layer (gamemodes/*.py)
-            ├── AI Layer       (core/api_client.py → Gemini API)
-            └── Web SPA        (web/ — served via Anki WebView)
-```
-
-## Data Flow
-
-The complete request lifecycle from user interaction to AI response:
-
-```mermaid
-sequenceDiagram
-    participant U as User (Browser)
-    participant SPA as web/js/app.js
-    participant Br as web/js/bridge.js
-    participant AW as Anki WebView
-    participant MW as ui/main_window.py
-    participant Eng as core/engine.py
-    participant GM as gamemodes/*.py
-    participant PM as core/prompt_manager.py
-    participant AC as core/api_client.py
-    participant GEM as Gemini API
-
-    U->>SPA: Click "Generate"
-    SPA->>Br: Bridge.sendAsync('generate', data)
-    Br->>AW: pycmd(JSON message)
-    AW->>MW: bridge_received(message)
-    MW->>Eng: handle_js_message(message)
-    Eng->>GM: gamemode.generate(data)
-    GM->>PM: get_prompt(gamemode, lang)
-    PM-->>GM: formatted prompt string
-    GM->>AC: generate(prompt, schema)
-    AC->>GEM: POST /v1/models/generate
-    GEM-->>AC: JSON response
-    AC-->>GM: parsed result dict
-    GM-->>Eng: exercise data
-    Eng-->>MW: {success: true, data: exercise}
-    MW-->>AW: Bridge.complete(id, result)
-    AW-->>Br: resolve Promise
-    Br-->>SPA: exercise data
-    SPA->>U: Render game UI
-```
-
-## Component Responsibilities
-
-### `__init__.py` — Anki Entry Point
-- Registers the add-on with Anki (menu item, hooks)
-- Creates the Qt main window (`ui/main_window.py`)
-- Initializes `AIEngine` on profile load
-
-### `core/engine.py` — Bridge Message Router (776 lines)
-- **Section 1**: Module-level helpers (`clean_json_response`, `normalize_answer`, `sanitize_html`)
-- **Section 2**: `AIEngine` class — manages GeminiClient, PromptManager, gamemode cache
-- **Section 3**: `handle_js_message()` — dispatch table routing 15+ bridge actions
-- **Section 4**: Generate & game handlers (`_handle_generate`, `_handle_check_answer`, `_handle_ai_grade`)
-- **Section 5**: Settings & UI handlers (`_handle_save_settings`, `_handle_get_ui_strings`, etc.)
-
-### `core/api_client.py` — Gemini Client
-- Manages multiple API keys with automatic rotation
-- Rate limiting and retry logic
-- Structured output via Pydantic schemas
-- Returns safe result objects (never raises exceptions to callers)
-
-### `core/prompt_manager.py` — Prompt Loading
-- Loads prompt templates from `prompts/{learn_lang}/{gamemode}.txt`
-- Falls back to `prompts/en/{gamemode}.txt` for unsupported languages
-- Substitutes `{learn_lang}`, `{ui_lang}`, `{level}`, `{topic}` placeholders
-- Converts ISO language codes to full names for AI comprehension
-
-### `core/schema_registry.py` — Pydantic Schemas (416 lines)
-- Defines the exact JSON structure each gamemode's AI response must follow
-- Used for Gemini structured output (enforces response format)
-- Each gamemode has a dedicated Pydantic model
-
-### `gamemodes/*.py` — Game Logic
-
-| File | Class | Key Method | Schema |
-|---|---|---|---|
-| `fill_blank.py` | `FillBlank` | `generate()` | `FillBlankExercise` |
-| `cloze.py` | `Cloze` | `generate()` | `ClozeExercise` |
-| `translation.py` | `Translation` | `generate()`, `check_answer()` | `TranslationExercise` |
-| `word_unscramble.py` | `WordUnscramble` | `generate()`, `check_answer()` | `UnscrambleExercise` |
-| `word_matching.py` | `WordMatching` | `generate()` | `MatchingExercise` |
-| `story_generator.py` | `StoryGenerator` | `generate()` | `StoryExercise` |
-| `sentence_transform.py` | `SentenceTransform` | `generate()`, `check_answer()` | `SentenceTransformExercise` |
-| `taboo.py` | `Taboo` | `generate()`, `check_answer()` | `TabooExercise` |
-
-### `web/js/app.js` — SPA Frontend (3280 lines)
-
-All wrapped in a single IIFE `const App = (() => { ... })()`. Organized by section:
-
-| Section | Lines (approx) | Contents |
-|---|---|---|
-| 1. State & Preferences | 1–175 | `loadPrefs`, `savePrefs`, `loadHistory`, `loadMatchingStats` |
-| 2. Core Utilities | 175–310 | `t()`, `esc()`, `showStatus`, `disposeCurrentGame`, `getWeakWords` |
-| 3. Routing & Shell | 310–395 | `home()`, `game()`, `render()`, `shell()`, `setBusy()`, `nav()` |
-| 4. Source & Settings | 395–830 | `source()`, `controls()`, `bindSource()`, `loadModels()`, `loadFields()` |
-| 5. Generate & History | 830–1130 | `generate()`, `preview()`, `sample()`, `addHistory()`, `normalizeExercise()` |
-| 6. Fill Blank & Cloze | 1130–1630 | `renderFillBlank()`, `renderCloze()`, history detail branches |
-| 7. Word Matching | 1630–2130 | `renderMatching()`, board engine (`initBoard`, `refillSlots`, `evaluateMatch`) |
-| 8. Unscramble | 2130–2450 | `renderUnscrambleAll()`, `updateUnscrambleCardDOM()`, drag-drop handlers |
-| 9. Story / Translation / Transform / Taboo | 2450–3190 | `renderStory()`, `renderTranslation()`, `renderSentenceTransform()`, `renderTaboo()` |
-| 10. Startup & Entry | 3190–3280 | `startApp()`, `render()`, `testKeys()` |
-
-### `web/js/bridge.js` — RPC Bridge (151 lines)
-- Promise-based wrapper around Anki's `pycmd()` function
-- Queues requests while bridge initializes
-- Supports AbortSignal and timeout
-- Browser dev mode falls back to `fetch POST /api/bridge`
-
-## Language System
-
-The add-on uses a **two-axis language model**:
+## 🗺️ COMPONENT MAP (16 SYSTEM GROUPS)
 
 ```
-Axis 1: learn_lang  — The language being studied (en, ja, ko, fr, ...)
-Axis 2: ui_lang     — The language of the interface (en, vi)
+Anki_AI_Learning_Hub/
+├── __init__.py                  # [Group 1] Anki Integration & Lifecycle Entry Point
+├── ui/                          # [Group 1, 2, 13] Presentation Layer
+│   ├── main_window.py           # Anki Tab Embedding & Async Worker Manager
+│   ├── settings_dialog.py       # Qt Config Dialog & Key Manager
+│   └── log_viewer.py            # System Log & Diagnostics GUI
+├── core/                        # [Group 1, 2, 3, 5, 6, 8, 10, 11, 13, 14] Core Domain & Bridge Services
+│   ├── engine.py                # AIEngine Facade & JS Bridge Router (~20 Actions)
+│   ├── settings.py              # SettingsManager & Persistent JSON Storage
+│   ├── timer.py                 # SessionTimer (Elapsed Time Signals)
+│   ├── api_client.py            # Backward-compatible LLM Client Alias
+│   ├── prompt_manager.py        # Template Prompt Loader & Placeholder Resolution
+│   ├── schema_registry.py       # Pydantic Schemas & Gemini JSON Spec Generators
+│   ├── content_validation.py    # AI Exercise Structure Validation Rules
+│   ├── deck_source.py           # Anki Deck Vocabulary Reader & Weak-Word Sampler
+│   ├── ai_grader.py             # Pedagogical AI Feedback Prompts
+│   ├── languages.py             # Supported Language Definitions
+│   ├── i18n.py                  # Catalog Loader (lang/*.json)
+│   ├── language_normalizer.py    # Legacy Schema Field Harmonizer
+│   ├── error_suppressor.py      # Anki Timeout Exception Interceptor
+│   ├── task_results.py          # Future Task Result Resolver
+│   └── logger.py                # Structured Flow JSONL Logger & Memory Ring Buffer
+├── llm/                         # [Group 7] AI / LLM Provider Layer (DIP)
+│   ├── base.py                  # BaseLLMProvider (Abstract Base Class)
+│   └── gemini.py                # GeminiProvider (Rotation, Backoff, Waterfalls)
+├── gamemodes/                   # [Group 9, 10, 11] Gamemode Domain Layer (8 Modes)
+│   ├── base.py                  # GameModeBase (Anki Card Generator)
+│   ├── fill_blank.py            # Fill-in-the-Blank Mode
+│   ├── cloze.py                 # Contextual Cloze Mode
+│   ├── translation.py           # Translation Practice Mode
+│   ├── word_unscramble.py       # Sentence Order Mode
+│   ├── word_matching.py         # Term-Definition Matcher (Offline)
+│   ├── story_generator.py       # Reading Comprehension Story Mode
+│   ├── sentence_transform.py    # Grammar Transformation Mode
+│   └── taboo.py                 # Taboo Word Guessing Game Mode
+├── prompts/                     # [Group 3] System Prompt Templates
+│   ├── common/                  # Shared Directives
+│   ├── en/                      # English Learning Templates
+│   └── zh/                      # Chinese Learning Templates
+├── lang/                        # [Group 3] i18n Catalogs
+│   ├── en.json                  # English UI String Catalog
+│   ├── vi.json                  # Vietnamese UI String Catalog
+│   └── languages.json           # 10 Supported Learning Languages Registry
+└── web/                         # [Group 4, 12, 15] Web SPA Frontend
+    ├── index.html               # SPA Container
+    ├── css/style.css            # Responsive Glassmorphism Styling
+    └── js/
+        ├── app.js               # Route Manager & Renderer
+        ├── bridge.js            # PyCmd Async RPC Layer
+        └── utils.js             # Front-end Helper Functions
 ```
 
-These are completely independent. A user can have `ui_lang=vi` (Vietnamese interface) while studying Japanese (`learn_lang=ja`).
+---
 
-**Prompt generation** uses `learn_lang` to select the prompt template directory and fills `{learn_lang}` / `{ui_lang}` placeholders. The AI receives both axes and generates:
-- Exercise content in `learn_lang`
-- Explanations and feedback in `ui_lang`
+## 📑 DETAILED COMPONENT GROUPS MATRIX
 
-## Adding a New Game Mode
+### GROUP 1. Anki Integration & Lifecycle Entry Point
+- [`__init__.py`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/__init__.py): Registers `open_hub()`, `open_settings()`, `init_addon()`, Anki menu entries, and Anki Browser context menu hooks.
+- [`ui/main_window.py`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/ui/main_window.py): `AIHubView` embeds WebView as a native Anki Qt Tab (`embed()`, `focus()`, `is_closed()`).
+- [`core/error_suppressor.py`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/core/error_suppressor.py): Suppresses known transient Anki Qt timeout exceptions.
+- [`core/task_results.py`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/core/task_results.py): Unwraps async background task futures across Anki versions.
 
-1. **Create** `gamemodes/my_game.py` implementing `generate()` and optionally `check_answer()`
-2. **Add** a Pydantic schema to `core/schema_registry.py`
-3. **Create** prompt templates in `prompts/en/my_game.txt`
-4. **Register** in `gamemodes/__init__.py`
-5. **Register** in `core/engine.py` GAME_LIMITS dict
-6. **Add** render function in `web/js/app.js` Section 9
-7. **Add** game card to home screen in `home()` function
+### GROUP 2. Settings & Configuration Management
+- [`core/settings.py`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/core/settings.py): `SettingsManager` loads and saves `user_files/settings.json`. Handles dynamic API key retrieval, active filtering, and security masking.
+- [`ui/settings_dialog.py`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/ui/settings_dialog.py): Qt configuration GUI dialog for keys, models, temperature, language, and diagnostics.
+- [`core/engine.py`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/core/engine.py): Bridge handlers: `_handle_save_settings`, `_handle_get_settings`, `_handle_test_key`, etc.
+- [`core/constants.py`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/core/constants.py): Model chains, waterfall mappings, rate limit backoff constants.
 
-## Adding a New UI Language
+### GROUP 3. Internationalization (i18n) & Prompt Loading
+- [`core/languages.py`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/core/languages.py): Registry of 10 supported learning languages.
+- [`core/i18n.py`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/core/i18n.py): Catalog strings loader with caching (`load_strings()`, `t()`).
+- [`core/language_normalizer.py`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/core/language_normalizer.py): Harmonizes legacy AI schema fields (`meaning_vi` -> `meaning`).
+- [`web/js/utils.js`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/web/js/utils.js): Front-end `Utils.i18n` and DOM translation interpolation.
 
-1. Copy `lang/en.json` to `lang/{new_lang}.json`
-2. Translate all values (keep keys unchanged)
-3. Add the language code to `uiLanguages` in `lang/languages.json`
+### GROUP 4. Single Page Application (SPA Frontend)
+- [`web/index.html`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/web/index.html): Clean HTML5 shell.
+- [`web/css/style.css`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/web/css/style.css): Modern glassmorphism dark/light visual theme.
+- [`web/js/app.js`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/web/js/app.js): Route controller (`nav()`, `home()`, `game()`, `render()`), timer lifecycle manager (`disposeCurrentGame()`).
+- [`web/js/bridge.js`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/web/js/bridge.js): Async PyCmd RPC bridge sending JSON envelopes.
 
-## Adding a New Learning Language
+### GROUP 5. Bridge Message Routing
+- [`core/engine.py`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/core/engine.py): `handle_js_message()` dispatches ~20 RPC actions. Handles `log_event`, `cancel_gen`, `close_hub`.
+- [`ui/main_window.py`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/ui/main_window.py): Thread worker routing via `mw.taskman.run_in_background()`.
 
-1. Add an entry to `learnLanguages` in `lang/languages.json`:
-   ```json
-   { "code": "th", "native": "ภาษาไทย", "names": { "en": "Thai", "vi": "Tiếng Thái" } }
-   ```
-2. Optionally create `prompts/th/` with specialized templates; otherwise falls back to `prompts/en/`
-3. No other code changes needed.
+### GROUP 6. Question Generation Pipeline (Core Engine)
+- [`core/engine.py`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/core/engine.py): `_handle_generate()` orchestrates the 4-phase generation pipeline (`CONNECT` -> `SYSTEM` -> `AI` -> `RENDER`).
+- [`core/prompt_manager.py`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/core/prompt_manager.py): Builds structured instructions from `prompts/{lang}/{gamemode}.txt`.
+- [`core/schema_registry.py`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/core/schema_registry.py): Pydantic schemas and Gemini JSON schema generators.
+- [`core/content_validation.py`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/core/content_validation.py): Enforces exercise option counts and answer consistency.
 
-## Key Design Decisions
+### GROUP 7. AI / LLM Provider Layer (Gemini REST API)
+- [`llm/base.py`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/llm/base.py): Abstract base class `BaseLLMProvider`.
+- [`llm/gemini.py`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/llm/gemini.py): `GeminiProvider` implementing exponential backoff, key rotation, model waterfall fallback, and user cancellation checks.
 
-| Decision | Rationale |
-|---|---|
-| Single IIFE for app.js | Anki WebView does not support ES Modules; no bundler for frontend |
-| Pydantic schemas for AI output | Ensures structured, validated responses from Gemini |
-| Prompt fallback to `en/` | New languages work immediately without writing new prompts |
-| Two-axis language model | UI lang and learning lang are truly independent user preferences |
-| Python as single source of truth | No TypeScript server mirrors Python logic; Anki is the only runtime |
+### GROUP 8. Anki Deck & Vocabulary Integration
+- [`core/deck_source.py`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/core/deck_source.py): Reads user's Anki collection, extracts target note fields, and samples vocabulary (prioritizing weak words).
+
+### GROUP 9. 8 Interactive Gamemodes
+1. **Fill in the Blank**: `gamemodes/fill_blank.py`
+2. **Cloze Passage**: `gamemodes/cloze.py`
+3. **Translation Practice**: `gamemodes/translation.py`
+4. **Word Unscramble**: `gamemodes/word_unscramble.py`
+5. **Word Matching**: `gamemodes/word_matching.py` (Offline local generation supported)
+6. **Story Generator**: `gamemodes/story_generator.py`
+7. **Sentence Transform**: `gamemodes/sentence_transform.py`
+8. **Taboo Word Game**: `gamemodes/taboo.py`
+
+### GROUP 10. Pedagogical AI Grading
+- [`core/ai_grader.py`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/core/ai_grader.py): `GRADER_PROMPTS` generating detailed grammatical, semantic, and error feedback in user's UI language.
+
+### GROUP 11. Anki Flashcard Export
+- [`gamemodes/base.py`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/gamemodes/base.py): `save_to_anki()` creates Anki checkpoint for Undo, checks duplicate notes, and inserts cards directly into collection.
+
+### GROUP 12. History & Performance Analytics
+- [`web/js/app.js`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/web/js/app.js): Session storage history management and Matching game accuracy statistics.
+
+### GROUP 13. System Observability & Logging
+- [`core/logger.py`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/core/logger.py): Thread-safe in-memory ring buffer (`collections.deque`), structured JSONL flow logger (`ai_hub_flow.jsonl`), and `FlowTimer`.
+- [`ui/log_viewer.py`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/ui/log_viewer.py): LogViewerDialog with monospace log viewer, level/phase filters, 1-click Diagnostic Bug Report generation, and multi-tier Anki version detection.
+
+### GROUP 14. Session & Timer Management
+- [`core/timer.py`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/core/timer.py): `SessionTimer` tracking total practice time and emitting Qt tick signals.
+
+### GROUP 15. SPA State & Navigation
+- [`web/js/app.js`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/web/js/app.js): Route state manager, preferences persistence, request abort controller.
+
+### GROUP 16. Automated Test Suite
+- `tests/test_logger.py`: Main log tests.
+- `tests/test_flow_logger.py`: Thread-safety ring buffer and masking security unit tests.
+- `tests/test_api_client.py`: Gemini client error handling tests.
+- `tests/test_languages.py`: Language registry tests.

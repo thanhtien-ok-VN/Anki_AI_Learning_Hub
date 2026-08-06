@@ -51,33 +51,31 @@ AI Learning Hub transforms your existing Anki vocabulary decks into interactive 
 
 ## Project Architecture
 
-```
+For a detailed sitemap of all 16 component groups, refer to [docs/ARCHITECTURE.md](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/docs/ARCHITECTURE.md).
+
+```text
 AI_Learning_Hub/
-├── __init__.py           # Anki add-on entry point (Qt UI setup)
-├── core/
-│   ├── engine.py         # AIEngine: main bridge message handler
-│   ├── api_client.py     # GeminiClient: API key rotation + rate limiting
-│   ├── prompt_manager.py # PromptManager: template loading with i18n fallback
-│   ├── schema_registry.py# Pydantic schemas for all 8 game modes
-│   ├── languages.py      # Language registry (learn_lang + ui_lang)
-│   └── settings.py       # SettingsManager: persistent config
-├── gamemodes/
-│   ├── fill_blank.py     # Fill in the Blank handler
-│   ├── cloze.py          # Cloze Paragraph handler
-│   ├── translation.py    # Translation handler
-│   ├── word_unscramble.py# Word Unscramble handler
-│   ├── word_matching.py  # Word Matching handler
-│   ├── story_generator.py# Story Generator handler
-│   ├── sentence_transform.py # Sentence Transform handler
-│   └── taboo.py          # Taboo handler
-├── prompts/
-│   ├── en/               # English prompt templates
-│   └── {lang}/           # Language-specific prompts (fallback to en/)
-├── web/
-│   ├── index.html        # SPA entry point
-│   ├── css/style.css     # All styles (1300+ lines, organized by section)
-│   └── js/
-│       ├── bridge.js     # Promise-based pycmd RPC bridge
+├── __init__.py           # [Group 1] Anki add-on entry point & menu setup
+├── ui/                   # [Group 1, 2, 13] Qt Presentation Layer & Diagnostics
+│   ├── main_window.py   # Anki Qt Tab embedding & async task manager
+│   ├── settings_dialog.py # Settings Dialog (Keys, Model, Language, Logs)
+│   └── log_viewer.py    # Log Viewer & Diagnostic Bug Report GUI
+├── core/                 # [Group 1-6, 8, 10, 11, 13, 14] Domain Core & Bridge
+│   ├── engine.py         # AIEngine: JS Bridge Router (~20 Actions, 4-Phase Flow)
+│   ├── settings.py       # SettingsManager: persistent JSON storage
+│   ├── timer.py          # SessionTimer: elapsed practice time tracking
+│   ├── api_client.py     # Backward-compatible alias for llm/gemini.py
+│   ├── prompt_manager.py # Prompt loading & placeholder substitution
+│   ├── schema_registry.py# Pydantic schemas & Gemini JSON spec generators
+│   └── logger.py         # Thread-Safe Ring Buffer & Flow JSONL Logger
+├── llm/                  # [Group 7] Provider Abstraction Layer (DIP)
+│   ├── base.py           # BaseLLMProvider abstract interface
+│   └── gemini.py         # GeminiProvider (Rotation, backoff, waterfalls)
+├── gamemodes/            # [Group 9] 8 Interactive Gamemode Handlers
+├── prompts/              # [Group 3] System prompt templates (en, zh, common)
+├── lang/                 # [Group 3] i18n JSON Catalogs (en.json, vi.json)
+└── web/                  # [Group 4, 12, 15] Web SPA Frontend (HTML, CSS, JS)
+```
 │       ├── utils.js      # i18n, shuffle, debounce, formatTime
 │       └── app.js        # Main SPA (8 game renderers, routing, state)
 ├── lang/
