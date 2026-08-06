@@ -143,6 +143,13 @@ const Bridge = {
 
     send(action, data = {}, opts = 90000) { return this.sendAsync(action, data, opts).catch(error => console.warn('[Bridge]', error)); },
 
+    updateStatus(text) {
+        const loadingText = document.querySelector('#loading-text');
+        if (loadingText && text) {
+            loadingText.textContent = text;
+        }
+    },
+
     init() { this._waitForPycmd(); },
 };
 

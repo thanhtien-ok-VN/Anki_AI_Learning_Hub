@@ -69,9 +69,24 @@ class GameModeBase(ABC):
         from aqt import mw
         from anki.notes import Note
 
+        if not mw.col:
+            return 0
+
+        # Create Anki Undo Checkpoint
+        mw.checkpoint("Save AI Learning Cards")
+
         model = mw.col.models.by_name("Basic")
         if not model:
             model = mw.col.models.current()
+        if not model or "flds" not in model:
+            return 0
+
+        fields = [f["name"] for f in model.get("flds", [])]
+        if not fields:
+            return 0
+
+        front_field = fields[0]
+        back_field = fields[1] if len(fields) > 1 else fields[0]
 
         deck = mw.col.decks.by_name(deck_name)
         if not deck:
@@ -84,11 +99,32 @@ class GameModeBase(ABC):
             front, back = self._format_anki_note(item)
             if not front and not back:
                 continue
+
+            # Duplicate Check: Check if front already exists in this deck or collection
+            clean_front = front.strip()
+            existing = mw.col.find_notes(f"did:{deck_id}")
+            is_dup = False
+            for nid in existing:
+                try:
+                    n = mw.col.get_note(nid)
+                    if n[front_field].strip() == clean_front:
+                        is_dup = True
+                        break
+                except Exception:
+                    continue
+
+            if is_dup:
+                continue
+
             note = Note(mw.col, model)
-            note["Front"] = front
-            note["Back"] = back
+            note[front_field] = front
+            if len(fields) > 1:
+                note[back_field] = back
             note.note_type()["did"] = deck_id
             mw.col.add_note(note, deck_id)
             count += 1
+
+        if count > 0:
+            mw.reset()
 
         return count

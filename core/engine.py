@@ -158,6 +158,17 @@ class SettingsManager:
         if old != value:
             log.info(f"Setting changed: {key}", {"old": old, "new": value})
 
+    def set_many(self, items: dict):
+        changed = False
+        for key, value in items.items():
+            old = self.data.get(key)
+            if old != value:
+                self.data[key] = value
+                changed = True
+                log.info(f"Setting changed: {key}", {"old": old, "new": value})
+        if changed:
+            self.save()
+
     def get_api_keys(self) -> list[str]:
         keys = []
         for i in range(1, 11):
@@ -178,6 +189,18 @@ class SettingsManager:
             if old_key3:
                 keys[2] = old_key3
         return keys
+
+    def get_masked_api_keys(self) -> list[str]:
+        raw_keys = self.get_api_keys()
+        masked = []
+        for k in raw_keys:
+            if not k:
+                masked.append("")
+            elif len(k) <= 8:
+                masked.append("****")
+            else:
+                masked.append(f"{k[:6]}...{k[-4:]}")
+        return masked
 
     def get_active_keys(self) -> list[str]:
         return [k for k in self.get_api_keys() if k]
@@ -357,6 +380,7 @@ class AIEngine:
                 "get_supported_languages": self._handle_get_supported_languages,
                 "ai_grade": self._handle_ai_grade,
                 "close_hub": self._handle_close_hub,
+                "cancel_gen": self._handle_cancel_gen,
             }
             handler = handlers.get(action)
             if handler:
@@ -407,7 +431,12 @@ class AIEngine:
     #  _handle_save_to_anki)
     # ──────────────────────────────────────────────────────────
 
+    def _handle_cancel_gen(self, data: dict = None) -> dict:
+        self.cancel_current_task()
+        return {"cancelled": True}
+
     def _handle_generate(self, data: dict) -> dict:
+        self.cancel_event.clear()
         data = normalize_language_fields(dict(data or {}))
         gamemode = data.get("gamemode", "fill_blank")
         language = valid_learn_lang(data.get("language"), self.settings.get("learn_lang", DEFAULT_LEARN_LANG))
@@ -633,28 +662,34 @@ class AIEngine:
     # ──────────────────────────────────────────────────────────
 
     def _handle_save_settings(self, data: dict) -> dict:
-        changed_keys = []
+        to_update = {}
         for key, value in data.items():
             if key == "ui_lang":
                 value = valid_ui_lang(value, self.settings.get("ui_lang", DEFAULT_UI_LANG))
             elif key == "learn_lang":
                 value = valid_learn_lang(value, self.settings.get("learn_lang", DEFAULT_LEARN_LANG))
-            self.settings.set(key, value)
-            changed_keys.append(key)
-        if any(k.startswith("api_key") for k in data):
+            elif key.startswith("api_key"):
+                val_str = str(value or "").strip()
+                if not val_str or "*" in val_str or "..." in val_str:
+                    continue
+            to_update[key] = value
+
+        self.settings.set_many(to_update)
+        if any(k.startswith("api_key") for k in to_update):
             self._reset_api_client()
             self._gamemode_cache.clear()
             log.info("API keys changed, client+cache reset")
-        log.info("Settings saved via JS", {"keys": changed_keys})
-        return {"saved": changed_keys}
+        log.info("Settings saved via JS", {"keys": list(to_update.keys())})
+        return {"saved": list(to_update.keys())}
 
     def _handle_get_settings(self, data: dict = None) -> dict:
-        # API keys never cross the Python/JS bridge.
-        return {
+        settings_copy = {
             key: value
             for key, value in self.settings.data.items()
             if not key.startswith("api_key")
         }
+        settings_copy["masked_keys"] = self.settings.get_masked_api_keys()
+        return settings_copy
 
     def _handle_check_api_key(self, data: dict = None) -> dict:
         keys = self.settings.get_active_keys()

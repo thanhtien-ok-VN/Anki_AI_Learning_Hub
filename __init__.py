@@ -62,7 +62,23 @@ def init_addon():
     settings_action.triggered.connect(open_settings)
     menu.addAction(settings_action)
 
-    log.info("Menu items added")
+    # Register Browser context menu hook
+    def on_browser_context_menu(browser, context_menu):
+        ai_menu = QAction("✨ AI Learning Hub: Luyện tập thẻ đã chọn", browser)
+        ai_menu.triggered.connect(lambda: _on_browser_practice(browser))
+        context_menu.addAction(ai_menu)
+
+    gui_hooks.browser_will_show_context_menu.append(on_browser_context_menu)
+
+    log.info("Menu items and Anki Browser hooks registered")
+
+
+def _on_browser_practice(browser):
+    nids = browser.selectedNotes()
+    if not nids:
+        showInfo("Hãy chọn ít nhất một thẻ trong danh sách để luyện tập AI.")
+        return
+    open_hub()
 
 
 def open_settings():

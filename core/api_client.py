@@ -33,10 +33,11 @@ class GeminiClient:
     _last_request_time = 0.0
     _min_interval = 1.5
 
-    def __init__(self, api_keys: list[str], model_name: str = "auto", ui_lang: str = "en"):
+    def __init__(self, api_keys: list[str], model_name: str = "auto", ui_lang: str = "en", cancel_event=None):
         self.keys = [k.strip() for k in api_keys if k.strip()]
         self.model_name = model_name
         self.ui_lang = ui_lang
+        self.cancel_event = cancel_event
         self.last_response = None
         self._active_key_index = 0
         self._unhealthy_until: dict[int, float] = {}
@@ -93,15 +94,16 @@ class GeminiClient:
             payload["generationConfig"]["response_schema"] = schema
         return payload
 
-    @classmethod
-    def _throttle(cls):
+    def _throttle(self):
+        if self.cancel_event and self.cancel_event.is_set():
+            raise ApiError("API request cancelled by user")
         now = time.time()
-        since = now - cls._last_request_time
-        if since < cls._min_interval:
-            delay = cls._min_interval - since
+        since = now - GeminiClient._last_request_time
+        if since < GeminiClient._min_interval:
+            delay = GeminiClient._min_interval - since
             log.debug(f"Throttle: sleep {delay:.2f}s")
             time.sleep(delay)
-        cls._last_request_time = time.time()
+        GeminiClient._last_request_time = time.time()
 
     @staticmethod
     def _retry_delay(attempt: int, base: float = None) -> float:
@@ -113,6 +115,8 @@ class GeminiClient:
         return code in RETRY_CONFIG["retry_codes"]
 
     def _call_api(self, payload: dict, key: str, model: str) -> dict:
+        if self.cancel_event and self.cancel_event.is_set():
+            raise ApiError("API request cancelled by user")
         self._throttle()
         url = self._build_url(model)
         data = json.dumps(payload).encode("utf-8")
@@ -122,7 +126,7 @@ class GeminiClient:
         log.debug(f"API call: model={model} url_len={len(data)}")
 
         try:
-            resp = urlopen(req, timeout=60)
+            resp = urlopen(req, timeout=25)
             self.last_response = resp
             raw = json.loads(resp.read().decode("utf-8"))
             log.debug("API response OK", {"model": model})
@@ -212,8 +216,16 @@ class GeminiClient:
             max_model_steps = max(max_model_steps, len(self._models_for_call(key)))
 
         for step in range(max_model_steps):
+            if self.cancel_event and self.cancel_event.is_set():
+                log.info("API call cancelled during step loop")
+                return self._err("E_CANCELLED", t("app.cancelled_gen", lang=self.ui_lang))
+
             # Với mỗi model step, duyệt qua các key hợp lệ
             for position, idx in list(enumerate(eligible)):
+                if self.cancel_event and self.cancel_event.is_set():
+                    log.info("API call cancelled during key loop")
+                    return self._err("E_CANCELLED", t("app.cancelled_gen", lang=self.ui_lang))
+
                 # Nếu idx đã bị loại bỏ khỏi eligible do lỗi xác thực trước đó, ta bỏ qua
                 if idx not in eligible:
                     continue
@@ -230,6 +242,10 @@ class GeminiClient:
                     time.sleep(0.25)
 
                 for attempt in range(max_retries):
+                    if self.cancel_event and self.cancel_event.is_set():
+                        log.info("API call cancelled during attempt loop")
+                        return self._err("E_CANCELLED", t("app.cancelled_gen", lang=self.ui_lang))
+
                     try:
                         log.debug(f"Trying {key_label} step {step} model {model} attempt {attempt+1}/{max_retries}")
                         notify(t("api.calling", lang=self.ui_lang, idx=idx+1, model=model))
@@ -369,7 +385,7 @@ class GeminiClient:
                     data = json.dumps(payload).encode("utf-8")
                     headers = {"Content-Type": "application/json", "x-goog-api-key": key}
                     req = Request(url, data=data, headers=headers)
-                    resp = urlopen(req, timeout=30)
+                    resp = urlopen(req, timeout=8)
                     raw = json.loads(resp.read().decode("utf-8"))
                     text = raw.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
                     log.info(f"test_key_with_waterfall OK: key={self.detect_key_type(key)} model={model} response={text}")

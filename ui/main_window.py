@@ -18,7 +18,16 @@ from aqt.webview import AnkiWebView
 from core.logger import log
 
 ADDON_PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-BACKGROUND_ACTIONS = {"generate", "test_key", "test_all_keys", "ai_grade"}
+BACKGROUND_ACTIONS = {
+    "generate",
+    "test_key",
+    "test_all_keys",
+    "ai_grade",
+    "sample_vocab_pairs",
+    "list_source_models",
+    "list_source_fields",
+    "save_to_anki",
+}
 
 
 class AIHubView:
