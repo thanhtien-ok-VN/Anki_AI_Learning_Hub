@@ -184,6 +184,16 @@ class SettingsDialog(QDialog):
         lang_row.addWidget(self.learn_lang_cb)
         layout.addLayout(lang_row)
 
+        # ===== Logs & Observability =====
+        self._section(layout, "logs.title")
+        log_row = QHBoxLayout()
+        view_logs_btn = QPushButton(self._add_i18n_key("logs.view"))
+        self.i18n_widgets.append((view_logs_btn, "logs.view"))
+        view_logs_btn.clicked.connect(self._open_log_viewer)
+        log_row.addWidget(view_logs_btn)
+        log_row.addStretch()
+        layout.addLayout(log_row)
+
         layout.addStretch()
         buttons = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
@@ -276,3 +286,8 @@ class SettingsDialog(QDialog):
                 log.error(f"Error saving settings: {e}")
 
         self.accept()
+
+    def _open_log_viewer(self):
+        from ui.log_viewer import LogViewerDialog
+        dialog = LogViewerDialog(self)
+        dialog.exec()

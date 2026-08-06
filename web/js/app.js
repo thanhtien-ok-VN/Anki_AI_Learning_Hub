@@ -356,11 +356,16 @@ const t = (key, fallback, ...args) => {
 
 
   const nav = r => {
+    const oldRoute = state.route;
     disposeCurrentGame();
     abortActiveRequests();
     state.route = r;
     location.hash = r === 'home' ? '' : r;
     render();
+    if (r !== oldRoute) {
+      const eventName = r === 'home' ? 'game_exit' : 'game_enter';
+      Bridge.send('log_event', { event: eventName, game: r, extra: { from: oldRoute } });
+    }
   };
   const shell = body => {
     state.busy = false;

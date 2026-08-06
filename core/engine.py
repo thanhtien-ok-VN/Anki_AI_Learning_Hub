@@ -230,6 +230,7 @@ class AIEngine:
                 "ai_grade": self._handle_ai_grade,
                 "close_hub": self._handle_close_hub,
                 "cancel_gen": self._handle_cancel_gen,
+                "log_event": self._handle_log_event,
             }
             handler = handlers.get(action)
             if handler:
@@ -282,154 +283,132 @@ class AIEngine:
     #  _handle_save_to_anki)
     # ──────────────────────────────────────────────────────────
 
+    def _handle_log_event(self, data: dict = None) -> dict:
+        data = data or {}
+        event = data.get("event", "unknown")
+        game = data.get("game", "")
+        extra = data.get("extra") or {}
+        log.info(f"User event: {event}", {"game": game, **extra})
+        flow(phase="EVENT", gamemode=game, message=f"User event: {event}", extra=extra)
+        return {"logged": True}
+
     def _handle_cancel_gen(self, data: dict = None) -> dict:
         self.cancel_current_task()
         return {"cancelled": True}
 
     def _handle_generate(self, data: dict) -> dict:
+        from core.logger import log, flow, FlowTimer, LogLevel
+        from core.schema_registry import get_schema
         self.cancel_event.clear()
         data = normalize_language_fields(dict(data or {}))
         gamemode = data.get("gamemode", "fill_blank")
-        language = valid_learn_lang(data.get("language"), self.settings.get("learn_lang", DEFAULT_LEARN_LANG))
-        data["language"] = language
-        level = data.get("level", "intermediate")
-        topic = data.get("topic", "daily_life")
-        minimum, maximum = GAME_LIMITS.get(gamemode, (1, 5))
-        count = max(minimum, min(int(data.get("count", minimum)), maximum))
-        data["count"] = count
-        source_pairs = data.get("vocab_pairs") or []
-        if gamemode == "cloze":
-            num_blanks = max(1, min(int(data.get("num_blanks") or 5), len(source_pairs) or 5, 10))
-            data["num_blanks"] = num_blanks
-            effective = num_blanks
-        else:
-            effective = count
 
-        if gamemode == "translation":
-            TRANSLATION_SENTENCE_TYPES = [
-                "passive voice",
-                "conditional (if + would)",
-                "present perfect vs past simple",
-                "comparative / superlative",
-                "relative clause (who/which/that)",
-                "complex sentence with because/although/while",
-                "modal verbs (can, should, must, might)",
-                "common idiom or phrasal verb",
-                "reported speech",
-                "negative + tag/question structure",
-            ]
-            data["sentence_type"] = random.choice(TRANSLATION_SENTENCE_TYPES)
+        # Phase 1: CONNECT
+        with FlowTimer("CONNECT", gamemode=gamemode, message="Checking client and API keys") as timer:
+            client = self._get_api_client()
+            active_keys = self.settings.get_active_keys()
+            timer.extra["active_keys_count"] = len(active_keys)
+            if not client or not active_keys:
+                return {
+                    "error": True,
+                    "error_code": "E_NO_KEYS",
+                    "message": "No API key configured. Set at least one in Settings.",
+                }
 
-        if gamemode == "unscramble":
-            UNSCRAMBLE_SENTENCE_TYPES = [
-                "passive voice",
-                "conditional (if + would)",
-                "relative clause (who/which/that)",
-                "comparative / superlative",
-                "reported speech",
-                "modal verbs (can, should, must, might)",
-                "common idiom or phrasal verb",
-                "present perfect vs past simple",
-                "imperative sentence",
-                "question structure (why/how/tag)",
-                "complex sentence with because/although/while",
-                "gerund as subject or object",
-            ]
-            sampled_types = random.sample(UNSCRAMBLE_SENTENCE_TYPES, min(count, len(UNSCRAMBLE_SENTENCE_TYPES)))
-            data["sentence_types"] = ", ".join(sampled_types)
+        # Phase 2: SYSTEM
+        with FlowTimer("SYSTEM", gamemode=gamemode, message="Building prompt and parameters") as timer:
+            language = valid_learn_lang(data.get("language"), self.settings.get("learn_lang", DEFAULT_LEARN_LANG))
+            data["language"] = language
+            level = data.get("level", "intermediate")
+            topic = data.get("topic", "daily_life")
+            minimum, maximum = GAME_LIMITS.get(gamemode, (1, 5))
+            count = max(minimum, min(int(data.get("count", minimum)), maximum))
+            data["count"] = count
+            source_pairs = data.get("vocab_pairs") or []
+            if gamemode == "cloze":
+                num_blanks = max(1, min(int(data.get("num_blanks") or 5), len(source_pairs) or 5, 10))
+                data["num_blanks"] = num_blanks
+                effective = num_blanks
+            else:
+                effective = count
 
-        if source_pairs:
-            needed = min(effective, len(source_pairs))
-            data["vocab_pairs"] = random.sample(source_pairs, needed) if needed else []
-            data["blank_words"] = ", ".join(p["term"] for p in data["vocab_pairs"])
-        # SPA callers only need to provide the common controls.  These defaults
-        # satisfy each prompt template without making UI routes template-aware.
-        data.setdefault("paragraph_min_words", 80)
-        data.setdefault("paragraph_max_words", 140)
-        data.setdefault("num_blanks", min(5, int(count)))
-        data.setdefault("source_lang", self.settings.get("ui_lang", "en"))
-        data.setdefault("target_lang", language)
-        data.setdefault("word_count", 180)
-        data.setdefault("question_count", count)
-        data.setdefault("target_words", "")
-        data.setdefault("focus", "grammar")
-        data.setdefault("voice", "active/passive")
-        data.setdefault("conditional", "conditional")
-        data.setdefault("reported", "reported speech")
-        data.setdefault("comparative", "comparative")
+            if gamemode == "translation":
+                TRANSLATION_SENTENCE_TYPES = [
+                    "passive voice", "conditional (if + would)", "present perfect vs past simple",
+                    "comparative / superlative", "relative clause (who/which/that)",
+                    "complex sentence with because/although/while", "modal verbs (can, should, must, might)",
+                    "common idiom or phrasal verb", "reported speech", "negative + tag/question structure",
+                ]
+                data["sentence_type"] = random.choice(TRANSLATION_SENTENCE_TYPES)
 
-        log.info(
-            f"Generate: {gamemode}",
-            {"language": language, "level": level, "topic": topic, "count": count},
-        )
+            if gamemode == "unscramble":
+                UNSCRAMBLE_SENTENCE_TYPES = [
+                    "passive voice", "conditional (if + would)", "relative clause (who/which/that)",
+                    "comparative / superlative", "reported speech", "modal verbs (can, should, must, might)",
+                    "common idiom or phrasal verb", "present perfect vs past simple", "imperative sentence",
+                    "question structure (why/how/tag)", "complex sentence with because/although/while",
+                    "gerund as subject or object",
+                ]
+                sampled_types = random.sample(UNSCRAMBLE_SENTENCE_TYPES, min(count, len(UNSCRAMBLE_SENTENCE_TYPES)))
+                data["sentence_types"] = ", ".join(sampled_types)
 
-        gm = self.get_gamemode(gamemode)
-        if gm and getattr(gm, "is_offline", False):
-            log.info(f"{gamemode} is offline mode, generating locally")
-            return gm.generate(**data)
+            if source_pairs:
+                needed = min(effective, len(source_pairs))
+                data["vocab_pairs"] = random.sample(source_pairs, needed) if needed else []
+                data["blank_words"] = ", ".join(p["term"] for p in data["vocab_pairs"])
 
-        from core.schema_registry import get_schema
+            data.setdefault("paragraph_min_words", 80)
+            data.setdefault("paragraph_max_words", 140)
+            data.setdefault("num_blanks", min(5, int(count)))
+            data.setdefault("source_lang", self.settings.get("ui_lang", "en"))
+            data.setdefault("target_lang", language)
+            data.setdefault("word_count", 180)
+            data.setdefault("question_count", count)
+            data.setdefault("target_words", "")
+            data.setdefault("focus", "grammar")
 
-        schema = get_schema(gamemode)
-        if not schema:
-            log.warn(f"No schema for gamemode: {gamemode}")
-            return {
-                "error": True,
-                "error_code": "E_NO_SCHEMA",
-                "message": f"Unknown gamemode: {gamemode}",
-            }
+            schema = get_schema(gamemode)
+            if not schema:
+                log.warn(f"No schema for gamemode: {gamemode}")
+                return {"error": True, "error_code": "E_NO_SCHEMA", "message": f"Unknown gamemode: {gamemode}"}
 
-        prompt_mgr = self.get_prompt_manager()
-        source_pairs = data.get("vocab_pairs") or []
-        if source_pairs and gamemode == "story" and not data.get("target_words"):
-            data = dict(data)
-            data["target_words"] = ", ".join(
-                pair["term"] for pair in source_pairs[:count]
+            prompt_mgr = self.get_prompt_manager()
+            if source_pairs and gamemode == "story" and not data.get("target_words"):
+                data = dict(data)
+                data["target_words"] = ", ".join(pair["term"] for pair in source_pairs[:count])
+
+            prompt_data = dict(data)
+            for key in ("gamemode", "language", "level", "topic", "count", "vocab_pairs"):
+                prompt_data.pop(key, None)
+            prompt_data["ui_lang"] = self.settings.get("ui_lang", "en")
+            prompt_data["feedback_lang"] = self.settings.get("ui_lang", "en")
+            prompt = prompt_mgr.get_prompt(
+                gamemode=gamemode, language=language, level=level, topic=topic, count=count,
+                vocab_pairs=source_pairs, **prompt_data
             )
-        # Do not pass the common arguments twice: they are already explicit
-        # parameters of get_prompt(), while the SPA also stores them in data.
-        prompt_data = dict(data)
-        for key in ("gamemode", "language", "level", "topic", "count", "vocab_pairs"):
-            prompt_data.pop(key, None)
-        prompt_data["ui_lang"] = self.settings.get("ui_lang", "en")
-        prompt_data["feedback_lang"] = self.settings.get("ui_lang", "en")
-        prompt = prompt_mgr.get_prompt(
-            gamemode=gamemode,
-            language=language,
-            level=level,
-            topic=topic,
-            count=count,
-            vocab_pairs=source_pairs,
-            **prompt_data,
-        )
+            timer.extra.update({"language": language, "level": level, "topic": topic, "count": count, "vocab_count": len(source_pairs)})
 
-        client = self._get_api_client()
-        if not client:
-            log.warn("No API client available")
-            return {
-                "error": True,
-                "error_code": "E_NO_KEYS",
-                "message": "No API key configured. Set at least one in Settings.",
-            }
-
-        result = client.generate_structured(
-            prompt=prompt,
-            response_schema=schema,
-            temperature=self.settings.get("temperature", 0.7),
-            progress_callback=self._send_progress,
-        )
+        # Phase 3: AI
+        with FlowTimer("AI", gamemode=gamemode, message="Generating content via Gemini API") as timer:
+            result = client.generate_structured(
+                prompt=prompt,
+                response_schema=schema,
+                temperature=self.settings.get("temperature", 0.7),
+                progress_callback=self._send_progress,
+            )
+            timer.extra["key_used"] = result.get("_key_used", "")
+            timer.extra["model_used"] = result.get("_model_used", "")
 
         if result.get("error"):
-            log.warn(
-                f"Generate failed: {result.get('error_code', '?')} - {result.get('message', '')[:100]}"
-            )
+            log.warn(f"Generate failed: {result.get('error_code', '?')} - {result.get('message', '')[:100]}")
             return result
-        else:
+
+        # Phase 4: RENDER
+        with FlowTimer("RENDER", gamemode=gamemode, message="Validating and rendering response") as timer:
+            gm = self.get_gamemode(gamemode)
             key_used = result.get("_key_used", "?")
             model_used = result.get("_model_used", "?")
-            log.info(f"Generate OK: {key_used} / {model_used}")
             
-            # Pydantic model validation
             from core.schema_registry import get_pydantic_model
             pydantic_cls = get_pydantic_model(gamemode)
             if pydantic_cls:
@@ -443,12 +422,8 @@ class AIEngine:
                         result["error_code"] = err_code
                 except Exception as e:
                     log.warn(f"Pydantic validation failed for {gamemode}: {e}")
-                    # Keep raw result as fallback rather than failing
-                    pass
 
-        if not result.get("error"):
             from core.content_validation import validate_game_result
-
             validation = validate_game_result(gamemode, result, count)
             if validation.get("error"):
                 return {
@@ -457,52 +432,15 @@ class AIEngine:
                     "message": validation["error"],
                 }
 
-        # Ánh xạ định nghĩa từ Anki deck của người dùng vào câu hỏi Fill in the Blank
-        if gamemode == "fill_blank" and not result.get("error"):
-            vocab_map = {}
-            for p in source_pairs:
-                term = p.get("term", "").strip().lower()
-                defn = p.get("definition", "").strip()
-                if term and defn:
-                    vocab_map[term] = defn
-                    
-            if "questions" in result:
-                for q in result["questions"]:
-                    target = q.get("target_word", "").strip().lower()
-                    matched_def = vocab_map.get(target)
-                    if not matched_def:
-                        # Khớp tương đối nếu từ ghép hoặc chứa từ khóa
-                        for term, defn in vocab_map.items():
-                            if term == target or (len(term) > 3 and term in target) or (len(target) > 3 and target in term):
-                                matched_def = defn
-                                break
-                    q["user_definition"] = matched_def if matched_def else q.get("meaning", "")
+            result = normalize_language_fields(result)
+            if gm:
+                rendered = gm.render_ui_data(result)
+                if rendered:
+                    result = rendered
 
-        if gamemode == "cloze" and not result.get("error"):
-            blanks = result.get("blanks", [])
-            answers = [b.get("answer", "").strip().lower() for b in blanks]
-            terms = {p.get("term", "").strip().lower() for p in data.get("vocab_pairs", [])}
-            ok = (
-                len(blanks) == int(data["num_blanks"])
-                and len(set(answers)) == len(answers)
-                and all(a in terms for a in answers)
-            )
-            if not ok:
-                return {
-                    "error": True,
-                    "error_code": "E_AI_CONTENT",
-                    "message": "Đáp án cloze phải đúng các từ đã chọn. Vui lòng thử lại.",
-                }
+            result = sanitize_dict(normalize_language_fields(result))
+            timer.extra["status"] = "OK"
 
-        result = normalize_language_fields(result)
-        if gm and not result.get("error"):
-            rendered = gm.render_ui_data(result)
-            if rendered:
-                result = rendered
-
-
-        # Recursively sanitize all HTML content in result before returning
-        result = sanitize_dict(normalize_language_fields(result))
         return result
 
     # ──────────────────────────────────────────────────────────
