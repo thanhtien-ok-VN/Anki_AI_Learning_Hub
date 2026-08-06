@@ -127,7 +127,7 @@ Anki_AI_Learning_Hub/
 
 ### GROUP 13. System Observability & Logging
 - [`core/logger.py`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/core/logger.py): Thread-safe in-memory ring buffer (`collections.deque`), structured JSONL flow logger (`ai_hub_flow.jsonl`), and `FlowTimer`.
-- [`ui/log_viewer.py`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/ui/log_viewer.py): LogViewerDialog with monospace log viewer, level/phase filters, 1-click Diagnostic Bug Report generation, and multi-tier Anki version detection.
+- [`ui/log_viewer.py`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/ui/log_viewer.py): LogViewerDialog with monospace log viewer, real-time QLineEdit keyword search, multi-filter algorithm, log counter (`Showing X of Y logs`), 1-click Diagnostic Bug Report generation, and multi-tier Anki version detection.
 
 ### GROUP 14. Session & Timer Management
 - [`core/timer.py`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/core/timer.py): `SessionTimer` tracking total practice time and emitting Qt tick signals.
