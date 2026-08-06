@@ -2,7 +2,12 @@ const App = (() => {
   const games = [['fill_blank','✍️','Fill in the Blank'],['cloze','📖','Cloze'],['translation','🌐','Translation'],['unscramble','🧩','Word Unscramble'],['matching','🔗','Word Matching'],['story','📚','Story'],['sentence_transform','🔄','Sentence Transform'],['taboo','🚫','Taboo']];
   const PFX = 'aihub_';
 
-  function loadPrefs() {
+  // ╔══════════════════════════════════════════════════════════════╗
+// ║  SECTION 1: STATE & PREFERENCES                               ║
+// ║  (loadPrefs, savePrefs, restorePrefs, clearPrefs,             ║
+// ║   loadHistory, saveHistory, loadMatchingStats)                ║
+// ╚══════════════════════════════════════════════════════════════╝
+function loadPrefs() {
     try {
       const p = localStorage.getItem(PFX + 'prefs');
       if (p) Object.assign(state.userPrefs, JSON.parse(p));
@@ -176,7 +181,12 @@ const App = (() => {
   loadHistory();
 
   const root = document.querySelector('#app');
-  const t = (key, fallback, ...args) => {
+  // ╔══════════════════════════════════════════════════════════════╗
+// ║  SECTION 2: CORE UTILITIES                                    ║
+// ║  (t, esc, normalizeText, setSafeTimeout, setSafeInterval,     ║
+// ║   disposeCurrentGame, showStatus, clearStatus, getWeakWords)  ║
+// ╚══════════════════════════════════════════════════════════════╝
+const t = (key, fallback, ...args) => {
     if (window.t) return window.t(key, fallback, ...args);
     let text = fallback || key;
     if (args.length > 0) {
@@ -303,11 +313,15 @@ const App = (() => {
   };
   const shell = body => {
     state.busy = false;
-    root.innerHTML = `<div class="timer-bar"><span class="timer-label">${esc(t('app.title', 'AI Learning Hub'))}</span><span id="busy-label"></span><button id="ui-lang-btn" class="btn btn-outline" style="padding:4px 10px; font-size:0.82rem; margin-right:4px;" title="${esc(t('app.ui_lang_label', 'Giao diện'))}">${esc(t('app.ui_lang_label', 'Giao diện'))}: <span id="ui-lang-display">${esc((typeof Utils !== 'undefined' && Utils.currentLang) || 'en')}</span></button><button id="close-hub" aria-label="${esc(t('app.close_hub', 'Đóng Hub'))}">${esc(t('app.close_hub', 'Đóng Hub'))}</button></div>${body}<div id="loading" class="loading-overlay" hidden><div class="spinner"></div><span id="loading-text">${esc(t('app.processing', 'Đang xử lý…'))}</span><button id="loading-cancel-btn" class="btn" style="margin-top:16px; background:#ef4444; color:white; border:none; padding:8px 20px; border-radius:6px; font-weight:600; cursor:pointer;" type="button">${esc(t('app.cancel_gen', 'Hủy tạo bài'))}</button></div>`;
+    root.innerHTML = `<div class="timer-bar"><span class="timer-label">${esc(t('app.title', 'AI Learning Hub'))}</span><span id="busy-label"></span><button id="ui-lang-btn" class="btn btn-outline" style="padding:4px 10px; font-size:0.82rem; margin-right:4px;" title="${esc(t('app.ui_lang_label', 'Giao diện'))}">${esc(t('app.ui_lang_label', 'Giao diện'))}: <span id="ui-lang-display">${esc((typeof Utils !== 'undefined' && Utils.currentLang) || 'en')}</span></button><button id="close-hub" aria-label="${esc(t('app.close_hub', 'Đóng Hub'))}">${esc(t('app.close_hub', 'Đóng Hub'))}</button></div>${body}<div id="loading" class="loading-overlay" hidden><div class="spinner"></div><span id="loading-text">${esc(t('app.processing', 'Đang xử lý…'))}</span><button id="loading-cancel-btn" class="btn btn-cancel-gen" style="margin-top:16px;" type="button">${esc(t('app.cancel_gen', 'Hủy tạo bài'))}</button></div>`;
     document.querySelector('#loading').hidden = true;
   };
 
-  function setBusy(on, text = t('app.generating', 'Đang tạo bài…')) {
+  // ╔══════════════════════════════════════════════════════════════╗
+// ║  SECTION 3: ROUTING & SHELL                                   ║
+// ║  (setBusy, home, getGameDesc, game, shell, render, nav)       ║
+// ╚══════════════════════════════════════════════════════════════╝
+function setBusy(on, text = t('app.generating', 'Đang tạo bài…')) {
     if (on) clearStatus();
     state.busy = on;
     const e = document.querySelector('#loading');
@@ -332,7 +346,7 @@ const App = (() => {
   }
 
   function home() {
-    shell('<main class="container"><div class="header" style="padding-top:50px"><h1>' + esc(t('app.title', 'AI Learning Hub')) + '</h1><p>' + esc(t('app.home_subtitle', 'Chọn một game để học từ bộ thẻ Anki')) + '</p><div class="api-check"><button class="btn btn-outline" id="test-keys">' + esc(t('app.test_api', 'Kiểm tra API')) + '</button><span id="api-result" aria-live="polite"></span></div></div><div class="game-grid">' + games.map(g => '<button class="game-card" data-game="' + g[0] + '"><div class="icon">' + g[1] + '</div><h3>' + esc(t(g[0] + '.title', g[2])) + '</h3><p>' + esc(getGameDesc(g[0])) + '</p></button>').join('') + '</div></main>');
+    shell('<main class="container"><div class="header pt-header"><h1>' + esc(t('app.title', 'AI Learning Hub')) + '</h1><p>' + esc(t('app.home_subtitle', 'Chọn một game để học từ bộ thẻ Anki')) + '</p><div class="api-check"><button class="btn btn-outline" id="test-keys">' + esc(t('app.test_api', 'Kiểm tra API')) + '</button><span id="api-result" aria-live="polite"></span></div></div><div class="game-grid">' + games.map(g => '<button class="game-card" data-game="' + g[0] + '"><div class="icon">' + g[1] + '</div><h3>' + esc(t(g[0] + '.title', g[2])) + '</h3><p>' + esc(getGameDesc(g[0])) + '</p></button>').join('') + '</div></main>');
     bindCommon();
     document.querySelectorAll('[data-game]').forEach(e => e.onclick = () => nav(e.dataset.game));
     document.querySelector('#test-keys').onclick = testKeys;
@@ -352,7 +366,12 @@ const App = (() => {
     return m[id] || t('desc.default', 'Luyện tập tương tác');
   }
 
-  function source() {
+  // ╔══════════════════════════════════════════════════════════════╗
+// ║  SECTION 4: SOURCE & SETTINGS PANEL                           ║
+// ║  (source, controls, buildLanguageOptionsHtml, bindSource,     ║
+// ║   loadModels, loadFields, drawDecks, options)                 ║
+// ╚══════════════════════════════════════════════════════════════╝
+function source() {
     return `<section class="config-panel source-panel"><h3>${esc(t('source.title', 'Nguồn từ vựng Anki'))}</h3><label>${esc(t('source.search', 'Tìm deck'))} <input id="deck-search" placeholder="${esc(t('source.search_placeholder', 'Gõ một phần tên deck…'))}"></label><select id="deck" class="deck-list" size="7"></select><div class="selector-grid"><label>${esc(t('source.note_type', 'Note type'))}<select id="model"><option>${esc(t('source.select_deck_first', 'Chọn deck'))}</option></select></label><label>${esc(t('source.term', 'Thuật ngữ'))}<select id="term"><option>${esc(t('source.select_notetype_first', 'Chọn note type'))}</option></select></label><label>${esc(t('source.definition', 'Định nghĩa'))}<select id="definition"><option>${esc(t('source.select_notetype_first', 'Chọn note type'))}</option></select></label></div><div class="config-row"><label>${esc(t('source.sample_count', 'Số từ mẫu'))} <input id="sample-limit" type="number" value="20" min="1" max="50"></label><button id="sample" class="btn btn-outline">${esc(t('source.get_samples', 'Lấy mẫu'))}</button><button id="reset-samples" class="btn btn-outline">${esc(t('source.reset_round', 'Làm mới vòng'))}</button></div><p id="source-status" class="source-status">${esc(t('source.status', 'Mẫu được chọn ngẫu nhiên, không lặp trong phiên Hub.'))}</p><details id="sample-preview"><summary>${esc(t('source.preview_empty', 'Chưa có mẫu để xem'))}</summary><ol id="sample-list"></ol></details></section>`;
   }
 
@@ -384,16 +403,16 @@ const App = (() => {
     const countSelect = hideCount ? '' : '<label>' + esc(countLabel) + '<select id="count">' + Array.from({ length: max - min + 1 }, (_, i) => '<option ' + ((i + min === 10 || (max < 10 && i + min === min)) ? 'selected' : '') + '>' + (i + min) + '</option>').join('') + '</select></label>';
 
     if (id === 'matching') {
-      return '<section class="config-panel"><div class="selector-grid">' + countSelect + '</div><div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-top:12px;"><button class="btn primary" id="generate">' + esc(t('controls.generate', 'Tạo bài')) + '</button></div></section>';
+      return '<section class="config-panel"><div class="selector-grid">' + countSelect + '</div><div class="flex items-center flex-wrap gap-3 mt-3"><button class="btn primary" id="generate">' + esc(t('controls.generate', 'Tạo bài')) + '</button></div></section>';
     }
 
-    return '<section class="config-panel"><div class="selector-grid"><label>' + esc(t('app.language', 'Learning language')) + '<select id="language">' + buildLanguageOptionsHtml() + '</select></label><label>' + esc(t('app.level', 'Level')) + '<select id="level"><option value="beginner">' + esc(t('controls.level_beginner', 'A1 Beginner')) + '</option><option value="elementary">' + esc(t('controls.level_elementary', 'A2 Elementary')) + '</option><option value="intermediate" selected>' + esc(t('controls.level_intermediate', 'B1 Intermediate')) + '</option><option value="upper_intermediate">' + esc(t('controls.level_upper_intermediate', 'B2 Upper-intermediate')) + '</option><option value="advanced">' + esc(t('controls.level_advanced', 'C1–C2 Advanced')) + '</option></select></label>' + countSelect + extra + '<label>' + esc(t('app.topic', 'Topic')) + '<input id="topic" value="daily_life"></label></div><div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-top:12px;"><button class="btn primary" id="generate">' + esc(t('controls.generate', 'Generate')) + '</button><button class="btn" id="cancel-gen" style="display:none; background:#ef4444; color:white; border:none; padding:10px 20px; font-weight:600;" type="button">' + esc(t('app.cancel_gen', 'Cancel generation')) + '</button></div></section>';
+    return '<section class="config-panel"><div class="selector-grid"><label>' + esc(t('app.language', 'Learning language')) + '<select id="language">' + buildLanguageOptionsHtml() + '</select></label><label>' + esc(t('app.level', 'Level')) + '<select id="level"><option value="beginner">' + esc(t('controls.level_beginner', 'A1 Beginner')) + '</option><option value="elementary">' + esc(t('controls.level_elementary', 'A2 Elementary')) + '</option><option value="intermediate" selected>' + esc(t('controls.level_intermediate', 'B1 Intermediate')) + '</option><option value="upper_intermediate">' + esc(t('controls.level_upper_intermediate', 'B2 Upper-intermediate')) + '</option><option value="advanced">' + esc(t('controls.level_advanced', 'C1–C2 Advanced')) + '</option></select></label>' + countSelect + extra + '<label>' + esc(t('app.topic', 'Topic')) + '<input id="topic" value="daily_life"></label></div><div class="flex items-center flex-wrap gap-3 mt-3"><button class="btn primary" id="generate">' + esc(t('controls.generate', 'Generate')) + '</button><button class="btn btn-cancel-gen" id="cancel-gen" style="display:none;" type="button">' + esc(t('app.cancel_gen', 'Cancel generation')) + '</button></div></section>';
   }
 
   function game() {
     const g = games.find(x => x[0] === state.route);
     const titleText = t(g[0] + '.title', g[2]);
-    shell(`<main class="container game-page" style="padding-top:50px">
+    shell(`<main class="container game-page pt-header">
       <div class="game-header">
         <button id="back" class="back-btn">${esc(t('app.back_hub', '← Hub'))}</button>
         <h2 class="game-title">${g[1]} ${esc(titleText)}</h2>
@@ -486,7 +505,7 @@ const App = (() => {
             <span style="font-weight:600; font-size:14px; color:var(--text);">${timeStr}</span>
             ${scoreStr}
           </div>
-          <div class="history-card-sub" style="margin-bottom:8px;">
+          <div class="history-card-sub mb-2">
             Bài tập ${totalQ} câu
           </div>
           <button class="btn btn-outline view-detail-btn" data-idx="${idx}" style="font-size:12px; padding:4px 12px;">
@@ -519,15 +538,15 @@ const App = (() => {
       const isUserChoice = idx === chosen;
       const letter = String.fromCharCode(65 + idx);
 
-      let badgeBg = isAns ? '#d1fae5' : (isUserChoice ? '#fee2e2' : 'var(--bg)');
-      let badgeColor = isAns ? '#047857' : (isUserChoice ? '#b91c1c' : 'var(--text-secondary)');
+      let badgeBg = isAns ? 'var(--color-success-bg)' : (isUserChoice ? 'var(--color-error-bg)' : 'var(--bg)');
+      let badgeColor = isAns ? 'var(--success)' : (isUserChoice ? 'var(--error)' : 'var(--text-secondary)');
       let badgeLabel = isAns ? t('feedback.badge_correct', '✓ Đáp án đúng') : (isUserChoice ? t('feedback.badge_chosen', '✕ Bạn chọn') : t('feedback.badge_distractor', 'Từ gây nhiễu'));
       let borderColor = isAns ? 'var(--success)' : (isUserChoice ? 'var(--error)' : 'var(--border)');
 
       return `
         <div style="padding:10px 12px; border-left:4px solid ${borderColor}; background:var(--bg); border-radius:4px; margin-bottom:8px; text-align:left;">
-          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px; margin-bottom:4px;">
-            <span style="font-size:14px;"><b>${letter}. ${esc(word)}</b> ${tr ? `<span style="color:var(--text-secondary); font-size:13px;">— ${esc(tr)}</span>` : ''}</span>
+          <div class="flex-row-between--wrap gap-2 mb-1">
+            <span class="text-base"><b>${letter}. ${esc(word)}</b> ${tr ? `<span style="color:var(--text-secondary); font-size:13px;">— ${esc(tr)}</span>` : ''}</span>
             <span style="font-size:11px; padding:2px 8px; border-radius:10px; font-weight:600; background:${badgeBg}; color:${badgeColor}; border:1px solid ${borderColor};">${esc(badgeLabel)}</span>
           </div>
           <div style="font-size:13px; color:var(--text); line-height:1.4;">
@@ -538,9 +557,9 @@ const App = (() => {
     }).join('');
 
     return `
-      <div style="margin-top:14px; text-align:left;">
-        <b style="font-size:14px;">📊 ${esc(t('feedback.options_analysis_title', 'Phân tích chi tiết các lựa chọn'))}:</b>
-        <div style="margin-top:8px;">
+      <div class="mt-3 text-left">
+        <b class="text-base">📊 ${esc(t('feedback.options_analysis_title', 'Phân tích chi tiết các lựa chọn'))}:</b>
+        <div class="mt-2">
           ${items}
         </div>
       </div>
@@ -577,26 +596,26 @@ const App = (() => {
         const explanation = q.explanation || q.explanation_short || '';
 
         return `
-          <div class="question-card" style="margin-bottom:16px;">
+          <div class="question-card mb-4">
             <div class="q-number">Câu ${qIdx + 1}/${questions.length}</div>
             <div class="q-text" style="font-size:16px; font-weight:600;">${esc(sentenceText)}</div>
 
-            <div class="feedback ${chosen !== undefined ? (isCorrect ? 'good' : 'bad') : ''}" style="margin-top:12px;">
+            <div class="feedback ${chosen !== undefined ? (isCorrect ? 'good' : 'bad') : ''} mt-3">
               ${chosen !== undefined ? `
-                <div style="font-weight:700; font-size:15px; margin-bottom:8px; color:${isCorrect ? 'var(--success)' : 'var(--error)'};">
+                <div class="font-bold text-md mb-2 ${isCorrect ? 'text-success' : 'text-error'}">
                   ${isCorrect ? 'Chính xác! ✓' : 'Chưa đúng ✕'}
                 </div>
               ` : '<div style="color:var(--text-secondary); margin-bottom:8px;">(Chưa làm bài)</div>'}
 
-              <div style="margin-bottom:8px;">
+              <div class="mb-2">
                 <b>🌐 Dịch câu hoàn chỉnh:</b> ${esc(trans)}
               </div>
 
-              <div style="margin-bottom:8px;">
+              <div class="mb-2">
                 <b>💡 Lý do chọn:</b> ${esc(explanation)}
               </div>
 
-              ${q.grammar_note ? `<div style="margin-bottom:8px;"><b>📌 Ghi chú ngữ pháp:</b> ${esc(q.grammar_note)}</div>` : ''}
+              ${q.grammar_note ? `<div class="mb-2"><b>📌 Ghi chú ngữ pháp:</b> ${esc(q.grammar_note)}</div>` : ''}
 
               ${buildOptionDetailsHtml(q, chosen)}
             </div>
@@ -617,19 +636,19 @@ const App = (() => {
         return `
           <div style="padding:10px; border:1px solid var(--border); border-radius:var(--radius-sm); margin-bottom:10px; background:var(--bg);">
             <b>Blank [${bIdx + 1}]</b>: <b style="color:var(--success);">${esc(correctOpt)}</b> ${meaning ? `(${esc(meaning)})` : ''}
-            <div>Kết quả: <span style="font-weight:600; color:${isCorrect ? 'var(--success)' : 'var(--error)'};">${isCorrect ? '✓ Đúng' : '✕ Sai'}</span> (Bạn chọn: <i>${esc(chosenOpt)}</i>)</div>
+            <div>Kết quả: <span class="font-semibold ${isCorrect ? 'text-success' : 'text-error'}">${isCorrect ? '✓ Đúng' : '✕ Sai'}</span> (Bạn chọn: <i>${esc(chosenOpt)}</i>)</div>
             <div style="font-size:13px; color:var(--text-secondary); margin-top:4px;">💡 ${esc(b.explanation || b.explanation_short || '')}</div>
           </div>
         `;
       }).join('');
 
       detailContent = `
-        <div class="question-card" style="margin-bottom:16px;">
+        <div class="question-card mb-4">
           <p><b>Đoạn văn hoàn chỉnh:</b></p>
           <div class="cloze-paragraph" style="background:var(--bg); padding:12px; border-radius:var(--radius-sm);">
             ${esc(data.full_solution_text || data.paragraph_full || data.paragraph_with_blanks || data.paragraph || '')}
           </div>
-          ${(data.story_translation || data.sentence_meaning || data.paragraph_translation) ? `<p style="margin-top:8px;"><b>🌐 Dịch đoạn văn:</b> ${esc(data.story_translation || data.sentence_meaning || data.paragraph_translation)}</p>` : ''}
+          ${(data.story_translation || data.sentence_meaning || data.paragraph_translation) ? `<p class="mt-2"><b>🌐 Dịch đoạn văn:</b> ${esc(data.story_translation || data.sentence_meaning || data.paragraph_translation)}</p>` : ''}
           <hr style="margin:16px 0;">
           <p><b>Chi tiết từng chỗ trống:</b></p>
           ${blanksHtml}
@@ -674,7 +693,7 @@ const App = (() => {
             </div>
             <div style="background:var(--bg); padding:10px; border-radius:var(--radius-sm); text-align:center; border:1px solid var(--border);">
               <div style="font-size:11px; color:var(--text-secondary);">Tỉ lệ chính xác</div>
-              <div style="font-weight:700; color:${accuracy >= 80 ? 'var(--success)' : 'var(--primary)'}; margin-top:2px;">${accuracy}%</div>
+              <div class="stat-card__value ${accuracy >= 80 ? 'text-success' : 'text-primary'}">${accuracy}%</div>
             </div>
             <div style="background:var(--bg); padding:10px; border-radius:var(--radius-sm); text-align:center; border:1px solid var(--border);">
               <div style="font-size:11px; color:var(--text-secondary);">Thời gian</div>
@@ -682,13 +701,13 @@ const App = (() => {
             </div>
           </div>
           <p style="font-weight:600; margin-bottom:10px;">Danh sách các cặp từ vựng:</p>
-          <ul style="list-style:none; padding:0; margin:0;">${pairsHtml}</ul>
+          <ul class="list-none">${pairsHtml}</ul>
         </div>
       `;
     } else if (gameId === 'unscramble' && (item.data?.questions || item.data?.sentences)) {
       const qs = item.data.questions || item.data.sentences || [];
       detailContent = qs.map((q, qIdx) => `
-        <div class="question-card" style="margin-bottom:12px;">
+        <div class="question-card mb-3">
           <p><b>Câu ${qIdx + 1}:</b> ${esc(q.hint || '')}</p>
           <p style="color:var(--success); font-weight:600;">➔ ${esc(q.correct_sentence)}</p>
           ${(q.meaning || q.translation || q.sentence_meaning) ? `<p style="font-size:13px; color:var(--text-secondary);">🌐 ${esc(q.meaning || q.translation || q.sentence_meaning)}</p>` : ''}
@@ -721,7 +740,7 @@ const App = (() => {
 
       detailContent = `
         <div class="question-card">
-          <div class="story-text" style="font-size:14px; max-height:200px; overflow-y:auto; background:rgba(0,0,0,0.02); padding:10px; border-radius:4px;">${esc(storyContent).replace(/\n\n/g, '<br><br>')}</div>
+          <div class="story-text" style="font-size:14px; max-height:200px; overflow-y:auto; background:var(--color-surface-tint); padding:10px; border-radius:4px;">${esc(storyContent).replace(/\n\n/g, '<br><br>')}</div>
           <p><b>Câu hỏi đọc hiểu:</b></p>
           ${qsHtml}
         </div>
@@ -1001,7 +1020,12 @@ const App = (() => {
   }
 
 
-  async function generate(id, optsOverride){
+  // ╔══════════════════════════════════════════════════════════════╗
+// ║  SECTION 5: GENERATE & HISTORY                                ║
+// ║  (generate, preview, request, sample, addHistory,            ║
+// ║   normalizeExercise, openMatchingStatsModal)                  ║
+// ╚══════════════════════════════════════════════════════════════╝
+async function generate(id, optsOverride){
     const signal = getSignal();
     try {
       disposeCurrentGame();
@@ -1141,21 +1165,21 @@ const App = (() => {
       `${Math.floor(stats.aggregates.best_time_sec / 60)}m ${stats.aggregates.best_time_sec % 60}s` : 'N/A';
 
     let html = `
-      <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-bottom: 20px;">
-        <div class="stat-card" style="padding: 12px; background: rgba(0,0,0,0.02); border: 1px solid var(--border); border-radius: 6px; text-align: center;">
+      <div class="stats-grid stats-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:20px;">
+        <div class="stat-card" style="padding: 12px; background:var(--color-surface-tint); border: 1px solid var(--border); border-radius: 6px; text-align: center;">
           <div style="font-size: 20px; font-weight: 700; color: var(--primary);">${stats.aggregates.total_games}</div>
           <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">Số bài đã chơi</div>
         </div>
-        <div class="stat-card" style="padding: 12px; background: rgba(0,0,0,0.02); border: 1px solid var(--border); border-radius: 6px; text-align: center;">
+        <div class="stat-card" style="padding: 12px; background:var(--color-surface-tint); border: 1px solid var(--border); border-radius: 6px; text-align: center;">
           <div style="font-size: 20px; font-weight: 700; color: var(--success);">${stats.aggregates.avg_accuracy}%</div>
           <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">Độ chính xác TB</div>
         </div>
-        <div class="stat-card" style="padding: 12px; background: rgba(0,0,0,0.02); border: 1px solid var(--border); border-radius: 6px; text-align: center;">
+        <div class="stat-card" style="padding: 12px; background:var(--color-surface-tint); border: 1px solid var(--border); border-radius: 6px; text-align: center;">
           <div style="font-size: 20px; font-weight: 700; color: var(--primary);">${bestTimeStr}</div>
           <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">Thời gian nhanh nhất</div>
         </div>
-        <div class="stat-card" style="padding: 12px; background: rgba(0,0,0,0.02); border: 1px solid var(--border); border-radius: 6px; text-align: center;">
-          <div style="font-size: 20px; font-weight: 700; color: #ef4444;">${stats.aggregates.total_wrong}</div>
+        <div class="stat-card" style="padding: 12px; background:var(--color-surface-tint); border: 1px solid var(--border); border-radius: 6px; text-align: center;">
+          <div style="font-size: 20px; font-weight: 700; color:var(--error);">${stats.aggregates.total_wrong}</div>
           <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">Tổng số lần ghép sai</div>
         </div>
       </div>
@@ -1168,7 +1192,7 @@ const App = (() => {
       html += `<div style="max-height: 240px; overflow-y: auto; border: 1px solid var(--border); border-radius: 6px;">
         <table style="width: 100%; border-collapse: collapse; font-size: 13px; text-align: left;">
           <thead>
-            <tr style="background: rgba(0,0,0,0.03); border-bottom: 1px solid var(--border);">
+            <tr style="background:var(--color-surface-tint); border-bottom: 1px solid var(--border);">
               <th style="padding: 8px 12px;">Thời gian</th>
               <th style="padding: 8px 12px;">Số cặp</th>
               <th style="padding: 8px 12px;">Độ chính xác</th>
@@ -1187,7 +1211,7 @@ const App = (() => {
                   <td style="padding: 8px 12px; font-weight: 600;">${r.matched}/${r.pairs}</td>
                   <td style="padding: 8px 12px; color: ${r.accuracy === 100 ? 'var(--success)' : 'inherit'}; font-weight: ${r.accuracy === 100 ? '700' : 'normal'};">${r.accuracy}%</td>
                   <td style="padding: 8px 12px;">${tStr}</td>
-                  <td style="padding: 8px 12px; color: ${r.wrong > 0 ? '#ef4444' : 'inherit'};">${r.wrong}</td>
+                  <td style="padding: 8px 12px; color: ${r.wrong > 0 ? 'var(--error)' : 'inherit'};">${r.wrong}</td>
                 </tr>
               `;
             }).join('')}
@@ -1198,7 +1222,7 @@ const App = (() => {
 
     html += `
       <div style="text-align: right; margin-top: 16px;">
-        <button class="btn btn-outline" id="clear-matching-stats-btn" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.3); padding: 6px 12px; font-size: 12px; font-weight: 600; cursor:pointer;">🗑️ Xóa thống kê</button>
+        <button class="btn btn-outline" id="clear-matching-stats-btn" style="color:var(--error); border-color: rgba(239, 68, 68, 0.3); padding: 6px 12px; font-size: 12px; font-weight: 600; cursor:pointer;">🗑️ Xóa thống kê</button>
       </div>
     `;
 
@@ -1245,7 +1269,12 @@ const App = (() => {
 
   /* ---- FILL-BLANK: all questions vertical ---- */
   /* ---- FILL-BLANK: all questions vertical ---- */
-  function renderFillBlank(x) {
+  // ╔══════════════════════════════════════════════════════════════╗
+// ║  SECTION 6: GAME — FILL BLANK & CLOZE                         ║
+// ║  (renderFillBlank, renderCloze, buildOptionDetailsHtml,       ║
+// ║   openHistoryModal, renderHistoryList, renderHistoryDetail)   ║
+// ╚══════════════════════════════════════════════════════════════╝
+function renderFillBlank(x) {
     const d = document.querySelector('#play');
     if (!x?.questions?.length) { d.innerHTML = '<div class="empty-state"><p>Không có câu hỏi.</p></div>'; return; }
     const isGraded = !!state.isGraded;
@@ -1300,24 +1329,24 @@ const App = (() => {
               ${isCorrect ? esc(t('feedback.exact', 'Chính xác! ✓')) : esc(t('feedback.incorrect_fill_blank', 'Chưa đúng ✕'))}
             </div>
             
-            <div style="margin-bottom:10px;">
+            <div class="mb-3">
               <b>🌐 ${esc(t('feedback.full_sentence_translation', 'Dịch câu hoàn chỉnh'))}:</b>
-              <div style="margin-top:4px; padding:10px 12px; background:rgba(0,0,0,0.03); border-radius:6px; font-size:13.5px; line-height:1.5;">
+              <div style="margin-top:4px; padding:10px 12px; background:var(--color-surface-tint); border-radius:6px; font-size:13.5px; line-height:1.5;">
                 ${esc(q.full_translation || q.sentence_translation || q.full_sentence_translation || t('feedback.no_translation', 'Không có bản dịch'))}
               </div>
             </div>
 
-            <div style="margin-bottom:10px;">
+            <div class="mb-3">
               <b>💡 ${esc(t('feedback.reason_choice', 'Lý do chọn'))}:</b>
-              <div style="margin-top:4px; padding:10px 12px; background:rgba(0,0,0,0.03); border-radius:6px; font-size:13.5px; line-height:1.5;">
+              <div style="margin-top:4px; padding:10px 12px; background:var(--color-surface-tint); border-radius:6px; font-size:13.5px; line-height:1.5;">
                 ${esc(q.explanation || q.explanation_short || t('feedback.no_explanation', 'Không có giải thích'))}
               </div>
             </div>
 
             ${q.grammar_note ? `
-            <div style="margin-bottom:10px;">
+            <div class="mb-3">
               <b>📌 ${esc(t('feedback.grammar_rule', 'Ghi chú ngữ pháp'))}:</b>
-              <div style="margin-top:4px; padding:10px 12px; background:rgba(0,0,0,0.03); border-radius:6px; font-size:13.5px; line-height:1.5;">
+              <div style="margin-top:4px; padding:10px 12px; background:var(--color-surface-tint); border-radius:6px; font-size:13.5px; line-height:1.5;">
                 ${esc(q.grammar_note)}
               </div>
             </div>
@@ -1337,10 +1366,10 @@ const App = (() => {
           </div>
           ${!isGraded ? `
             <div style="margin-top: 10px; text-align: right;">
-              <button class="btn btn-outline hint-btn" data-hint-q="${i}" style="padding: 4px 10px; font-size: 12.5px; border-color: #eab308; color: #ca8a04;">
+              <button class="btn btn-outline hint-btn" data-hint-q="${i}" style="padding: 4px 10px; font-size: 12.5px; border-color:var(--color-warn); color:var(--color-warn-dark);">
                 💡 Gợi ý
               </button>
-              <div class="hint-text-box" id="hint-text-${i}" style="font-size: 13px; color: var(--text-secondary); margin-top: 6px; text-align: left; display: none; background: rgba(234, 179, 8, 0.05); padding: 8px 12px; border-radius: 6px; border-left: 3px solid #eab308;"></div>
+              <div class="hint-text-box" id="hint-text-${i}" class="hint-text-box"></div>
             </div>
           ` : ''}
           <div id="feedback-${i}">${feedbackHtml}</div>
@@ -1350,8 +1379,8 @@ const App = (() => {
 
     const submitHtml = isGraded ? `
       <div id="fill-overall-feedback">
-        <div class="feedback ${score === x.questions.length ? 'good' : 'bad'}" style="text-align:center; margin-top:20px;">
-          <h3 style="margin-bottom:8px;">Kết quả: ${score}/${x.questions.length} câu đúng</h3>
+        <div class="feedback ${score === x.questions.length ? 'good' : 'bad'} text-center mt-5">
+          <h3 class="mb-2">Kết quả: ${score}/${x.questions.length} câu đúng</h3>
         </div>
       </div>
     ` : `
@@ -1581,7 +1610,7 @@ const App = (() => {
     }
 
     const submitBtnHtml = isGraded ? '' : `
-      <div style="text-align:center; margin-top:20px;">
+      <div class="text-center mt-5">
         <button class="btn primary" id="grade-cloze" style="padding: 10px 32px; font-size: 15px;">Chấm điểm</button>
       </div>
     `;
@@ -1628,7 +1657,12 @@ const App = (() => {
   }
 
   /* ---- MATCHING: 5-Slot Card Refill Engine & Bidirectional Matching ---- */
-  function renderMatching(x) {
+  // ╔══════════════════════════════════════════════════════════════╗
+// ║  SECTION 7: GAME — WORD MATCHING (Board Engine)               ║
+// ║  (renderMatching, initBoard, refillSlots, evaluateMatch,      ║
+// ║   handleCardClick, finishGame, renderBoard, playSound)        ║
+// ╚══════════════════════════════════════════════════════════════╝
+function renderMatching(x) {
     const d = document.querySelector('#play');
     if (!x || !x.pairs || !x.pairs.length) {
       d.innerHTML = '<div class="empty-state"><p>Không có dữ liệu từ vựng để nối.</p></div>';
@@ -2016,7 +2050,7 @@ const App = (() => {
             <p>📊 Độ chính xác: <b>${accuracy}%</b></p>
           </div>
           ${statsSummaryHtml}
-          <div style="display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; margin-top:20px;">
+          <div class="flex justify-center flex-wrap gap-3 mt-5">
             <button class="btn primary" id="restart-matching-btn" style="padding: 10px 24px;">🔄 Chơi lại bài này</button>
             <button class="btn btn-outline" id="new-matching-btn" style="padding: 10px 24px;">⚡ Tạo bài nối mới</button>
           </div>
@@ -2124,7 +2158,12 @@ const App = (() => {
 
   let unscrambleDragState = null;
 
-  function renderUnscrambleAll(x) {
+  // ╔══════════════════════════════════════════════════════════════╗
+// ║  SECTION 8: GAME — WORD UNSCRAMBLE                            ║
+// ║  (renderUnscrambleAll, updateUnscrambleCardDOM,               ║
+// ║   resetGameState)                                             ║
+// ╚══════════════════════════════════════════════════════════════╝
+function renderUnscrambleAll(x) {
     const d = document.querySelector('#play');
     if (!x?.questions?.length) { d.innerHTML = '<div class="empty-state"><p>Không có câu hỏi.</p></div>'; return; }
     const isGraded = !!state.isGraded;
@@ -2175,7 +2214,7 @@ const App = (() => {
         } else if (isUnanswered) {
           // Kịch bản 3: Bỏ trống (Unanswered)
           sentenceDisplayHtml = `
-            <div class="unscramble-unanswered-box" style="margin-top:12px; padding:14px 16px; border:2px solid var(--border); border-radius:8px; background:rgba(0,0,0,0.02);">
+            <div class="unscramble-unanswered-box" style="margin-top:12px; padding:14px 16px; border:2px solid var(--border); border-radius:8px; background:var(--color-surface-tint);">
               <div style="font-size:12px; font-weight:700; color:white; background:var(--text-secondary); padding:3px 8px; border-radius:4px; display:inline-block; margin-bottom:8px;">${t('unscramble.not_answered', '⚪ CHƯA TRẢ LỜI')}</div>
               <div style="font-size:18px; font-weight:700; color:var(--primary); margin:8px 0;">
                 ✅ ${esc(q.correct_sentence)}
@@ -2187,12 +2226,12 @@ const App = (() => {
         } else {
           // Kịch bản 2: Sai (Incorrect)
           sentenceDisplayHtml = `
-            <div class="unscramble-wrong-box" style="margin-top:12px; padding:14px 16px; border:2px solid #ef4444; border-radius:8px; background:rgba(239, 68, 68, 0.02);">
-              <div style="font-size:12px; font-weight:700; color:white; background:#ef4444; padding:3px 8px; border-radius:4px; display:inline-block; margin-bottom:8px;">${t('unscramble.wrong_mark', '🔴 SAI')}</div>
-              <p style="margin:4px 0 8px; font-size:14px; font-weight:600; color:#ef4444;">⚠️ ${esc(t('unscramble.wrong_position', 'Vị trí sai'))}: ${esc(feedbackObj.error_position || t('unscramble.word_order_incorrect', 'Trật tự các từ chưa đúng.'))}</p>
+            <div class="unscramble-wrong-box" style="margin-top:12px; padding:14px 16px; border:2px solid var(--error); border-radius:8px; background:var(--color-error-bg);">
+              <div style="font-size:12px; font-weight:700; color:white; background:var(--error); padding:3px 8px; border-radius:4px; display:inline-block; margin-bottom:8px;">${t('unscramble.wrong_mark', '🔴 SAI')}</div>
+              <p style="margin:4px 0 8px; font-size:14px; font-weight:600; color:var(--error);">⚠️ ${esc(t('unscramble.wrong_position', 'Vị trí sai'))}: ${esc(feedbackObj.error_position || t('unscramble.word_order_incorrect', 'Trật tự các từ chưa đúng.'))}</p>
               
-              <div class="unscramble-compare" style="margin:10px 0; padding:10px; border-left:3px solid #ef4444; background:rgba(239,68,68,0.02); border-radius:4px;">
-                <p style="margin:2px 0; font-size:13.5px;">❌ <b>${esc(t('feedback.your_answer', 'Câu của bạn'))}:</b> <span style="color:#ef4444; font-weight:600;">${esc(chosen.join(' '))}</span></p>
+              <div class="unscramble-compare" style="margin:10px 0; padding:10px; border-left:3px solid var(--error); background:var(--color-error-bg); border-radius:4px;">
+                <p style="margin:2px 0; font-size:13.5px;">❌ <b>${esc(t('feedback.your_answer', 'Câu của bạn'))}:</b> <span style="color:var(--error); font-weight:600;">${esc(chosen.join(' '))}</span></p>
                 <p style="margin:2px 0; font-size:13.5px;">✅ <b>${esc(t('feedback.expected_answer', 'Đáp án đúng'))}:</b> <span style="color:var(--success); font-weight:600;">${esc(q.correct_sentence)}</span></p>
               </div>
 
@@ -2207,7 +2246,7 @@ const App = (() => {
       } else {
         sentenceDisplayHtml = `
           <div class="unscramble-sentence-box" id="sentence-box-${i}" style="min-height:58px; padding:12px 16px; border:2px dashed var(--border); border-radius:8px; display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:12px; background:rgba(0,0,0,0.01); transition:all 0.2s;">
-            <span style="color:var(--text-secondary); font-style:italic;">${esc(t('unscramble.drag_instruction', 'Bấm hoặc kéo các từ bên dưới vào đây...'))}</span>
+            <span class="text-secondary italic">${esc(t('unscramble.drag_instruction', 'Bấm hoặc kéo các từ bên dưới vào đây...'))}</span>
           </div>
         `;
       }
@@ -2241,7 +2280,7 @@ const App = (() => {
       `;
     } else {
       submitBtnHtml = `
-        <div style="text-align:right; margin-top:24px;">
+        <div class="text-right mt-5">
           <button class="btn" id="grade-unscramble" style="padding:10px 24px; font-weight:700;">Nộp bài & Chấm điểm</button>
         </div>
       `;
@@ -2288,7 +2327,7 @@ const App = (() => {
           };
         });
       } else {
-        chosenBox.innerHTML = '<span style="color:var(--text-secondary); font-style:italic;">Bấm hoặc kéo các từ bên dưới vào đây...</span>';
+        chosenBox.innerHTML = '<span class="text-secondary italic">Bấm hoặc kéo các từ bên dưới vào đây...</span>';
       }
 
       // 2. Cập nhật các chips từ gợi ý
@@ -2455,7 +2494,12 @@ const App = (() => {
   }
 
   /* ---- STORY: read + comprehension questions (Vertical options, Detailed Explanation & Evidence) ---- */
-  function renderStory(x) {
+  // ╔══════════════════════════════════════════════════════════════╗
+// ║  SECTION 9: GAME — STORY / TRANSLATION / TRANSFORM / TABOO   ║
+// ║  (renderStory, highlightWords, renderTranslation,             ║
+// ║   renderSentenceTransform, renderTaboo)                       ║
+// ╚══════════════════════════════════════════════════════════════╝
+function renderStory(x) {
     const d = document.querySelector('#play');
     if (!d) return;
     if (!x || !x.story) {
@@ -2522,7 +2566,7 @@ const App = (() => {
         </div>
         ${fullTranslation ? `
           <details style="margin-top:12px; border-top:1px dashed var(--border); padding-top:10px;">
-            <summary style="cursor:pointer; font-weight:600; color:var(--primary);">${t('story.view_translation', '🌐 Xem bản dịch')}</summary>
+            <summary class="cursor-pointer font-semibold text-primary">${t('story.view_translation', '🌐 Xem bản dịch')}</summary>
             <div style="margin-top:8px; font-size:14.5px; color:var(--text); line-height:1.6;">
               ${esc(fullTranslation).replace(/\n\n/g, '<br><br>')}
             </div>
@@ -2764,7 +2808,7 @@ const App = (() => {
         // Hiển thị Đánh giá chung
         if (typeof r.score !== 'undefined') {
           const lv = r.level || (r.correct ? t('feedback.grade_pass', 'Đạt') : t('feedback.grade_improve', 'Cần cải thiện'));
-          html += `<div class="overall-grade" style="margin-top:10px; padding:10px; background:rgba(0,0,0,0.02); border-radius:6px; border-left:4px solid ${r.correct?'var(--success)':'var(--error)'}">
+          html += `<div class="overall-grade" style="margin-top:10px; padding:10px; background:var(--color-surface-tint); border-radius:6px; border-left:4px solid ${r.correct?'var(--success)':'var(--error)'}">
             <p style="margin: 0;">📊 <b>${esc(t('feedback.overall_grade', 'ĐÁNH GIÁ CHUNG'))}:</b> ${esc(t('feedback.score_label', 'Điểm số'))}: <span style="font-size:16px; font-weight:700; color:${r.correct?'var(--success)':'var(--error)'}">${r.score}/10</span> (${esc(lv)})</p>
           </div>`;
         }
@@ -2774,7 +2818,7 @@ const App = (() => {
           html += '<hr><p><b>🔍 ' + esc(t('feedback.detailed_error_analysis', 'PHÂN TÍCH LỖI:')) + '</b></p>';
           r.errors.forEach(err => {
             if (typeof err === 'object' && err.name) {
-              html += `<div class="error-item" style="margin-bottom:12px; padding:8px 12px; border-left:3px solid var(--error); background:rgba(239, 68, 68, 0.02); border-radius:4px;">
+              html += `<div class="error-item error-item-block">
                 <p style="margin:2px 0;">🔴 <b>${esc(t('feedback.error_label', 'Lỗi'))}:</b> ${esc(err.name)}</p>
                 <p style="margin:2px 0; padding-left:14px; font-size:13px;">❌ <b>${esc(t('feedback.wrong_label', 'Lỗi sai'))}:</b> <span style="color:var(--error);">${esc(err.wrong)}</span> ➔ <b>${esc(t('feedback.reason_label', 'Vì sao sai'))}:</b> <i>${esc(err.reason)}</i></p>
                 <p style="margin:2px 0; padding-left:14px; font-size:13px;">💡 <b>${esc(t('feedback.suggestion_label', 'Gợi ý sửa'))}:</b> <span style="color:var(--success); font-weight:600;">${esc(err.suggestion)}</span> ➔ <b>${esc(t('feedback.fix_label', 'Vì sao sửa'))}:</b> <i>${esc(err.why)}</i></p>
@@ -2833,7 +2877,7 @@ const App = (() => {
     const expectedText = q.expected_answer || '';
     const normExpected = q.normalized_answer || norm(expectedText);
 
-    document.querySelector('#play').innerHTML='<div class="question-card"><p class="q-text"><b>'+esc(t('feedback.requirement', 'Yêu cầu:'))+'</b> '+esc(instructionText)+'</p><p class="q-text"><b>'+esc(t('feedback.original_sentence', 'Câu gốc:'))+'</b> '+esc(originalText)+'</p><textarea id="answer" placeholder="'+esc(t('placeholder.sentence_transform', 'Nhập câu trả lời...'))+'"></textarea><div style="display:flex; gap:12px; margin-top:12px;"><button class="btn primary" id="grade">'+esc(t('app.grade', 'Chấm điểm'))+'</button><button class="btn btn-outline" id="hint-transform" style="border-color: #eab308; color: #ca8a04;">💡 Gợi ý</button></div><div class="hint-text-box" id="hint-text-transform" style="font-size: 13px; color: var(--text-secondary); margin-top: 10px; display: none; background: rgba(234, 179, 8, 0.05); padding: 8px 12px; border-radius: 6px; border-left: 3px solid #eab308;"></div><div id="feedback"></div></div>';
+    document.querySelector('#play').innerHTML='<div class="question-card"><p class="q-text"><b>'+esc(t('feedback.requirement', 'Yêu cầu:'))+'</b> '+esc(instructionText)+'</p><p class="q-text"><b>'+esc(t('feedback.original_sentence', 'Câu gốc:'))+'</b> '+esc(originalText)+'</p><textarea id="answer" placeholder="'+esc(t('placeholder.sentence_transform', 'Nhập câu trả lời...'))+'"></textarea><div class="flex gap-3 mt-3"><button class="btn primary" id="grade">'+esc(t('app.grade', 'Chấm điểm'))+'</button><button class="btn btn-outline" id="hint-transform" class="btn-hint">💡 Gợi ý</button></div><div class="hint-text-box" id="hint-text-transform" class="hint-text-box"></div><div id="feedback"></div></div>';
     
     let hintLevel = 0;
     const hintBtn = document.querySelector('#hint-transform');
@@ -2928,7 +2972,7 @@ const App = (() => {
           // Phân tích lỗi chi tiết 4 bước từ AI
           if (r.specific_error || r.why_wrong || r.how_to_fix || r.why_fix) {
             html += `<hr><p><b>🔍 ${esc(t('feedback.detailed_error_analysis', 'Phân tích chi tiết lỗi sai'))}:</b></p>
-            <div class="error-item" style="margin-bottom:12px; padding:8px 12px; border-left:3px solid var(--error); background:rgba(239, 68, 68, 0.02); border-radius:4px;">
+            <div class="error-item error-item-block">
               <p style="margin:2px 0;">🔴 <b>${esc(t('feedback.error_label', 'Lỗi'))}:</b> ${esc(r.specific_error || t('feedback.grammar_vocab_error', 'Lỗi cấu trúc/Từ vựng'))}</p>
               <p style="margin:2px 0; padding-left:14px; font-size:13px;">❌ <b>${esc(t('feedback.wrong_label', 'Lỗi sai'))}:</b> <span style="color:var(--error);">${esc(ansVal)}</span> ➔ <b>${esc(t('feedback.reason_label', 'Vì sao sai'))}:</b> <i>${esc(r.why_wrong || t('feedback.grammar_structure_error', 'Chưa biến đổi đúng cấu trúc ngữ pháp yêu cầu'))}</i></p>
               <p style="margin:2px 0; padding-left:14px; font-size:13px;">💡 <b>${esc(t('feedback.suggestion_label', 'Cách sửa'))}:</b> <span style="color:var(--success); font-weight:600;">${esc(r.how_to_fix || expectedText)}</span> ➔ <b>${esc(t('feedback.fix_label', 'Vì sao sửa'))}:</b> <i>${esc(r.why_fix || t('feedback.rule_fix_error', 'Đảm bảo đúng quy tắc biến đổi câu'))}</i></p>
@@ -2995,16 +3039,16 @@ const App = (() => {
         <div class="forbidden">${forbidden.map(w=>'<span>🚫 '+esc(w)+'</span>').join('')}</div>
         <div class="description">${esc(clueText)}</div>
         <textarea id="answer" placeholder="${esc(t('placeholder.taboo', 'Nhập từ bạn đoán bằng {0}...', langLabel))}"></textarea>
-        <div style="display:flex; gap:12px; margin-top:12px;">
+        <div class="flex gap-3 mt-3">
           <button class="btn primary" id="grade">${esc(t('app.grade', 'Chấm điểm'))}</button>
-          <button class="btn btn-outline" id="hint-taboo" style="border-color: #eab308; color: #ca8a04;">💡 Gợi ý</button>
+          <button class="btn btn-outline" id="hint-taboo" class="btn-hint">💡 Gợi ý</button>
         </div>
-        <div class="hint-text-box" id="hint-text-taboo" style="font-size: 13px; color: var(--text-secondary); margin-top: 10px; display: none; background: rgba(234, 179, 8, 0.05); padding: 8px 12px; border-radius: 6px; border-left: 3px solid #eab308;"></div>
+        <div class="hint-text-box" id="hint-text-taboo" class="hint-text-box"></div>
         <div id="feedback"></div>
         
-        <div class="taboo-guide-callout" style="margin-top: 24px; padding: 12px; background: rgba(0,0,0,0.02); border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; line-height: 1.4; color: var(--text-secondary);">
+        <div class="taboo-guide-callout" style="margin-top: 24px; padding: 12px; background:var(--color-surface-tint); border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; line-height: 1.4; color: var(--text-secondary);">
           ${t('taboo.guide_title', '💡 HƯỚNG DẪN ĐOÁN TỪ (01 LẦN GỬI):')}
-          <ul style="margin: 4px 0 0 16px; padding: 0;">
+          <ul class="mt-1 ml-2 list-none">
             <li>Nhập nhiều từ hoặc cụm từ đoán cách nhau bằng dấu phẩy.</li>
             <li>Chỉ cần 1 trong các từ bạn nhập là đáp án đúng hoặc đồng nghĩa, bạn sẽ thắng.</li>
             <li>Ví dụ: <code>hobby, habit, custom, routine</code>.</li>
@@ -3183,7 +3227,11 @@ const App = (() => {
   }
 
   /* ---- API KEY TESTER ---- */
-  async function testKeys(){
+  // ╔══════════════════════════════════════════════════════════════╗
+// ║  SECTION 10: STARTUP & ENTRY POINT                            ║
+// ║  (testKeys, render, startApp)                                 ║
+// ╚══════════════════════════════════════════════════════════════╝
+async function testKeys(){
     const button=document.querySelector('#test-keys'),out=document.querySelector('#api-result');
     const signal = getSignal();
     try{
@@ -3213,9 +3261,9 @@ const App = (() => {
           html += `
             <div class="api-key-row" style="display:flex; align-items:center; justify-content:space-between; padding:8px 12px; border:1px solid var(--border); border-radius:var(--radius-sm); background:var(--card-bg);">
               <div>
-                <span style="font-weight:600;">${esc(t('app.key_label', 'Key {0}', item.key))}</span>${details}
+                <span class="font-semibold">${esc(t('app.key_label', 'Key {0}', item.key))}</span>${details}
               </div>
-              <span class="api-key-status ${item.ok ? 'ok' : 'fail'}" style="font-weight:600;">
+              <span class="api-key-status ${item.ok ? 'ok' : 'fail'} font-semibold">
                 ${statusIcon} ${statusText}
               </span>
             </div>

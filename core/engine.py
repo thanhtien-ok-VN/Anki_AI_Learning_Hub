@@ -14,6 +14,12 @@ from core.languages import DEFAULT_LEARN_LANG, DEFAULT_UI_LANG, bridge_languages
 
 import re
 
+# ──────────────────────────────────────────────────────────────
+# SECTION 1: Module-level helpers
+# (clean_json_response, normalize_answer, sanitize_html,
+#  sanitize_dict, ADDON_PATH, DEFAULT_SETTINGS, GAME_LIMITS)
+# ──────────────────────────────────────────────────────────────
+
 def clean_json_response(raw_text: str) -> str:
     """Strip markdown code blocks and extra text, return pure JSON."""
     if not raw_text or not isinstance(raw_text, str):
@@ -110,6 +116,11 @@ GAME_LIMITS = {
     "story": (3, 10),
 }
 
+
+# ──────────────────────────────────────────────────────────────
+# SECTION 2: SettingsManager & SessionTimer
+# (Persistent config storage, session elapsed-time tracking)
+# ──────────────────────────────────────────────────────────────
 
 class SettingsManager:
     def __init__(self, path: str = SETTINGS_PATH):
@@ -214,6 +225,11 @@ class SessionTimer(QObject):
         if self.start_time:
             self.tick.emit(self.elapsed_seconds())
 
+
+# ──────────────────────────────────────────────────────────────
+# SECTION 3: AIEngine — Init, API Client, Game Cache
+# (Manages GeminiClient, PromptManager, gamemode object cache)
+# ──────────────────────────────────────────────────────────────
 
 class AIEngine:
     def __init__(self):
@@ -384,6 +400,12 @@ class AIEngine:
                 "error_code": "E_INTERNAL",
                 "message": "The AI Hub could not complete this request.",
             }
+
+    # ──────────────────────────────────────────────────────────
+    # SECTION 4: Bridge Handlers — Generate & Game
+    # (_handle_generate, _handle_check_answer, _handle_ai_grade,
+    #  _handle_save_to_anki)
+    # ──────────────────────────────────────────────────────────
 
     def _handle_generate(self, data: dict) -> dict:
         data = normalize_language_fields(dict(data or {}))
@@ -602,6 +624,13 @@ class AIEngine:
         # Recursively sanitize all HTML content in result before returning
         result = sanitize_dict(normalize_language_fields(result))
         return result
+
+    # ──────────────────────────────────────────────────────────
+    # SECTION 5: Bridge Handlers — Settings, UI & Utility
+    # (_handle_save_settings, _handle_get_settings,
+    #  _handle_set_ui_lang, _handle_get_ui_strings,
+    #  _handle_list_decks, _handle_sample_vocab_pairs, etc.)
+    # ──────────────────────────────────────────────────────────
 
     def _handle_save_settings(self, data: dict) -> dict:
         changed_keys = []

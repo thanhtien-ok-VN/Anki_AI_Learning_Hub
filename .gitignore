@@ -8,8 +8,3 @@ Plans/
 # Python cache files
 __pycache__/
 *.pyc
-
-# Node.js
-node_modules/
-dist/
-package-lock.json

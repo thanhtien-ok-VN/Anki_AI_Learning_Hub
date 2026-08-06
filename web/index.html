@@ -1,8 +1,26 @@
 <!doctype html>
-<html lang="vi">
+<html lang="en">
+<!--
+  lang="en" is the default. startApp() updates document.documentElement.lang
+  dynamically based on the user's ui_lang setting.
+-->
 <head>
-  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>AI Learning Hub</title><link rel="stylesheet" href="css/style.css">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="AI-powered vocabulary learning games for Anki">
+  <meta name="theme-color" content="#4a90d9">
+  <title>AI Learning Hub</title>
+  <link rel="preload" href="css/style.css" as="style">
+  <link rel="stylesheet" href="css/style.css">
 </head>
-<body><div id="status-banner" class="status-banner" role="status" aria-live="polite" hidden><span id="status-banner-message"></span><button id="status-banner-close" type="button" aria-label="Đóng thông báo">×</button></div><div id="app"></div><script src="js/bridge.js"></script><script src="js/utils.js"></script><script src="js/app.js"></script></body>
+<body>
+  <div id="status-banner" class="status-banner" role="status" aria-live="polite" hidden>
+    <span id="status-banner-message"></span>
+    <button id="status-banner-close" type="button" aria-label="Dismiss notification">×</button>
+  </div>
+  <div id="app"></div>
+  <script src="js/bridge.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/app.js"></script>
+</body>
 </html>
