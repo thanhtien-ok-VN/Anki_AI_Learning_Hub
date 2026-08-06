@@ -323,12 +323,20 @@ class GeminiClient:
                             continue
                         break
 
+        if not eligible and not last_error:
+            last_error = "No active or valid API keys available."
+            final_code = EC["NO_KEYS"]
+            message = t("app.ai_no_keys", lang=self.ui_lang)
+            return self._err(final_code, message, last_error)
+
         if final_code == EC["RATE_LIMIT"]:
             message = t("app.ai_rate_limited", lang=self.ui_lang)
         elif final_code == EC["INTERNAL_ERROR"]:
-            message = t("app.ai_internal_error", lang=self.ui_lang)
+            message = f"{t('app.ai_internal_error', lang=self.ui_lang)} ({last_error})" if last_error else t("app.ai_internal_error", lang=self.ui_lang)
+        elif final_code == EC["NO_KEYS"]:
+            message = t("app.ai_no_keys", lang=self.ui_lang)
         else:
-            message = t("app.ai_unavailable", lang=self.ui_lang)
+            message = f"{t('app.ai_unavailable', lang=self.ui_lang)}: {last_error}" if last_error else t("app.ai_unavailable", lang=self.ui_lang)
         return self._err(final_code, message, last_error)
 
     def generate_structured(

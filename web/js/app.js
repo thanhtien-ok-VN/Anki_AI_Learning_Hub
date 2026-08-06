@@ -234,6 +234,9 @@ const t = (key, fallback, ...args) => {
 
   const statusState = { key: '', shownAt: 0 };
   const bridgeMessage = error => {
+    if (error?.message && typeof error.message === 'string' && error.message.length > 0 && !error.message.includes('The AI Hub could not')) {
+      return error.message;
+    }
     const messages = {
       E_RATE_LIMIT: t('app.ai_rate_limited', 'AI đang bận. Vui lòng thử lại sau.'),
       E_API_ERROR: t('app.ai_unavailable', 'AI hiện tạm không khả dụng. Vui lòng thử lại sau.'),

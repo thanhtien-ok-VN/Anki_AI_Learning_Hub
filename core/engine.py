@@ -389,22 +389,24 @@ class AIEngine:
                 # gamemode payloads remain inside data for the SPA.
                 if isinstance(result, dict) and "success" in result:
                     if not result.get("success"):
-                        log.warn(
-                            f"Bridge operation failed: {result.get('message', '')}"
-                        )
+                        err_msg = result.get("message") or "The operation failed."
+                        err_code = result.get("error_code") or "E_OPERATION"
+                        log.warn(f"Bridge operation failed [{err_code}]: {err_msg}")
                         return {
                             "success": False,
-                            "data": {},
-                            "error_code": result.get("error_code", "E_OPERATION"),
-                            "message": "The AI Hub could not complete this request.",
+                            "data": result.get("data", {}),
+                            "error_code": err_code,
+                            "message": err_msg,
                         }
                     return result
                 if isinstance(result, dict) and result.get("error"):
+                    err_msg = result.get("message") or "The operation failed."
+                    err_code = result.get("error_code") or "E_OPERATION"
                     return {
                         "success": False,
                         "data": {},
-                        "error_code": result.get("error_code", "E_OPERATION"),
-                        "message": result.get("message", "The operation failed."),
+                        "error_code": err_code,
+                        "message": err_msg,
                     }
                 return {"success": True, "data": result or {}}
             log.warn(f"Unknown action: {action}")

@@ -60,11 +60,13 @@ class AIHubView:
         try:
             return self.engine.handle_js_message(payload)
         except Exception as e:
-            log.exception(f"Safe handle error in background thread: {e}")
+            import traceback
+            tb = traceback.format_exc()
+            log.exception(f"Safe handle error in background thread: {e}\n{tb}")
             return self._result(
                 False,
                 code="E_INTERNAL",
-                message="The AI Hub could not complete this request.",
+                message=f"Internal error: {str(e)}",
             )
 
     def _on_bridge_cmd(self, cmd: str) -> str:
