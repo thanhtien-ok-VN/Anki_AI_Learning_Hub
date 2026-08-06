@@ -9,15 +9,20 @@ Requirements:
 - Create exactly {count} fill-in-the-blank sentences in Chinese. Each with ONE missing word (_____).
 - Vary grammatical roles: verbs, nouns, adjectives, adverbs, measure words, particles.
 - Vary sentence structures: statements, questions, ba-construction, resultative compounds, topic-comment.
-- Provide exactly 4 options per sentence (1 correct + 3 distractors) using types:
-  + correct (the correct word)
-  + antonym
-  + synonym / near_synonym (similar meaning but wrong context)
-  + different_word_class
-  + wrong_character (similar-looking character, wrong meaning)
-  + wrong_context
-  + tone_confusion (similar pinyin, different tone)
-- Explain thoroughly why the correct answer fits and why distractors are wrong, all in {ui_lang}.
+- Provide exactly 4 options per sentence (1 correct option + 3 distractors).
+- **Distractor Quality & Challenge Rules**:
+  1. The distractors MUST be challenging and effective, making the learner think and deduce the answer. Avoid overly obvious incorrect options.
+  2. Each distractor must be grammatically fitting when placed in the blank (e.g. correct measure word/particle combination where applicable) but semantically incorrect/out of context.
+  3. **Strict Word Family / Class Rule**: Avoid having exactly 2 words that differ only in word class (e.g., noun vs verb). If you use word class distractors, you MUST include a complete **trio of word classes** from that root meaning (e.g., 1 Noun + 1 Verb + 1 Adjective/Adverb) to force grammatical analysis.
+  4. For characters with similar visual structures (`wrong_character`) or pinyin pronunciation (`tone_confusion`), they must be chosen to carefully challenge the student's semantic precision.
+  5. The 3 distractors MUST be chosen from the whitelist below. Set the `"type"` field in the JSON options array to EXACTLY one of these tokens:
+     - `antonym` (opposite meaning)
+     - `synonym` or `near_synonym` (similar meaning but wrong context)
+     - `different_word_class` (part of a trio of word classes)
+     - `wrong_character` (visually similar character with different meaning)
+     - `wrong_context` or `semantic_close` (semantically close but wrong)
+     - `tone_confusion` or `tone_mutation` (similar pinyin/different tone)
+- Explain thoroughly why the correct answer fits and why each distractor is incorrect, all in {ui_lang}.
 
 Output raw JSON only, no markdown formatting.
 

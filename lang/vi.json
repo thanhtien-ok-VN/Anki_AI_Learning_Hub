@@ -9,6 +9,7 @@
   "api.no_schema": "Key{idx} ({model}) không hỗ trợ schema. Đang chuyển cấu trúc...",
   "api.unknown_error": "Key{idx} lỗi không xác định. Đang chuyển key...",
   "app.ai_internal_error": "AI Hub không thể hoàn tất yêu cầu này.",
+  "app.ai_content_invalid": "Nội dung do AI tạo ra không hợp lệ. Vui lòng thử lại.",
   "app.ai_no_keys": "Chưa có API key. Hãy cấu hình trong phần cài đặt.",
   "app.ai_rate_limited": "AI đang bận. Vui lòng thử lại sau.",
   "app.ai_timeout": "Yêu cầu AI mất quá nhiều thời gian.",

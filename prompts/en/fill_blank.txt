@@ -9,17 +9,20 @@ Requirements:
 - Place the blank (_____) in various positions (beginning, middle, end) of sentences.
 - Vary the grammatical roles of the missing words (verbs, nouns, adjectives, adverbs, phrasal verbs, prepositions).
 - Vary the sentence structures (active/passive voice, conditionals, relative clauses, perfect tenses, comparisons, modal verbs).
-- Provide exactly 4 options per sentence. The 3 distractors MUST be chosen from at least 2 different types in the pool below, and vary combinations across sentences:
-  + correct (the correct word)
-  + antonym
-  + synonym / near_synonym
-  + different_word_class
-  + wrong_tense
-  + wrong_verb_form
-  + collocation_error
-  + wrong_context / semantic_close
-  + related_word
-- Explain thoroughly why the correct answer fits and why distractors are wrong.
+- Provide exactly 4 options per sentence (1 correct option + 3 distractors).
+- **Distractor Quality & Challenge Rules**:
+  1. The distractors MUST be challenging and effective, making the learner think and deduce the answer. Avoid overly obvious incorrect options.
+  2. Each distractor must be grammatically fitting when placed in the blank (e.g. same tense, plural/singular form where applicable) but semantically incorrect/out of context. The learner should not be able to easily eliminate them based on simple grammar errors.
+  3. **Strict Word Family Rule**: Avoid having exactly 2 words that share the same root/base meaning but differ only in word class (e.g., just "create" and "creative"). However, if you choose to use word class distractors, you MUST include a complete **trio of word classes** from that root (e.g., 1 Noun + 1 Verb + 1 Adjective/Adverb from the same root word, such as "creation", "create", and "creative"). This forces the student to analyze the sentence structure deeply.
+  4. The 3 distractors MUST be chosen from at least 2 different types in the whitelist below. Set the `"type"` field in the JSON options array to EXACTLY one of these tokens:
+     - `antonym` (opposite meaning)
+     - `synonym` or `near_synonym` (similar meaning but slightly wrong nuance or collocates poorly)
+     - `different_word_class` (part of a trio of word classes from the same root)
+     - `wrong_tense` or `wrong_verb_form` (correct base meaning, wrong form)
+     - `collocation_error` (seems logical but is not a natural collocation)
+     - `wrong_context` or `semantic_close` (semantically close to the context but wrong)
+     - `related_word` (belongs to the same semantic field but wrong)
+- Explain thoroughly why the correct answer fits and why each distractor is incorrect.
 - All explanations and meanings MUST be in {ui_lang}.
 
 Output raw JSON only, no markdown formatting.

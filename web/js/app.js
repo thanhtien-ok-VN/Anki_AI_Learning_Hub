@@ -245,21 +245,58 @@ const t = (key, fallback, ...args) => {
       E_BRIDGE_NETWORK: t('app.ai_internal_error', 'AI Hub không thể hoàn tất yêu cầu này.'),
       E_BRIDGE_PARSE: t('app.ai_internal_error', 'AI Hub không thể hoàn tất yêu cầu này.'),
       E_PYCMD: t('app.ai_internal_error', 'AI Hub không thể hoàn tất yêu cầu này.'),
+      E_AI_CONTENT: t('app.ai_content_invalid', 'Nội dung do AI tạo ra không hợp lệ. Vui lòng thử lại.'),
     };
+    if (error?.error_code === 'E_AI_CONTENT' && error?.message) {
+      console.warn('[AI Hub] Content validation failure detail:', error.message);
+    }
     return messages[error?.error_code] || error?.message || t('app.operation_failed', 'Thao tác không thể hoàn tất.');
   };
 
   const clearStatus = () => {
     const banner = document.querySelector('#status-banner');
-    if (banner) banner.hidden = true;
+    if (banner) {
+      banner.hidden = true;
+      banner.className = 'status-banner';
+    }
     statusState.key = '';
   };
 
-  const showStatus = error => {
+  const showStatus = (error, optType) => {
     const banner = document.querySelector('#status-banner');
     const message = document.querySelector('#status-banner-message');
+    const iconContainer = document.querySelector('#status-banner-icon');
     if (!banner || !message) return;
-    const key = error?.error_code || String(error?.message || error || 'status');
+
+    // 1. Determine notification type (error, warning, success, info)
+    let type = optType || 'info';
+    const errCode = error?.error_code;
+    if (errCode) {
+      if ([
+        'E_RATE_LIMIT', 'E_API_ERROR', 'E_NO_KEYS', 'E_TIMEOUT', 
+        'E_INTERNAL', 'E_BACKGROUND', 'E_BRIDGE', 'E_BRIDGE_NETWORK', 
+        'E_BRIDGE_PARSE', 'E_PYCMD', 'E_AI_CONTENT'
+      ].includes(errCode)) {
+        type = 'error';
+      } else {
+        type = 'warning';
+      }
+    } else if (typeof error === 'string') {
+      const lower = error.toLowerCase();
+      if (lower.includes('hủy') || lower.includes('cancel') || lower.includes('chưa chọn') || lower.includes('hãy chọn') || lower.includes('không đủ')) {
+        type = 'warning';
+      } else if (lower.includes('thành công') || lower.includes('success') || error.startsWith('✓')) {
+        type = 'success';
+      }
+    }
+
+    // 2. Select corresponding icon
+    let iconHtml = 'ℹ️';
+    if (type === 'error') iconHtml = '❌';
+    else if (type === 'warning') iconHtml = '⚠️';
+    else if (type === 'success') iconHtml = '✓';
+
+    const key = errCode || String(error?.message || error || 'status');
     const now = Date.now();
     if (statusState.key === key && now - statusState.shownAt < 30000) {
       statusState.shownAt = now;
@@ -267,10 +304,21 @@ const t = (key, fallback, ...args) => {
       statusState.key = key;
       statusState.shownAt = now;
     }
+
+    // 3. Update contents & styling
     message.textContent = typeof error === 'string' ? error : bridgeMessage(error);
+    if (iconContainer) iconContainer.innerHTML = iconHtml;
+    
+    banner.className = `status-banner status-banner--${type}`;
+    
+    // Reset slide-in animation to trigger it again
+    banner.style.animation = 'none';
+    banner.offsetHeight; // trigger reflow
+    banner.style.animation = '';
+    
     banner.hidden = false;
 
-    // Auto-hide after 8 seconds to allow enough reading time
+    // Auto-hide after 8 seconds
     if (statusState.timeoutId) {
       clearTimeout(statusState.timeoutId);
     }

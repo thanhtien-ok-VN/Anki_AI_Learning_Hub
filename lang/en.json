@@ -9,6 +9,7 @@
   "api.no_schema": "Key{idx} ({model}) does not support schema. Switching structure...",
   "api.unknown_error": "Key{idx} unknown error. Switching key...",
   "app.ai_internal_error": "AI Hub could not complete this request.",
+  "app.ai_content_invalid": "AI generated content was invalid. Please try again.",
   "app.ai_no_keys": "No API keys configured. Set them in settings.",
   "app.ai_rate_limited": "AI is busy. Please try again later.",
   "app.ai_timeout": "AI request timed out.",
