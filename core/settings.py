@@ -40,37 +40,46 @@ class SettingsManager:
             try:
                 with open(self.path, "r", encoding="utf-8") as f:
                     loaded = json.load(f)
-                    self.data.update(loaded)
+                    if isinstance(loaded, dict):
+                        self.data.update(loaded)
                 self.data["ui_lang"] = valid_ui_lang(self.data.get("ui_lang"))
                 self.data["learn_lang"] = valid_learn_lang(self.data.get("learn_lang"))
                 log.debug(f"Settings loaded from {self.path}", {"key_count": len(self.data)})
             except Exception as e:
-                log.warn(f"Failed to load settings: {e}")
+                log.warn(f"Failed to load settings from {self.path}, falling back to defaults: {e}")
+                self.data = dict(DEFAULT_SETTINGS)
 
     def save(self):
-        os.makedirs(os.path.dirname(self.path), exist_ok=True)
-        with open(self.path, "w", encoding="utf-8") as f:
-            json.dump(self.data, f, indent=2, ensure_ascii=False)
-        log.debug("Settings saved")
+        try:
+            os.makedirs(os.path.dirname(self.path), exist_ok=True)
+            with open(self.path, "w", encoding="utf-8") as f:
+                json.dump(self.data, f, indent=2, ensure_ascii=False)
+            log.debug("Settings saved")
+        except Exception as e:
+            log.error(f"Failed to save settings to {self.path}: {e}")
 
     def get(self, key: str, default=None):
         return self.data.get(key, default)
 
     def set(self, key: str, value):
+        if isinstance(key, str) and key.startswith("api_key") and isinstance(value, str):
+            value = value.strip()
         old = self.data.get(key)
         self.data[key] = value
         self.save()
         if old != value:
-            log.info(f"Setting changed: {key}", {"old": old, "new": value})
+            log.info(f"Setting changed: {key}")
 
     def set_many(self, items: dict):
         changed = False
         for key, value in items.items():
+            if isinstance(key, str) and key.startswith("api_key") and isinstance(value, str):
+                value = value.strip()
             old = self.data.get(key)
             if old != value:
                 self.data[key] = value
                 changed = True
-                log.info(f"Setting changed: {key}", {"old": old, "new": value})
+                log.info(f"Setting changed: {key}")
         if changed:
             self.save()
 

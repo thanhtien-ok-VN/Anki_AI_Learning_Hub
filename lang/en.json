@@ -240,6 +240,8 @@
   "logs.copy_report": "📋 Copy Bug Report",
   "logs.delete": "🗑️ Delete Logs",
   "logs.open_folder": "📁 Open Log Folder",
+  "logs.search_placeholder": "🔍 Search keyword (message, phase, model, error)...",
+  "logs.showing_count": "Showing {0} of {1} logs",
   "logs.source_flow": "Flow Logs (JSONL)",
   "logs.source_main": "Main System Log (Text)",
   "logs.title": "System Logs & Diagnostics",

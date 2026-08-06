@@ -242,6 +242,8 @@
   "logs.copy_report": "📋 Copy Báo Cáo Lỗi",
   "logs.delete": "🗑️ Xóa File Logs",
   "logs.open_folder": "📁 Mở Thư Mục Log",
+  "logs.search_placeholder": "🔍 Tìm kiếm từ khóa (thông điệp, pha, model, lỗi)...",
+  "logs.showing_count": "Hiển thị {0} trên {1} nhật ký",
   "logs.source_flow": "Flow Logs (JSONL)",
   "logs.source_main": "Main System Log (Text)",
   "logs.title": "Nhật Ký & Chẩn Đoán Hệ Thống",

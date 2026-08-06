@@ -72,12 +72,8 @@ class SettingsDialog(QDialog):
 
         for idx in range(10):
             row = QHBoxLayout()
-            label_key = "settings.primary_key" if idx == 0 else ("settings.key_n", idx + 1)
-            lbl_text = (
-                self._add_i18n_key("settings.primary_key")
-                if idx == 0
-                else self._add_i18n_key("settings.key_n").replace("{0}", str(idx + 1))
-            )
+            label_key = ("settings.key_n", idx + 1)
+            lbl_text = self._add_i18n_key("settings.key_n").replace("{0}", str(idx + 1))
             lbl = QLabel(lbl_text)
             row.addWidget(lbl)
             self.i18n_widgets.append((lbl, label_key))

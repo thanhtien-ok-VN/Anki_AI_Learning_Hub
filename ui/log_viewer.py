@@ -11,6 +11,7 @@ from aqt.qt import (
     QHBoxLayout,
     QLabel,
     QComboBox,
+    QLineEdit,
     QPushButton,
     QPlainTextEdit,
     QMessageBox,
@@ -58,11 +59,11 @@ class LogViewerDialog(QDialog):
 
     def _init_ui(self):
         self.setWindowTitle(t("logs.title", self.current_ui_lang))
-        self.resize(880, 580)
+        self.resize(920, 600)
         layout = QVBoxLayout()
         layout.setSpacing(8)
 
-        # Toolbar Lọc
+        # Toolbar Lọc dòng 1: Source, Level, Phase, Refresh
         filter_row = QHBoxLayout()
 
         filter_row.addWidget(QLabel("Source:"))
@@ -89,6 +90,18 @@ class LogViewerDialog(QDialog):
         filter_row.addWidget(self.refresh_btn)
 
         layout.addLayout(filter_row)
+
+        # Toolbar Lọc dòng 2: Search input & Log count label
+        search_row = QHBoxLayout()
+        self.search_inp = QLineEdit()
+        self.search_inp.setPlaceholderText("🔍 Search keyword (message, phase, model, error)...")
+        search_row.addWidget(self.search_inp, 1)
+
+        self.count_lbl = QLabel("")
+        self.count_lbl.setStyleSheet("color: #666; font-size: 12px; padding-left: 8px;")
+        search_row.addWidget(self.count_lbl)
+
+        layout.addLayout(search_row)
 
         # Content Area Monospace
         self.text_edit = QPlainTextEdit()
@@ -123,6 +136,7 @@ class LogViewerDialog(QDialog):
         self.source_cb.currentIndexChanged.connect(self._load_logs)
         self.level_cb.currentIndexChanged.connect(self._load_logs)
         self.phase_cb.currentIndexChanged.connect(self._load_logs)
+        self.search_inp.textChanged.connect(self._load_logs)
         self.refresh_btn.clicked.connect(self._load_logs)
         self.copy_btn.clicked.connect(self._copy_bug_report)
         self.open_folder_btn.clicked.connect(self._open_log_folder)
@@ -132,11 +146,20 @@ class LogViewerDialog(QDialog):
         source_idx = self.source_cb.currentIndex()
         level = self.level_cb.currentText()
         phase = self.phase_cb.currentText()
+        query = self.search_inp.text().strip().lower()
 
         if source_idx == 0:  # JSONL Flow Logs
-            entries = read_flow_logs(limit=250, level=level, phase=phase)
-            lines = []
+            entries = read_flow_logs(limit=500, level=level, phase=phase)
+            filtered_entries = []
             for e in entries:
+                if query:
+                    searchable = f"{e.get('message', '')} {e.get('phase', '')} {e.get('gamemode', '')} {e.get('level', '')} {json.dumps(e.get('extra', {}))}".lower()
+                    if query not in searchable:
+                        continue
+                filtered_entries.append(e)
+
+            lines = []
+            for e in filtered_entries:
                 ts = e.get("ts", "")[:19].replace("T", " ")
                 lvl = e.get("level", "INFO").ljust(5)
                 phs = e.get("phase", "").ljust(7)
@@ -145,17 +168,33 @@ class LogViewerDialog(QDialog):
                 msg = e.get("message", "")
                 extra = json.dumps(e.get("extra", {}), ensure_ascii=False) if e.get("extra") else ""
                 lines.append(f"{ts} | {lvl} | {phs} | {gm}{msg}{dur} {extra}")
-            self.text_edit.setPlainText("\n".join(lines) or "No flow logs recorded.")
+
+            self.text_edit.setPlainText("\n".join(lines) or "No matching flow logs.")
+            self.count_lbl.setText(f"Showing {len(filtered_entries)} of {len(entries)} logs")
         else:  # Text Log
             if not os.path.isfile(LOG_PATH):
                 self.text_edit.setPlainText("No log file found.")
+                self.count_lbl.setText("0 logs")
                 return
             try:
                 with open(LOG_PATH, "r", encoding="utf-8") as f:
-                    content = f.read()
-                self.text_edit.setPlainText(content[-50000:] or "Log file is empty.")
+                    raw_lines = f.read().strip().split("\n")
+
+                filtered_lines = []
+                for l in raw_lines:
+                    if not l.strip():
+                        continue
+                    if level != "ALL" and f"[{level}]" not in l:
+                        continue
+                    if query and query not in l.lower():
+                        continue
+                    filtered_lines.append(l)
+
+                self.text_edit.setPlainText("\n".join(filtered_lines[-300:]) or "No matching log lines.")
+                self.count_lbl.setText(f"Showing {min(len(filtered_lines), 300)} of {len(raw_lines)} log lines")
             except Exception as e:
                 self.text_edit.setPlainText(f"Failed to read log file: {e}")
+                self.count_lbl.setText("Error reading logs")
 
         # Scroll to bottom
         sb = self.text_edit.verticalScrollBar()
