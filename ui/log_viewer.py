@@ -23,6 +23,31 @@ from core.logger import log, read_flow_logs, clear_all_logs, LOG_PATH, FLOW_LOG_
 from core.i18n import t
 
 
+def get_anki_version() -> str:
+    try:
+        import anki.buildinfo
+        return getattr(anki.buildinfo, "version", "Unknown")
+    except Exception:
+        pass
+    try:
+        import aqt
+        if hasattr(aqt, "appVersion"):
+            return aqt.appVersion
+    except Exception:
+        pass
+    try:
+        import anki
+        if hasattr(anki, "version"):
+            return anki.version
+        from aqt import mw
+        if mw and hasattr(mw, "pm") and hasattr(mw.pm, "ankiVersion"):
+            v = mw.pm.ankiVersion
+            return v() if callable(v) else str(v)
+    except Exception:
+        pass
+    return "Unknown"
+
+
 class LogViewerDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent or mw)
@@ -140,7 +165,7 @@ class LogViewerDialog(QDialog):
         sys_info = {
             "OS": f"{platform.system()} {platform.release()} ({platform.machine()})",
             "Python": sys.version.split()[0],
-            "Anki": getattr(mw, "ankiVersion", "Unknown"),
+            "Anki": get_anki_version(),
             "UI_Lang": self.current_ui_lang,
             "Learn_Lang": self.s.get("learn_lang") if self.s else "Unknown",
             "Model": self.s.get("model") if self.s else "auto",

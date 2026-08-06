@@ -94,20 +94,21 @@ class SettingsManager:
                 keys[2] = old_key3
         return keys
 
-    def get_masked_api_keys(self) -> list[str]:
-        raw_keys = self.get_api_keys()
-        masked = []
-        for k in raw_keys:
-            if not k:
-                masked.append("")
-            elif len(k) <= 8:
-                masked.append("****")
-            else:
-                masked.append(f"{k[:6]}...{k[-4:]}")
-        return masked
-
     def get_active_keys(self) -> list[str]:
-        return [k for k in self.get_api_keys() if k]
+        """Return list of valid, non-empty API keys with whitespace stripped."""
+        raw_keys = self.get_api_keys()
+        return [k.strip() for k in raw_keys if isinstance(k, str) and k.strip()]
+
+    def get_masked_api_keys(self) -> list[str]:
+        """Return masked strings for active non-empty API keys only."""
+        active = self.get_active_keys()
+        masked = []
+        for k in active:
+            if len(k) <= 12:
+                masked.append(f"{k[:2]}****{k[-2:]}" if len(k) >= 6 else "****")
+            else:
+                masked.append(f"{k[:4]}...{k[-4:]}")
+        return masked
 
     def has_any_key(self) -> bool:
         return bool(self.get_active_keys())

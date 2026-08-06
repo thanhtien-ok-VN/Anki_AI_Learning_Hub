@@ -2,8 +2,10 @@ import json
 import os
 import time
 import uuid
+import threading
 import traceback
 from datetime import datetime
+from collections import deque
 from typing import Optional, Any, Dict, List
 
 ADDON_PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -11,6 +13,9 @@ LOG_PATH = os.path.join(ADDON_PATH, "user_files", "ai_hub.log")
 FLOW_LOG_PATH = os.path.join(ADDON_PATH, "user_files", "ai_hub_flow.jsonl")
 MAX_LOG_BYTES = 1 * 1024 * 1024
 SESSION_ID = uuid.uuid4().hex[:8]
+
+_LOG_RING_BUFFER: deque = deque(maxlen=200)
+_LOG_LOCK = threading.Lock()
 
 
 class LogLevel:
@@ -85,8 +90,6 @@ def flow(
     extra: Optional[Dict[str, Any]] = None,
 ):
     """Write structured JSONL log entry for application observability."""
-    os.makedirs(os.path.dirname(FLOW_LOG_PATH), exist_ok=True)
-    log._rotate_if_needed(FLOW_LOG_PATH)
     entry = {
         "ts": datetime.now().isoformat(),
         "session_id": SESSION_ID,
@@ -97,7 +100,12 @@ def flow(
         "duration_ms": duration_ms,
         "extra": extra or {},
     }
+    with _LOG_LOCK:
+        _LOG_RING_BUFFER.append(entry)
+
     try:
+        os.makedirs(os.path.dirname(FLOW_LOG_PATH), exist_ok=True)
+        log._rotate_if_needed(FLOW_LOG_PATH)
         with open(FLOW_LOG_PATH, "a", encoding="utf-8") as f:
             f.write(json.dumps(entry, ensure_ascii=False, default=str) + "\n")
     except Exception:
@@ -139,12 +147,11 @@ class FlowTimer:
         )
 
 
-def read_flow_logs(
+def _read_logs_from_disk(
     limit: int = 200,
     level: Optional[str] = None,
     phase: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
-    """Read and filter structured JSONL flow log entries."""
     if not os.path.isfile(FLOW_LOG_PATH):
         return []
     entries = []
@@ -168,8 +175,32 @@ def read_flow_logs(
     return entries[-limit:]
 
 
+def read_flow_logs(
+    limit: int = 200,
+    level: Optional[str] = None,
+    phase: Optional[str] = None,
+) -> List[Dict[str, Any]]:
+    """Read and filter structured flow log entries from RAM first, falling back to disk."""
+    with _LOG_LOCK:
+        ram_logs = list(_LOG_RING_BUFFER)
+
+    if ram_logs:
+        filtered = ram_logs
+        if level and level != "ALL":
+            filtered = [e for e in filtered if e.get("level") == level]
+        if phase and phase != "ALL":
+            filtered = [e for e in filtered if e.get("phase") == phase]
+        if filtered:
+            return filtered[-limit:]
+
+    return _read_logs_from_disk(limit, level, phase)
+
+
 def clear_all_logs() -> bool:
-    """Delete all main log and flow log files including rotated backups."""
+    """Delete all main log and flow log files including rotated backups and RAM buffer."""
+    with _LOG_LOCK:
+        _LOG_RING_BUFFER.clear()
+
     user_files = os.path.dirname(LOG_PATH)
     if not os.path.isdir(user_files):
         return False
