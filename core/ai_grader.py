@@ -75,11 +75,7 @@ Respond in JSON matching the exact schema below:
             "suggestion": "How to fix it",
             "why": "Why this correction is better"
         }}
-    ],
-    "suggested_answers": {{
-        "common": "A natural, common translation suitable for the student's level",
-        "advanced": "A more advanced, sophisticated translation with richer vocabulary"
-    }}
+    ]
 }}
 """
 
@@ -112,10 +108,8 @@ Expected Answer: {expected_answer}
 Student's Answer: {user_answer}
 Student's level: {level}
 
-Acceptable variations: {acceptable_variations}
-
 Task:
-Evaluate the student's answer. If it is correct (or matches one of the acceptable variations), set correct to true.
+Evaluate the student's answer. If it matches the expected answer or is grammatically identical, set correct to true.
 If it is incorrect, identify the specific error, explain why it is wrong, how to fix it, and why this fix works.
 Explain all reasons and notes in {feedback_lang}.
 
@@ -127,8 +121,7 @@ Respond in JSON matching the exact schema below:
     "why_wrong": "Why the student's answer is wrong",
     "how_to_fix": "How to fix it",
     "why_fix": "Why this correction is correct under the grammar rule",
-    "grammar_rule": "The grammar rule being tested",
-    "acceptable_variations": ["variation1", "variation2"]
+    "grammar_rule": "The grammar rule being tested"
 }}
 """
 
