@@ -553,6 +553,10 @@ class AIEngine:
 
         results = []
         for idx, key in enumerate(keys):
+            if self.cancel_event and self.cancel_event.is_set():
+                log.info(f"test_all_keys cancelled by user before slot {idx+1}/{len(keys)}")
+                return {"results": results, "cancelled": True}
+
             slot = idx + 1
             if not key.strip():
                 results.append({"key": slot, "ok": False, "error": "Empty"})
@@ -560,6 +564,18 @@ class AIEngine:
             client = GeminiClient([key], configured_model, cancel_event=self.cancel_event)
             try:
                 res = client.test_key_with_waterfall(key, progress_callback=self._send_progress)
+                if self.cancel_event and self.cancel_event.is_set():
+                    log.info(f"test_all_keys cancelled by user after slot {slot}/{len(keys)}")
+                    results.append(
+                        {
+                            "key": slot,
+                            "ok": False,
+                            "model": res.get("model", ""),
+                            "error_code": "E_CANCELLED",
+                            "error": "Cancelled by user",
+                        }
+                    )
+                    return {"results": results, "cancelled": True}
                 results.append(
                     {
                         "key": slot,

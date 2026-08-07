@@ -46,6 +46,16 @@ class TestEngineRouter(unittest.TestCase):
         self.assertFalse(res.get("success"))
         self.assertEqual(res.get("error_code"), "E_INTERNAL")
 
+    def test_test_all_keys_cancellation(self):
+        def mock_test(key, progress_callback=None):
+            self.engine.cancel_event.set()
+            return {"ok": True, "model": "test"}
+
+        with patch.object(self.engine.settings, 'get_api_keys', return_value=['key1', 'key2']), \
+             patch('core.api_client.GeminiClient.test_key_with_waterfall', side_effect=mock_test):
+            res = self.engine._handle_test_all_keys()
+            self.assertTrue(res.get("cancelled"))
+
 
 if __name__ == '__main__':
     unittest.main()

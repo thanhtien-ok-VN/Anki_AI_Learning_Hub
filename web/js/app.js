@@ -3221,7 +3221,10 @@ async function testKeys(){
     const button=document.querySelector('#test-keys'),out=document.querySelector('#api-result');
     const signal = getSignal();
     try{
-      if(button)button.innerHTML='<span class="button-spinner"></span> ' + esc(t('app.testing_api', 'Đang kiểm tra…'));
+      if(button){
+        button.innerHTML='<span class="button-spinner"></span> ' + esc(t('app.testing_api', 'Đang kiểm tra…'));
+        button.disabled = true;
+      }
       setBusy(true, t('app.testing_api_status', 'Đang kiểm tra API…'));
       const data=await Bridge.sendAsync('test_all_keys', {}, { signal });
       if (signal.aborted) return;
@@ -3238,12 +3241,20 @@ async function testKeys(){
         }
       }
     }catch(e){
-      if(e.name==='AbortError'||e.error_code==='E_ABORTED')return;
+      if(e.name==='AbortError'||e.error_code==='E_ABORTED'){
+        if (out) {
+          out.innerHTML = `<span class="badge-status-warn" style="display:inline-flex; align-items:center; gap:6px; padding:6px 14px; border-radius:16px; background:rgba(234,179,8,0.12); color:#ca8a04; font-weight:600; font-size:13px; margin-top:8px;">⚠️ ${esc(t('app.action_cancelled', 'Đã hủy kiểm tra API'))}</span>`;
+        }
+        return;
+      }
       showBridgeFailure(e);
     }finally{
+      if(button){
+        button.innerHTML=esc(t('app.test_api', 'Kiểm tra API'));
+        button.disabled = false;
+      }
       if(!signal.aborted){
         setBusy(false);
-        if(button)button.innerHTML=esc(t('app.test_api', 'Kiểm tra API'))
       }
     }
   }

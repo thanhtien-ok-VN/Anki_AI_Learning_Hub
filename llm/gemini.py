@@ -406,16 +406,22 @@ class GeminiProvider(BaseLLMProvider):
                     headers = {"Content-Type": "application/json", "x-goog-api-key": key}
                     req = Request(url, data=data, headers=headers)
                     resp = urlopen(req, timeout=8)
+                    if self.cancel_event and self.cancel_event.is_set():
+                        return {"ok": False, "error_code": "E_CANCELLED", "error": t("app.cancelled_gen", lang=self.ui_lang)}
                     raw = json.loads(resp.read().decode("utf-8"))
                     text = raw.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
                     log.info(f"test_key_with_waterfall OK: key={self.detect_key_type(key)} model={model} response={text}")
                     return {"ok": True, "model": model, "response": text}
                 except HTTPError as e:
+                    if self.cancel_event and self.cancel_event.is_set():
+                        return {"ok": False, "error_code": "E_CANCELLED", "error": t("app.cancelled_gen", lang=self.ui_lang)}
                     body = e.read().decode("utf-8", errors="replace")[:300]
                     code = e.code
                     log.warn(f"test_key_with_waterfall FAIL: key={self.detect_key_type(key)} model={model} attempt={attempt+1} HTTP {code}")
                     if code in {429, 500, 503} and attempt < max_retries - 1:
                         delay = 2.0 * (2 ** attempt) + random.uniform(0, 0.5)
+                        if self.cancel_event and self.cancel_event.is_set():
+                            return {"ok": False, "error_code": "E_CANCELLED", "error": t("app.cancelled_gen", lang=self.ui_lang)}
                         time.sleep(delay)
                         continue
                     if code in {429, 500, 503}:
