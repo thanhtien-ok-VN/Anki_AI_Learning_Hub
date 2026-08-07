@@ -10,6 +10,7 @@ from aqt.qt import QAction
 from aqt.utils import showInfo
 
 from core.logger import log
+import core.error_suppressor
 
 mw.addonManager.setWebExports(__name__, r"web/.*")
 log.info(f"Add-on loaded: {ADDON_NAME} v2.0")

@@ -16,6 +16,7 @@ from aqt.qt import QTabWidget, QUrl
 from aqt.webview import AnkiWebView
 
 from core.logger import log
+import ui.webview_bridge
 
 ADDON_PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BACKGROUND_ACTIONS = {

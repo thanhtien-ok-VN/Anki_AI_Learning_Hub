@@ -68,61 +68,11 @@ const Utils = {
     },
 
     goTo(page) {
-        // Legacy game pages delegate to the SPA router when it is present.
-        // This deliberately avoids a document navigation inside AnkiWebView.
         const route = String(page).replace(/\.html$/, '');
         if (window.App && typeof window.App.navigate === 'function') {
             window.App.navigate(route === 'index' ? 'home' : route);
         }
-    },
-
-    escapeHtml(str) {
-        const div = document.createElement('div');
-        div.textContent = str;
-        return div.innerHTML;
-    },
-
-    debounce(fn, delay = 300) {
-        let timer;
-        return (...args) => {
-            clearTimeout(timer);
-            timer = setTimeout(() => fn(...args), delay);
-        };
-    },
-
-    formatTime(seconds) {
-        const m = String(Math.floor(seconds / 60)).padStart(2, '0');
-        const s = String(seconds % 60).padStart(2, '0');
-        return `${m}:${s}`;
-    },
-
-    loadConfig(gamemode) {
-        try {
-            const data = localStorage.getItem(`aihub_config_${gamemode}`);
-            return data ? JSON.parse(data) : {};
-        } catch {
-            return {};
-        }
-    },
-
-    saveConfig(gamemode, config) {
-        localStorage.setItem(`aihub_config_${gamemode}`, JSON.stringify(config));
-    },
-
-    showLoading(show = true) {
-        const el = document.getElementById('loading');
-        if (el) el.style.display = show ? 'block' : 'none';
-    },
-
-    showGameContent(show = true) {
-        const el = document.getElementById('game-content');
-        if (el) el.style.display = show ? 'block' : 'none';
-    },
-
-    enableButton(id, enabled = true) {
-        const btn = document.getElementById(id);
-        if (btn) btn.disabled = !enabled;
-    },
+    }
 };
 
 window.Utils = Utils;

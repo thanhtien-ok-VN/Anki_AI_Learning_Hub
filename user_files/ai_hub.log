@@ -1,0 +1,123 @@
+[2026-08-07 23:11:07.083] [INFO] [AIHub] GeminiProvider init {"key_count": 2, "key_types": ["unknown", "unknown"], "model": "auto", "ui_lang": "en"}
+[2026-08-07 23:11:07.085] [INFO] [AIHub] generate_structured {"prompt_len": 11, "has_schema": true, "temperature": 0.7}
+[2026-08-07 23:11:07.086] [DEBUG] [AIHub] Trying key1 (unknown) step 0 model gemini-3.1-flash-lite attempt 1/3
+[2026-08-07 23:11:11.102] [DEBUG] [AIHub] Trying key1 (unknown) step 0 model gemini-3.1-flash-lite attempt 2/3
+[2026-08-07 23:11:15.105] [DEBUG] [AIHub] Trying key1 (unknown) step 0 model gemini-3.1-flash-lite attempt 3/3
+[2026-08-07 23:11:15.356] [DEBUG] [AIHub] Trying key2 (unknown) step 0 model gemini-3.1-flash-lite attempt 1/3
+[2026-08-07 23:11:19.357] [DEBUG] [AIHub] Trying key2 (unknown) step 0 model gemini-3.1-flash-lite attempt 2/3
+[2026-08-07 23:11:23.360] [DEBUG] [AIHub] Trying key2 (unknown) step 0 model gemini-3.1-flash-lite attempt 3/3
+[2026-08-07 23:11:23.361] [DEBUG] [AIHub] Trying key1 (unknown) step 1 model gemini-flash-latest attempt 1/3
+[2026-08-07 23:11:23.610] [DEBUG] [AIHub] JS message: generate {"data_keys": ["gamemode"]}
+[2026-08-07 23:11:23.621] [INFO] [AIHub] GeminiProvider init {"key_count": 2, "key_types": ["unknown", "unknown"], "model": "auto", "ui_lang": "en"}
+[2026-08-07 23:11:23.622] [INFO] [AIHub] generate_structured {"prompt_len": 11, "has_schema": true, "temperature": 0.7}
+[2026-08-07 23:11:23.622] [DEBUG] [AIHub] Trying key1 (unknown) step 0 model gemini-3.1-flash-lite attempt 1/3
+[2026-08-07 23:11:27.362] [DEBUG] [AIHub] Trying key1 (unknown) step 1 model gemini-flash-latest attempt 2/3
+[2026-08-07 23:11:27.624] [DEBUG] [AIHub] Trying key1 (unknown) step 0 model gemini-3.1-flash-lite attempt 2/3
+[2026-08-07 23:11:31.363] [DEBUG] [AIHub] Trying key1 (unknown) step 1 model gemini-flash-latest attempt 3/3
+[2026-08-07 23:11:31.614] [DEBUG] [AIHub] Trying key2 (unknown) step 1 model gemini-flash-latest attempt 1/3
+[2026-08-07 23:11:31.625] [DEBUG] [AIHub] Trying key1 (unknown) step 0 model gemini-3.1-flash-lite attempt 3/3
+[2026-08-07 23:11:31.876] [DEBUG] [AIHub] Trying key2 (unknown) step 0 model gemini-3.1-flash-lite attempt 1/3
+[2026-08-07 23:11:35.615] [DEBUG] [AIHub] Trying key2 (unknown) step 1 model gemini-flash-latest attempt 2/3
+[2026-08-07 23:11:35.833] [DEBUG] [AIHub] JS message: generate {"data_keys": ["gamemode"]}
+[2026-08-07 23:11:35.877] [DEBUG] [AIHub] Trying key2 (unknown) step 0 model gemini-3.1-flash-lite attempt 2/3
+[2026-08-07 23:11:39.616] [DEBUG] [AIHub] Trying key2 (unknown) step 1 model gemini-flash-latest attempt 3/3
+[2026-08-07 23:11:39.617] [ERROR] [AIHub] Uncaught exception in generate_structured: t() got multiple values for argument 'lang'
+[2026-08-07 23:11:39.617] [WARN] [AIHub] API error [E_INTERNAL]: t() got multiple values for argument 'lang'
+[2026-08-07 23:11:39.619] [INFO] [AIHub] GeminiProvider init {"key_count": 0, "key_types": [], "model": "auto", "ui_lang": "en"}
+[2026-08-07 23:11:39.620] [INFO] [AIHub] generate_structured {"prompt_len": 6, "has_schema": true, "temperature": 0.7}
+[2026-08-07 23:11:39.621] [WARN] [AIHub] API error [E_NO_KEYS]: No API keys configured. Set them in settings.
+[2026-08-07 23:11:39.680] [WARN] [Test] rate limited
+[2026-08-07 23:11:39.681] [ERROR] [Test] network failed
+[2026-08-07 23:11:39.729] [ERROR] [AIHub] Settings file is corrupt. Loading defaults.
+[2026-08-07 23:11:39.734] [WARN] [AIHub] Corrupt settings backed up to settings.corrupt.1786119099.json
+[2026-08-07 23:11:39.878] [DEBUG] [AIHub] Trying key2 (unknown) step 0 model gemini-3.1-flash-lite attempt 3/3
+[2026-08-07 23:11:39.879] [DEBUG] [AIHub] Trying key1 (unknown) step 1 model gemini-flash-latest attempt 1/3
+[2026-08-07 23:11:43.880] [DEBUG] [AIHub] Trying key1 (unknown) step 1 model gemini-flash-latest attempt 2/3
+[2026-08-07 23:11:47.039] [DEBUG] [AIHub] JS message: generate {"data_keys": ["gamemode"]}
+[2026-08-07 23:11:47.044] [INFO] [AIHub] GeminiProvider init {"key_count": 2, "key_types": ["unknown", "unknown"], "model": "auto", "ui_lang": "en"}
+[2026-08-07 23:11:47.044] [INFO] [AIHub] generate_structured {"prompt_len": 11, "has_schema": true, "temperature": 0.7}
+[2026-08-07 23:11:47.045] [DEBUG] [AIHub] Trying key1 (unknown) step 0 model gemini-3.1-flash-lite attempt 1/3
+[2026-08-07 23:11:47.046] [WARN] [AIHub] key1 (unknown) gemini-3.1-flash-lite rate limited, retry in 2.2s
+[2026-08-07 23:11:47.882] [DEBUG] [AIHub] Trying key1 (unknown) step 1 model gemini-flash-latest attempt 3/3
+[2026-08-07 23:11:48.133] [DEBUG] [AIHub] Trying key2 (unknown) step 1 model gemini-flash-latest attempt 1/3
+[2026-08-07 23:11:49.230] [DEBUG] [AIHub] Trying key1 (unknown) step 0 model gemini-3.1-flash-lite attempt 2/3
+[2026-08-07 23:11:49.231] [WARN] [AIHub] key1 (unknown) gemini-3.1-flash-lite rate limited, retry in 4.4s
+[2026-08-07 23:11:52.135] [DEBUG] [AIHub] Trying key2 (unknown) step 1 model gemini-flash-latest attempt 2/3
+[2026-08-07 23:11:53.583] [DEBUG] [AIHub] Trying key1 (unknown) step 0 model gemini-3.1-flash-lite attempt 3/3
+[2026-08-07 23:11:53.833] [DEBUG] [AIHub] Trying key2 (unknown) step 0 model gemini-3.1-flash-lite attempt 1/3
+[2026-08-07 23:11:53.835] [INFO] [AIHub] GeminiProvider init {"key_count": 0, "key_types": [], "model": "auto", "ui_lang": "en"}
+[2026-08-07 23:11:53.835] [INFO] [AIHub] generate_structured {"prompt_len": 6, "has_schema": true, "temperature": 0.7}
+[2026-08-07 23:11:53.836] [WARN] [AIHub] API error [E_NO_KEYS]: No API keys configured. Set them in settings.
+[2026-08-07 23:11:53.849] [ERROR] [AIHub] Settings file is corrupt. Loading defaults.
+[2026-08-07 23:11:53.850] [WARN] [AIHub] Corrupt settings backed up to settings.corrupt.1786119113.json
+[2026-08-07 23:11:55.963] [DEBUG] [AIHub] JS message: generate {"data_keys": ["gamemode"]}
+[2026-08-07 23:11:56.136] [DEBUG] [AIHub] Trying key2 (unknown) step 1 model gemini-flash-latest attempt 3/3
+[2026-08-07 23:11:56.137] [ERROR] [AIHub] Uncaught exception in generate_structured: t() got multiple values for argument 'lang'
+[2026-08-07 23:11:56.137] [WARN] [AIHub] API error [E_INTERNAL]: t() got multiple values for argument 'lang'
+[2026-08-07 23:11:56.138] [INFO] [AIHub] GeminiProvider init {"key_count": 0, "key_types": [], "model": "auto", "ui_lang": "en"}
+[2026-08-07 23:11:56.139] [INFO] [AIHub] generate_structured {"prompt_len": 6, "has_schema": true, "temperature": 0.7}
+[2026-08-07 23:11:56.139] [WARN] [AIHub] API error [E_NO_KEYS]: No API keys configured. Set them in settings.
+[2026-08-07 23:11:56.156] [ERROR] [AIHub] Settings file is corrupt. Loading defaults.
+[2026-08-07 23:11:56.157] [WARN] [AIHub] Corrupt settings backed up to settings.corrupt.1786119116.json
+[2026-08-07 23:12:03.552] [DEBUG] [AIHub] JS message: generate {"data_keys": ["gamemode"]}
+[2026-08-07 23:12:03.553] [DEBUG] [AIHub] JS message: non_existent_action {"data_keys": null}
+[2026-08-07 23:12:03.554] [WARN] [AIHub] Unknown action: non_existent_action
+[2026-08-07 23:12:03.587] [ERROR] [AIHub] handle_js_message error: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)
+Traceback (most recent call last):
+  File "D:\GithubDesktopClone\Anki_AI_Learning_Hub\core\engine.py", line 212, in handle_js_message
+    msg = json.loads(message)
+  File "D:\ProgramFolder\Miniforge\Lib\json\__init__.py", line 352, in loads
+    return _default_decoder.decode(s)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^
+  File "D:\ProgramFolder\Miniforge\Lib\json\decoder.py", line 345, in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+               ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\ProgramFolder\Miniforge\Lib\json\decoder.py", line 361, in raw_decode
+    obj, end = self.scan_once(s, idx)
+               ~~~~~~~~~~~~~~^^^^^^^^
+json.decoder.JSONDecodeError: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)
+
+[2026-08-07 23:12:03.589] [INFO] [AIHub] GeminiProvider init {"key_count": 2, "key_types": ["unknown", "unknown"], "model": "auto", "ui_lang": "en"}
+[2026-08-07 23:12:03.589] [INFO] [AIHub] generate_structured {"prompt_len": 11, "has_schema": true, "temperature": 0.7}
+[2026-08-07 23:12:03.590] [DEBUG] [AIHub] Trying key1 (unknown) step 0 model gemini-3.1-flash-lite attempt 1/3
+[2026-08-07 23:12:03.591] [WARN] [AIHub] key1 (unknown) gemini-3.1-flash-lite rate limited, retry in 2.3s
+[2026-08-07 23:12:05.845] [DEBUG] [AIHub] Trying key1 (unknown) step 0 model gemini-3.1-flash-lite attempt 2/3
+[2026-08-07 23:12:05.846] [WARN] [AIHub] key1 (unknown) gemini-3.1-flash-lite rate limited, retry in 4.3s
+[2026-08-07 23:12:10.180] [DEBUG] [AIHub] Trying key1 (unknown) step 0 model gemini-3.1-flash-lite attempt 3/3
+[2026-08-07 23:12:10.432] [DEBUG] [AIHub] Trying key2 (unknown) step 0 model gemini-3.1-flash-lite attempt 1/3
+[2026-08-07 23:12:10.433] [INFO] [AIHub] GeminiProvider init {"key_count": 0, "key_types": [], "model": "auto", "ui_lang": "en"}
+[2026-08-07 23:12:10.433] [INFO] [AIHub] generate_structured {"prompt_len": 6, "has_schema": true, "temperature": 0.7}
+[2026-08-07 23:12:10.434] [WARN] [AIHub] API error [E_NO_KEYS]: No API keys configured. Set them in settings.
+[2026-08-07 23:12:10.448] [ERROR] [AIHub] Settings file is corrupt. Loading defaults.
+[2026-08-07 23:12:10.450] [WARN] [AIHub] Corrupt settings backed up to settings.corrupt.1786119130.json
+[2026-08-07 23:12:16.436] [DEBUG] [AIHub] JS message: generate {"data_keys": ["gamemode"]}
+[2026-08-07 23:12:16.437] [DEBUG] [AIHub] JS message: non_existent_action {"data_keys": null}
+[2026-08-07 23:12:16.438] [WARN] [AIHub] Unknown action: non_existent_action
+[2026-08-07 23:12:16.441] [ERROR] [AIHub] handle_js_message error: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)
+Traceback (most recent call last):
+  File "D:\GithubDesktopClone\Anki_AI_Learning_Hub\core\engine.py", line 212, in handle_js_message
+    msg = json.loads(message)
+  File "D:\ProgramFolder\Miniforge\Lib\json\__init__.py", line 352, in loads
+    return _default_decoder.decode(s)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^
+  File "D:\ProgramFolder\Miniforge\Lib\json\decoder.py", line 345, in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+               ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\ProgramFolder\Miniforge\Lib\json\decoder.py", line 361, in raw_decode
+    obj, end = self.scan_once(s, idx)
+               ~~~~~~~~~~~~~~^^^^^^^^
+json.decoder.JSONDecodeError: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)
+
+[2026-08-07 23:12:16.442] [INFO] [AIHub] GeminiProvider init {"key_count": 2, "key_types": ["unknown", "unknown"], "model": "auto", "ui_lang": "en"}
+[2026-08-07 23:12:16.443] [INFO] [AIHub] generate_structured {"prompt_len": 11, "has_schema": true, "temperature": 0.7}
+[2026-08-07 23:12:16.443] [DEBUG] [AIHub] Trying key1 (unknown) step 0 model gemini-3.1-flash-lite attempt 1/3
+[2026-08-07 23:12:16.445] [WARN] [AIHub] key1 (unknown) gemini-3.1-flash-lite rate limited, retry in 2.5s
+[2026-08-07 23:12:18.916] [DEBUG] [AIHub] Trying key1 (unknown) step 0 model gemini-3.1-flash-lite attempt 2/3
+[2026-08-07 23:12:18.917] [WARN] [AIHub] key1 (unknown) gemini-3.1-flash-lite rate limited, retry in 4.3s
+[2026-08-07 23:12:23.172] [DEBUG] [AIHub] Trying key1 (unknown) step 0 model gemini-3.1-flash-lite attempt 3/3
+[2026-08-07 23:12:23.423] [DEBUG] [AIHub] Trying key2 (unknown) step 0 model gemini-3.1-flash-lite attempt 1/3
+[2026-08-07 23:12:23.424] [INFO] [AIHub] GeminiProvider init {"key_count": 0, "key_types": [], "model": "auto", "ui_lang": "en"}
+[2026-08-07 23:12:23.424] [INFO] [AIHub] generate_structured {"prompt_len": 6, "has_schema": true, "temperature": 0.7}
+[2026-08-07 23:12:23.425] [WARN] [AIHub] API error [E_NO_KEYS]: No API keys configured. Set them in settings.
+[2026-08-07 23:12:23.443] [ERROR] [AIHub] Settings file is corrupt. Loading defaults.
+[2026-08-07 23:12:23.444] [WARN] [AIHub] Corrupt settings backed up to settings.corrupt.1786119143.json

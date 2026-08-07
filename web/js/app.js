@@ -209,6 +209,7 @@ const t = (key, fallback, ...args) => {
   const normalizeAnswer = s => normalizeText(s).trim().toLowerCase();
   const norm = normalizeText;
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  window.esc = esc;
   const renderExplanationBox = (text, title) => {
     if (!text || typeof text !== 'string') return '';
     const trimmed = text.trim();
@@ -1150,7 +1151,7 @@ async function generate(id, optsOverride){
     let totalQ = 0;
     if (id === 'fill_blank') totalQ = data.questions ? data.questions.length : 0;
     else if (id === 'cloze') totalQ = data.blanks ? data.blanks.length : 0;
-    else if (id === 'story') totalQ = data.comprehension_questions ? data.comprehension_questions.length : 0;
+    else if (id === 'story') totalQ = data.questions ? data.questions.length : (data.comprehension_questions ? data.comprehension_questions.length : 0);
     else if (id === 'unscramble') totalQ = data.questions ? data.questions.length : (data.sentences ? data.sentences.length : 0);
     else if (id === 'sentence_transform') totalQ = data.questions ? data.questions.length : 0;
     else if (id === 'translation') totalQ = data.sentences ? data.sentences.length : 1;
@@ -1450,6 +1451,7 @@ function renderFillBlank(x) {
       d.querySelectorAll('[data-hint-q]').forEach(btn => {
         btn.onclick = () => {
           const qIdx = +btn.dataset.hintQ;
+          if (state.hintedQuestions) state.hintedQuestions.add(qIdx);
           const q = x.questions[qIdx];
           const textEl = document.querySelector(`#hint-text-${qIdx}`);
           if (window.HintSystem) {
@@ -1527,11 +1529,12 @@ function renderFillBlank(x) {
     `;
 
     // Process paragraph with clean single-pass inline selects
-    let rawText = isNewSchema ? x.paragraph : (x.paragraph_with_blanks || '');
+    let rawText = isNewSchema ? (x.paragraph || '') : (x.paragraph_with_blanks || '');
+    let safeText = esc(rawText);
     let blankIdx = 0;
     const placeholderRegex = /(\[BLANK_\d+\]|\[\d+\])/gi;
 
-    let processedParagraph = rawText.replace(placeholderRegex, (match) => {
+    let processedParagraph = safeText.replace(placeholderRegex, (match) => {
       if (blankIdx >= x.blanks.length) return match;
       const i = blankIdx++;
       const b = x.blanks[i];
@@ -1619,7 +1622,7 @@ function renderFillBlank(x) {
     `;
 
     if (!isGraded) {
-      d.querySelectorAll('select.cloze-inline-select').forEach(sel => {
+      d.querySelectorAll('select.cloze-select').forEach(sel => {
         sel.onchange = () => {
           const bIdx = +sel.dataset.blank;
           const val = sel.value;
@@ -2447,8 +2450,6 @@ function renderUnscrambleAll(x) {
               if (state.answers[`feedback_${i}`]?.correct) finalScore++;
             });
 
-            const historyItem = addHistory(gameId, x);
-            state.currentHistoryItem = historyItem;
             if (state.currentHistoryItem) {
               state.currentHistoryItem.answers = { ...state.answers };
               state.currentHistoryItem.score = finalScore;
@@ -2477,6 +2478,9 @@ function renderUnscrambleAll(x) {
     state.index = 0;
     state.currentHistoryItem = null;
     state.hintedQuestions = new Set();
+    if (window.HintSystem && typeof window.HintSystem.reset === 'function') {
+      window.HintSystem.reset();
+    }
     if (gameId === 'taboo') {
       state.tabooCursor = 0;
       state.tabooOrder = [];
@@ -2786,6 +2790,12 @@ function renderStory(x) {
         if (signal.aborted) return;
         const fb=document.querySelector('#feedback');
         if(!fb)return;
+
+        if (state.currentHistoryItem) {
+          state.currentHistoryItem.answers = { user_answer: document.querySelector('#answer')?.value || '' };
+          state.currentHistoryItem.score = typeof r.score !== 'undefined' ? r.score : (r.correct ? 10 : 0);
+          saveHistory();
+        }
         
         let html='<div class="feedback '+(r.correct?'good':'bad')+'"><b>'+(r.correct?esc(t('feedback.exact', 'Chính xác!')):esc(t('feedback.needs_improvement', 'Cần cải thiện')))+'</b>';
         
@@ -2866,6 +2876,7 @@ function renderStory(x) {
     const hintBtn = document.querySelector('#hint-transform');
     if (hintBtn) {
       hintBtn.onclick = () => {
+        if (state.hintedQuestions) state.hintedQuestions.add(0);
         const textEl = document.querySelector('#hint-text-transform');
         if (window.HintSystem) {
           window.HintSystem.requestHint('sentence_transform', q, 0, textEl, hintBtn);
@@ -2920,6 +2931,11 @@ function renderStory(x) {
         }
 
         if (signal.aborted) return;
+        if (state.currentHistoryItem) {
+          state.currentHistoryItem.answers = { user_answer: ansVal };
+          state.currentHistoryItem.score = typeof r.score !== 'undefined' ? r.score : (r.correct ? 10 : 0);
+          saveHistory();
+        }
         if (!r.correct && state.pairs && state.pairs[0]) {
           addWeakWord(state.pairs[0].term);
         }
@@ -3030,6 +3046,7 @@ function renderStory(x) {
     const hintBtn = document.querySelector('#hint-taboo');
     if (hintBtn) {
       hintBtn.onclick = () => {
+        if (state.hintedQuestions) state.hintedQuestions.add(currentRoundIdx);
         const textEl = document.querySelector('#hint-text-taboo');
         if (window.HintSystem) {
           window.HintSystem.requestHint('taboo', q, currentRoundIdx, textEl, hintBtn);
@@ -3073,6 +3090,11 @@ function renderStory(x) {
         }
 
         if (signal.aborted) return;
+        if (state.currentHistoryItem) {
+          state.currentHistoryItem.answers = { user_answer: guessInput };
+          state.currentHistoryItem.score = typeof r.score !== 'undefined' ? r.score : (r.correct ? 10 : 0);
+          saveHistory();
+        }
         if (!r.correct) {
           addWeakWord(secretWord);
         }
@@ -3232,6 +3254,7 @@ async function testKeys(){
       if (p && Object.keys(p).length) Object.assign(state.userPrefs, p);
       state.userPrefs.learn_lang = (settings && settings.learn_lang) || state.userPrefs.learn_lang || state.userPrefs.language || 'en';
       state.userPrefs.language = state.userPrefs.learn_lang;
+      document.documentElement.lang = state.userPrefs.ui_lang || 'en';
     } catch (e) { console.warn("Failed to load language settings:", e); }
 
     try {

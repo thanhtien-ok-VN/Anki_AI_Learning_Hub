@@ -112,4 +112,6 @@ class WordMatchingMode(GameModeBase):
         }
 
     def _format_anki_note(self, data: dict) -> tuple:
-        return (data.get("content", ""), "")
+        front = data.get("term", data.get("word", data.get("content", "")))
+        back = data.get("definition", data.get("meaning", data.get("translation", "")))
+        return (front, back)
