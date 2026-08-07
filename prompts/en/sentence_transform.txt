@@ -3,31 +3,29 @@ Grammar focus: {focus}
 Difficulty: {level_instruction}
 Topic: {topic}
 
-MANDATORY: The entire content MUST revolve around the topic "{topic}".
+MANDATORY DIRECTIVES:
+1. Content focus: Sentences MUST express real-world life facts, scientific/cultural knowledge, or practical academic facts related to "{topic}".
+2. All instructions, explanations, and grammar notes MUST be in {ui_lang}. Sentences in {learn_lang}.
+3. DO NOT provide acceptable variations. Provide exactly ONE standard `expected_answer`.
 
 Requirements:
-- For each exercise provide an original sentence and a prompt/hint.
 - `normalized_answer`: MUST be fully lowercase with NO punctuation (except apostrophes).
 - List common errors students make with this structure.
 - List forbidden words that must NOT appear in the answer.
-- All instructions, explanations, and grammar notes MUST be in {ui_lang}. Sentences in {learn_lang}.
 
-Output raw JSON only, no markdown formatting.
+Output raw JSON only:
 
 {
   "questions": [
     {
-      "original": "She is too young to drive.",
-      "prompt": "Rewrite using 'so... that'",
-      "expected_answer": "She is so young that she cannot drive.",
-      "normalized_answer": "she is so young that she cannot drive",
-      "acceptable_variations": [
-        {"text": "She's so young that she can't drive.", "note": "[note in {ui_lang}]"}
-      ],
-      "forbidden_words": ["too"],
-      "grammar_rule": "so + adj + that + clause...",
+      "original": "Light travels faster than sound in any medium.",
+      "prompt": "Rewrite using 'not as... as'",
+      "expected_answer": "Sound does not travel as fast as light in any medium.",
+      "normalized_answer": "sound does not travel as fast as light in any medium",
+      "forbidden_words": ["faster"],
+      "grammar_rule": "not as + adjective/adverb + as...",
       "common_errors": [
-        {"error": "She is so young that she can drive.", "feedback": "[feedback in {ui_lang}]"}
+        {"error": "Sound does not travel faster as light", "feedback": "[feedback in {ui_lang}]"}
       ]
     }
   ]

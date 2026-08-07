@@ -2,43 +2,35 @@ Generate a fill-in-the-blank exercise for a {learn_lang} learner.
 Difficulty: {level_instruction}
 Topic: {topic}
 
-MANDATORY: The entire content MUST revolve around the topic "{topic}".
+MANDATORY DIRECTIVES:
+1. Content focus: Sentences MUST revolve around real-world life facts, scientific/cultural knowledge, or practical academic facts related to "{topic}".
+2. All explanations, meanings, and translations MUST be in {ui_lang}.
 
 Requirements:
 - Create exactly {count} fill-in-the-blank sentences in {learn_lang}. Each with ONE missing word (_____). 
 - Place the blank (_____) in various positions (beginning, middle, end) of sentences.
-- Vary the grammatical roles of the missing words (verbs, nouns, adjectives, adverbs, phrasal verbs, prepositions).
-- Vary the sentence structures (active/passive voice, conditionals, relative clauses, perfect tenses, comparisons, modal verbs).
 - Provide exactly 4 options per sentence (1 correct option + 3 distractors).
-- **Distractor Quality & Challenge Rules**:
-  1. The distractors MUST be challenging and effective, making the learner think and deduce the answer. Avoid overly obvious incorrect options.
-  2. Each distractor must be grammatically fitting when placed in the blank (e.g. same tense, plural/singular form where applicable) but semantically incorrect/out of context. The learner should not be able to easily eliminate them based on simple grammar errors.
-  3. **Strict Word Family Rule**: Avoid having exactly 2 words that share the same root/base meaning but differ only in word class (e.g., just "create" and "creative"). However, if you choose to use word class distractors, you MUST include a complete **trio of word classes** from that root (e.g., 1 Noun + 1 Verb + 1 Adjective/Adverb from the same root word, such as "creation", "create", and "creative"). This forces the student to analyze the sentence structure deeply.
-  4. The 3 distractors MUST be chosen from at least 2 different types in the whitelist below. Set the `"type"` field in the JSON options array to EXACTLY one of these tokens:
-     - `antonym` (opposite meaning)
-     - `synonym` or `near_synonym` (similar meaning but slightly wrong nuance or collocates poorly)
-     - `different_word_class` (part of a trio of word classes from the same root)
-     - `wrong_tense` or `wrong_verb_form` (correct base meaning, wrong form)
-     - `collocation_error` (seems logical but is not a natural collocation)
-     - `wrong_context` or `semantic_close` (semantically close to the context but wrong)
-     - `related_word` (belongs to the same semantic field but wrong)
-- Explain thoroughly why the correct answer fits and why each distractor is incorrect.
-- All explanations and meanings MUST be in {ui_lang}.
+- **CRITICAL DISTRACTOR RULES (3 Distractors)**:
+  + All 3 distractors MUST belong to the same semantic field/topic and have the same part of speech and grammatical structure as the correct answer.
+  + All 4 options MUST have comparable string lengths to avoid leaking the correct answer.
+  + Distractors must be plausible and grammatically fitting in the blank, but semantically distinct. NEVER create a second valid correct answer.
+  + Distractor `"type"` field MUST be set to one of: `antonym`, `synonym`, `wrong_context`, `different_word_class`, `collocation_error`, `related_word`.
+- Explain thoroughly why the correct answer fits and why distractors are wrong in {ui_lang}.
 
-Output raw JSON only, no markdown formatting.
+Output raw JSON only:
 
 {
   "questions": [
     {
-      "sentence": "The project was ______ due to lack of funding.",
-      "target_word": "abandoned",
+      "sentence": "Da Nang is a major central-governed city located in the ______ Coast region of Vietnam.",
+      "target_word": "South Central",
       "meaning": "[meaning of target word in {ui_lang}]",
       "full_translation": "[full sentence translation in {ui_lang}]",
       "options": [
-        {"word": "abandoned", "is_correct": true, "type": "correct", "reason": "[reason in {ui_lang}]"},
-        {"word": "continued", "is_correct": false, "type": "antonym", "reason": "[reason in {ui_lang}]"},
-        {"word": "abandoning", "is_correct": false, "type": "wrong_verb_form", "reason": "[reason in {ui_lang}]"},
-        {"word": "lost", "is_correct": false, "type": "wrong_context", "reason": "[reason in {ui_lang}]"}
+        {"word": "South Central", "is_correct": true, "type": "correct", "reason": "[reason in {ui_lang}]"},
+        {"word": "Red River", "is_correct": false, "type": "wrong_context", "reason": "[reason in {ui_lang}]"},
+        {"word": "Central Highlands", "is_correct": false, "type": "wrong_context", "reason": "[reason in {ui_lang}]"},
+        {"word": "South Eastern", "is_correct": false, "type": "wrong_context", "reason": "[reason in {ui_lang}]"}
       ],
       "explanation": "[detailed explanation in {ui_lang}]",
       "grammar_note": "[grammar note in {ui_lang}]"

@@ -2,20 +2,18 @@ Generate a {source_lang} to {target_lang} translation exercise.
 Sentence complexity: {level_instruction}
 Topic: {topic}
 
-Requirements:
-- The exercise MUST revolve around the topic "{topic}".
-- The sentence MUST use this grammatical type: {sentence_type}. Do NOT use any other sentence structure. Keep the meaning natural and appropriate for the topic and level.
-- Focus on common mistakes made by {learn_lang} learners (tense, pluralization, articles, word order, prepositions).
-- Provide the reference translation and alternative correct versions.
-- All grammar notes, rubric, and explanations in {ui_lang}.
+MANDATORY DIRECTIVES:
+1. Content focus: The source sentence MUST express a real-world life fact, scientific/cultural knowledge, or practical academic fact related to "{topic}".
+2. Grammar type: Sentence MUST strictly use this grammatical structure: {sentence_type}.
+3. Provide exactly ONE accurate reference translation in {target_lang}.
+4. DO NOT provide alternative translations.
+5. All grading rubrics and notes MUST be in {ui_lang}.
 
-Output raw JSON only, no markdown formatting.
+Output raw JSON only:
+
 {
-  "source_sentence": "[sentence in {source_lang}]",
+  "source_sentence": "[source sentence expressing a real-world fact in {source_lang}]",
   "target_language": "{target_lang}",
-  "reference_translation": "[correct translation in {target_lang}]",
-  "alternative_translations": [
-    {"text": "[alternative translation in {target_lang}]", "note": "[note in {ui_lang}]"}
-  ],
-  "grading_rubric": "[grading rubric in {ui_lang}]"
+  "reference_translation": "[accurate reference translation in {target_lang}]",
+  "grading_rubric": "[pedagogical grading rubric in {ui_lang}]"
 }

@@ -2,33 +2,31 @@ Generate {count} sentence unscramble puzzles for a {learn_lang} learner.
 Difficulty: {level_instruction}
 Topic: {topic}
 
-MANDATORY: The entire content MUST revolve around the topic "{topic}".
+MANDATORY DIRECTIVES:
+1. Content focus: The target sentences MUST express real-world life facts, scientific/cultural facts, or practical academic knowledge related to "{topic}".
+2. Language: Sentences to unscramble MUST be in {learn_lang}. All hints, meanings, translations, instructions, and grammar notes MUST strictly be in {ui_lang}.
+3. The sentences MUST each use a DIFFERENT grammatical structure from: {sentence_types}.
 
 Requirements:
-- Generate exactly {count} grammatically correct {learn_lang} sentences.
-- The {count} sentences MUST each use a DIFFERENT grammatical structure. Use these structures (one per sentence, in order): {sentence_types}. Do NOT repeat structures.
-- Each sentence must have 6-12 words with clear structure.
-- Provide a {ui_lang} hint and full translation in {ui_lang}.
-- Highlight key vocabulary with {ui_lang} meanings.
-- Explain why this sentence has the difficulty level it has.
-- Include a grammar note about the sentence structure.
-- Include a core_structure field describing the fundamental sentence formula (e.g., "S + should + V + to-V (purpose)").
+- Each sentence must have 6-12 words with clear grammatical structure.
+- Provide {ui_lang} translation, hint, and grammar notes.
+- Include `core_structure` describing the formula in {ui_lang}.
 
-Output raw JSON only, no markdown formatting.
+Output raw JSON only:
+
 {
   "questions": [
     {
-      "correct_sentence": "The quick brown fox jumps over the lazy dog.",
-      "meaning": "[meaning in {ui_lang}]",
-      "hint": "[hint in {ui_lang}]",
+      "correct_sentence": "Water boils at one hundred degrees Celsius under normal atmospheric pressure.",
+      "meaning": "[full translation in {ui_lang}]",
+      "hint": "[helpful clue in {ui_lang}]",
       "key_vocabulary": [
-        {"word": "quick", "meaning": "[meaning in {ui_lang}]"},
-        {"word": "jumps", "meaning": "[meaning in {ui_lang}]"},
-        {"word": "lazy", "meaning": "[meaning in {ui_lang}]"}
+        {"word": "boils", "meaning": "[meaning in {ui_lang}]"},
+        {"word": "pressure", "meaning": "[meaning in {ui_lang}]"}
       ],
-      "difficulty_reason": "[difficulty reason in {ui_lang}]",
+      "difficulty_reason": "[difficulty explanation in {ui_lang}]",
       "grammar_note": "[grammar note in {ui_lang}]",
-      "core_structure": "S + V + O + Prepositional Phrase"
+      "core_structure": "S + V + at + Temp + under + N"
     }
   ]
 }

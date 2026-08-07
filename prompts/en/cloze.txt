@@ -1,34 +1,29 @@
-Generate a Cloze test (paragraph with missing words) for a {learn_lang} learner.
+Generate a Cloze test (coherent paragraph with missing words) for a {learn_lang} learner.
 Difficulty: {level_instruction}
-Length: ~50-80 words.
 Number of blanks: {num_blanks}
 Topic: {topic}
 
-MANDATORY: The entire content MUST revolve around the topic "{topic}".
+MANDATORY DIRECTIVES:
+1. Content focus: The paragraph MUST focus on real-world life facts, scientific/cultural facts, or practical academic knowledge related to "{topic}".
+2. Passage length: Adjust paragraph length dynamically according to the number of blanks (5 blanks = 100-150 words; 10 blanks = 220-350 words). Maximum length MUST be under 400 words.
+3. Replace each target word in the text with token placeholders: [BLANK_1], [BLANK_2], etc., strictly in order of appearance.
+4. Target words: Paragraph MUST naturally incorporate these target words: {blank_words}. Each used exactly once as an answer.
+5. Language: Paragraph content in {learn_lang}. Meanings, translations, and explanations MUST be in {ui_lang}.
+6. DO NOT include hints or context summaries.
 
-Requirements:
-- The paragraph must be a coherent text.
-- Paragraph content MUST be in {learn_lang}. All hints, meanings and explanations MUST be in {ui_lang}.
-- Replace each missing word with [BLANK_1], [BLANK_2], etc. in order of appearance.
-- CRITICAL: The blank answers MUST be EXACTLY these words, each used exactly once: {blank_words}. Write a coherent paragraph that naturally contains ALL of them.
-- Do not provide any distractors.
-- Provide hints and explanations in {ui_lang}.
-
-Output raw JSON only, no markdown formatting.
+Output raw JSON only:
 
 {
-  "paragraph": "Yesterday, John went to the [BLANK_1] to buy some [BLANK_2]...",
+  "paragraph": "Overthinking often arises when we face high pressure in simple life situations. Instead of focusing on present facts, an internal dialogue creates endless scenarios driven by anxiety...",
   "blanks": [
     {
       "id": "BLANK_1",
-      "answer": "market",
+      "answer": "pressure",
       "meaning": "[meaning in {ui_lang}]",
-      "hint": "[hint in {ui_lang}]",
       "distractors": [],
       "explanation": "[explanation in {ui_lang}]"
     }
   ],
-  "full_solution_text": "Yesterday, John went to the market to buy some...",
-  "story_translation": "[full translation in {ui_lang}]",
-  "context_summary": "[summary in {ui_lang}]"
+  "full_solution_text": "Overthinking often arises when we face high pressure in simple life situations...",
+  "story_translation": "[full paragraph translation in {ui_lang}]"
 }
