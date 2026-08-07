@@ -1,5 +1,6 @@
 import json
 import os
+from core.logger import flow
 
 GLOBAL_SYSTEM_INSTRUCTION = """You are an expert language teacher and curriculum designer.
 CRITICAL RULES:
@@ -30,6 +31,9 @@ class PromptManager:
         if not prompt:
             prompt = self._default_prompt(gamemode)
 
+        global_path = os.path.join(self.prompts_dir, "common", "global_system_instruction.txt")
+        global_instruction = self._load(global_path) or GLOBAL_SYSTEM_INSTRUCTION
+
         level_instruction = {
             "beginner": "CEFR A1: Absolute beginner. Use ONLY the most basic vocabulary (colors, numbers, family, simple daily objects). Shortest possible sentences. Present simple tense only.",
             "elementary": "CEFR A2: Elementary. Use common everyday phrases, past/present tense. Simple sentence structures with basic connectors (and, but, because).",
@@ -38,8 +42,6 @@ class PromptManager:
             "advanced": "CEFR C1-C2: Advanced. Use nuanced vocabulary, idioms, collocations. Complex grammatical structures including inversion, cleft sentences, mixed conditionals.",
         }.get(level, "CEFR B1: Intermediate. Use moderate vocabulary and standard structures.")
 
-        # The caller supplies these as explicit arguments to avoid duplicate
-        # keyword errors, but templates still refer to them as placeholders.
         kwargs.setdefault("gamemode", gamemode)
         kwargs.setdefault("language", language)
         kwargs.setdefault("level", level)
@@ -47,15 +49,23 @@ class PromptManager:
         kwargs.setdefault("count", 5)
         kwargs["level_instruction"] = level_instruction
         
-        # Safely replace known placeholders in prompt without failing on raw JSON braces
         from core.languages import get_language_name
-        kwargs["learn_lang"] = get_language_name(language)
+        learn_lang_name = get_language_name(language)
+        kwargs["learn_lang"] = learn_lang_name
         if "ui_lang" in kwargs:
             kwargs["ui_lang"] = get_language_name(kwargs["ui_lang"])
+        else:
+            kwargs["ui_lang"] = "English"
+            
         if "feedback_lang" in kwargs:
             kwargs["feedback_lang"] = get_language_name(kwargs["feedback_lang"])
 
-        rendered = GLOBAL_SYSTEM_INSTRUCTION + "\n\n" + prompt
+        flow(
+            phase="PROMPT",
+            message=f"Prompt rendered for gamemode={gamemode}, learn_lang={learn_lang_name}, ui_lang={kwargs.get('ui_lang')}"
+        )
+
+        rendered = global_instruction + "\n\n" + prompt
         for k, v in kwargs.items():
             placeholder = f"{{{k}}}"
             if placeholder in rendered:
@@ -89,16 +99,14 @@ class PromptManager:
                 "Generate {count} fill-in-the-blank sentences in {learn_lang}.\n"
                 "Level: {level_instruction}\n"
                 "Topic: {topic}\n"
-                "Each sentence has ONE blank (_____). Place the blank at various positions. Provide exactly 4 options (1 correct + 3 distractors).\n"
-                "Distractors must be selected from different types: antonyms, synonyms, different word classes, wrong verb tenses, or semantic/contextual errors.\n"
+                "Each sentence has ONE blank (_____). Provide exactly 4 options (1 correct + 3 distractors).\n"
                 "Output valid JSON matching the provided schema."
             ),
             "cloze": (
-                "Write a coherent paragraph in {learn_lang} ({paragraph_min_words}-{paragraph_max_words} words).\n"
+                "Write a coherent paragraph in {learn_lang} under 400 words.\n"
                 "Level: {level_instruction}\n"
                 "Topic: {topic}\n"
-                "Then remove {num_blanks} words. The blank answers MUST be EXACTLY these words, each used exactly once: {blank_words}.\n"
-                "Do not provide distractors.\n"
+                "Remove {num_blanks} words: {blank_words}.\n"
                 "Output valid JSON matching the provided schema."
             ),
             "translation": (
@@ -106,46 +114,28 @@ class PromptManager:
                 "Source language: {source_lang}, Target language: {target_lang}\n"
                 "Level: {level_instruction}\n"
                 "Topic: {topic}\n"
-                "Include grammar notes and vocabulary highlights for each sentence.\n"
                 "Output valid JSON matching the provided schema."
             ),
             "unscramble": (
                 "Generate exactly {count} grammatically correct sentences in {learn_lang}.\n"
                 "Level: {level_instruction}\n"
                 "Topic: {topic}\n"
-                "Each sentence should be 6-12 words long. The {count} sentences MUST each use a DIFFERENT grammatical structure: {sentence_types}.\n"
-                "Provide a core_structure field describing the sentence formula.\n"
                 "Output valid JSON matching the provided schema."
             ),
             "story": (
-                "Write a short story in {learn_lang} ({word_count} words) that naturally incorporates "
-                "ALL of these target words: {target_words}\n"
+                "Write a reading passage in {learn_lang} under 400 words.\n"
                 "Level: {level_instruction}\n"
-                "Each target word must appear at least once and be used in its correct context.\n"
-                "Then generate {question_count} reading comprehension questions about the story "
-                "(4 multiple-choice options each, 1 correct).\n"
+                "Generate comprehension questions with balanced 4 options.\n"
                 "Output valid JSON matching the provided schema."
             ),
             "sentence_transform": (
                 "Generate {count} sentence transformation exercises in {learn_lang}.\n"
-                "Focus: {focus} ({voice}/conditional/reported/comparative)\n"
-                "Level: {level_instruction}\n"
-                "For each exercise provide:\n"
-                "- An original sentence\n"
-                "- Clear transformation instruction\n"
-                "- A hint word\n"
-                "- The expected correct answer\n"
-                "- The grammar rule being tested\n"
+                "Focus: {focus}\n"
                 "Output valid JSON matching the provided schema."
             ),
             "taboo": (
                 "Generate {count} Taboo rounds in {learn_lang}.\n"
-                "Level: {level_instruction}\n"
                 "Topic: {topic}\n"
-                "For each round provide:\n"
-                "- A secret word\n"
-                "- 4-5 forbidden words (related terms that would make it too easy)\n"
-                "- An AI description of the word without using forbidden words\n"
                 "Output valid JSON matching the provided schema."
             ),
         }
