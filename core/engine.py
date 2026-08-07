@@ -306,6 +306,8 @@ class AIEngine:
         return {"logged": True}
 
     def _handle_cancel_gen(self, data: dict = None) -> dict:
+        from core.logger import flow
+        flow(phase="EVENT", message="Cancel requested by user via cancel_gen RPC")
         self.cancel_current_task()
         return {"cancelled": True}
 

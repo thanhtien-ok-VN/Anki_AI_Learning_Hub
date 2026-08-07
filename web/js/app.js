@@ -168,6 +168,7 @@ function loadPrefs() {
       Bridge.abortAll();
     }
   }
+  const abortCurrentRequest = abortActiveRequests;
 
   function getSignal() {
     if (!currentAbortController || currentAbortController.signal.aborted) {
@@ -396,7 +397,14 @@ function setBusy(on, text = t('app.generating', 'Đang tạo bài…')) {
       if (cBtn) {
         cBtn.textContent = text.includes('tạo bài') || text.includes('Generating') ? t('app.cancel_gen', 'Hủy tạo bài') : t('app.cancel_action', 'Hủy thao tác');
         cBtn.onclick = () => {
-          abortCurrentRequest();
+          try {
+            abortActiveRequests();
+            if (typeof Bridge !== 'undefined' && Bridge.send) {
+              Bridge.send('cancel_gen', {});
+            }
+          } catch (ex) {
+            console.error('Cancel request failed:', ex);
+          }
           setBusy(false);
           setStatus(t('app.action_cancelled', 'Đã hủy thao tác.'), 'info');
         };
