@@ -1543,10 +1543,10 @@ function renderFillBlank(x) {
       </div>
     `;
 
-    // Process paragraph with inline selects
+    // Process paragraph with clean single-pass inline selects
     let rawText = isNewSchema ? x.paragraph : (x.paragraph_with_blanks || '');
     let blankIdx = 0;
-    const placeholderRegex = /(\[BLANK_\d+\]|\[\d+\]|\(\d+\)|\[blank_\d+\]|_{2,})/gi;
+    const placeholderRegex = /(\[BLANK_\d+\]|\[\d+\])/gi;
 
     let processedParagraph = rawText.replace(placeholderRegex, (match) => {
       if (blankIdx >= x.blanks.length) return match;
@@ -1554,7 +1554,7 @@ function renderFillBlank(x) {
       const b = x.blanks[i];
       const chosen = state.answers[i];
 
-      let selectClass = 'cloze-inline-select';
+      let selectClass = 'cloze-select';
       let disabledAttr = isGraded ? 'disabled' : '';
 
       if (isGraded) {
@@ -1575,26 +1575,6 @@ function renderFillBlank(x) {
       </select>`;
     });
 
-    while (blankIdx < x.blanks.length) {
-      const i = blankIdx++;
-      const b = x.blanks[i];
-      const chosen = state.answers[i];
-      let selectClass = 'cloze-inline-select';
-      let disabledAttr = isGraded ? 'disabled' : '';
-      if (isGraded) {
-        if (chosen === b.correct_index) selectClass += ' correct';
-        else if (chosen !== undefined && chosen !== '') selectClass += ' wrong';
-      }
-      const optionsHtml = b.options.map((opt, oIdx) => `
-        <option value="${oIdx}" ${chosen === oIdx ? 'selected' : ''}>${esc(opt)}</option>
-      `).join('');
-
-      processedParagraph += ` <select class="${selectClass}" data-blank="${i}" ${disabledAttr}>
-        <option value="">-- [${i + 1}] --</option>
-        ${optionsHtml}
-      </select>`;
-    }
-
     let score = 0;
     if (isGraded) {
       x.blanks.forEach((b, i) => {
@@ -1611,11 +1591,10 @@ function renderFillBlank(x) {
         const vnMeaning = (b.meaning || b.meaning_in_vietnamese) ? ` (${b.meaning || b.meaning_in_vietnamese})` : '';
 
         return `
-          <div style="margin-bottom: 10px; font-size: 14px;">
+          <div style="margin-bottom: 10px; font-size: 14px; text-align: left !important;">
             <b>[${i + 1}]</b> <span style="color: ${isOk ? 'var(--success)' : 'var(--error)'}; font-weight:600;">${isOk ? esc(t('feedback.badge_correct_short', '✓ Đúng')) : esc(t('feedback.badge_wrong_short', '✕ Sai'))}</span>
             — ${esc(t('feedback.answer_label_short', 'Đáp án'))}: <b style="color: var(--success);">${esc(correctOpt)}</b>${esc(vnMeaning)}
             ${!isOk ? `<span style="color: var(--text-secondary);">(${esc(t('feedback.you_chose', 'Bạn chọn'))}: ${esc(chosenOpt)})</span>` : ''}
-            ${b.hint ? `<div style="font-size: 13px; color: var(--text-secondary); margin-top: 2px;">💡 ${esc(t('feedback.hint_label', 'Gợi ý'))}: ${esc(b.hint)}</div>` : ''}
             <div style="font-size: 13px; color: var(--text-secondary); margin-top: 2px;">
               💡 ${esc(t('feedback.explanation_label', 'Giải thích'))}: ${esc(b.explanation || b.explanation_short || '')}
             </div>
@@ -1624,9 +1603,8 @@ function renderFillBlank(x) {
       }).join('');
 
       const transHtml = (x.story_translation || x.paragraph_translation || x.sentence_meaning)
-        ? `<div style="margin-top:12px; padding-top:10px; border-top:1px dashed var(--border); font-size:14px;">
+        ? `<div style="margin-top:12px; padding-top:10px; border-top:1px dashed var(--border); font-size:14px; text-align: left !important;">
              <b>🌐 ${esc(t('cloze.paragraph_translation', 'Dịch đoạn văn'))}:</b> ${esc(x.story_translation || x.paragraph_translation || x.sentence_meaning)}
-             ${x.context_summary ? `<br><b>📝 ${esc(t('cloze.context_summary', 'Tóm tắt ngữ cảnh'))}:</b> ${esc(x.context_summary)}` : ''}
              ${x.full_solution_text ? `<br><b>📖 ${esc(t('cloze.completed_paragraph', 'Đoạn văn hoàn chỉnh'))}:</b> ${esc(x.full_solution_text)}` : ''}
            </div>`
         : '';

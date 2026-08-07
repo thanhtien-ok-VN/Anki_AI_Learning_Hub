@@ -1022,6 +1022,43 @@ body {
 [id^="hint-text"] * {
   text-align: left !important;
 }
+
+/* ===================== GLOBAL TYPOGRAPHY & LEFT ALIGNMENT SCALE ===================== */
+.question-card,
+.story-card,
+.cloze-card,
+.explanation-card,
+.ai-explanation,
+.hint-box,
+.ai-analysis-box,
+.passage-text,
+.story-content,
+.q-text {
+    text-align: left !important;
+    font-size: 16px !important;
+    line-height: 1.7 !important;
+}
+
+.question-card *,
+.story-card *,
+.cloze-card *,
+.explanation-card *,
+.passage-text *,
+.story-content * {
+    text-align: left !important;
+}
+
+.cloze-select {
+    padding: 4px 10px;
+    font-size: 15px;
+    font-weight: 600;
+    border-radius: var(--radius-sm);
+    border: 1.5px solid var(--primary);
+    background: var(--bg);
+    color: var(--text);
+    margin: 2px 4px;
+    cursor: pointer;
+}
 .btn-hint {
   border-color: var(--color-warn);
   color: var(--color-warn-dark);
