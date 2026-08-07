@@ -165,6 +165,8 @@ class AIHubView:
     def close(self):
         if self._closed:
             return
+        from core.logger import flow
+        flow(phase="EVENT", message="AI Hub view closed")
         tabs, main_web = self._tabs, self._main_web
         self._closed = True
         self._hub_web = None

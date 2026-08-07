@@ -369,7 +369,7 @@ const t = (key, fallback, ...args) => {
   };
   const shell = body => {
     state.busy = false;
-    root.innerHTML = `<div class="timer-bar"><span class="timer-label">${esc(t('app.title', 'AI Learning Hub'))}</span><span id="busy-label"></span><button id="ui-lang-btn" class="btn btn-outline" style="padding:4px 10px; font-size:0.82rem; margin-right:4px;" title="${esc(t('app.ui_lang_label', 'Giao diện'))}">${esc(t('app.ui_lang_label', 'Giao diện'))}: <span id="ui-lang-display">${esc((typeof Utils !== 'undefined' && Utils.currentLang) || 'en')}</span></button><button id="close-hub" aria-label="${esc(t('app.close_hub', 'Đóng Hub'))}">${esc(t('app.close_hub', 'Đóng Hub'))}</button></div>${body}<div id="loading" class="loading-overlay" hidden><div class="spinner"></div><span id="loading-text">${esc(t('app.processing', 'Đang xử lý…'))}</span><button id="loading-cancel-btn" class="btn btn-cancel-gen" style="margin-top:16px;" type="button">${esc(t('app.cancel_gen', 'Hủy tạo bài'))}</button></div>`;
+    root.innerHTML = `<div class="timer-bar"><span class="timer-label">${esc(t('app.title', 'AI Learning Hub'))}</span><span id="busy-label"></span><button id="close-hub" aria-label="${esc(t('app.close_hub', 'Đóng Hub'))}">${esc(t('app.close_hub', 'Đóng Hub'))}</button></div>${body}<div id="loading" class="loading-overlay" hidden><div class="spinner"></div><span id="loading-text">${esc(t('app.processing', 'Đang xử lý…'))}</span><button id="loading-cancel-btn" class="btn btn-cancel-gen" style="margin-top:16px;" type="button">${esc(t('app.cancel_gen', 'Hủy tạo bài'))}</button></div>`;
     document.querySelector('#loading').hidden = true;
   };
 
@@ -859,30 +859,10 @@ function source() {
     const closeBtn = document.querySelector('#close-hub');
     if (closeBtn) {
       closeBtn.onclick = () => {
+        Bridge.send('log_event', { event: 'hub_close' });
         abortActiveRequests();
         clearPrefs();
         Bridge.send('close_hub');
-      };
-    }
-    const uiLangBtn = document.querySelector('#ui-lang-btn');
-    if (uiLangBtn) {
-      uiLangBtn.onclick = async () => {
-        const langs = state.uiLanguages || ['en', 'vi'];
-        const cur = (typeof Utils !== 'undefined' && Utils.currentLang) || 'en';
-        const next = langs[(langs.indexOf(cur) + 1) % langs.length];
-        const langNames = { 'en': 'EN', 'vi': 'VI' };
-        await Bridge.sendAsync('set_ui_lang', { lang: next });
-        if (typeof Utils !== 'undefined') {
-          Utils.currentLang = next;
-          await Utils.initI18n();
-        }
-        const display = document.querySelector('#ui-lang-display');
-        if (display) display.textContent = langNames[next] || next.toUpperCase();
-        // Save to prefs
-        const p = state.userPrefs || {};
-        p.ui_lang = next;
-        state.userPrefs = p;
-        try { localStorage.setItem('ai_learning_hub_prefs_ui_lang', next); } catch(e) {}
       };
     }
     const cancelBtn = document.querySelector('#loading-cancel-btn');
@@ -3295,42 +3275,17 @@ async function testKeys(){
       setBusy(true, t('app.testing_api_status', 'Đang kiểm tra API…'));
       const data=await Bridge.sendAsync('test_all_keys', {}, { signal });
       if (signal.aborted) return;
-      const results=data.results||[],ok=results.filter(item=>item.ok).length;
+      const results=data.results||[];
+      const okCount=results.filter(item=>item.ok).length;
+      const totalCount=results.length;
       if (out) {
-        let html = '<div class="api-tester-container" style="display:flex; flex-direction:column; gap:8px; width:100%; margin-top:12px; font-size:13px; text-align:left;">';
-        results.forEach(item => {
-          let statusIcon = item.ok ? '✅' : '❌';
-          let statusText = item.ok ? t('app.api_ok', 'Hoạt động') : t('app.api_fail', 'Lỗi');
-          
-          if (!item.ok && item.error_code === 'E_RATE_LIMIT') {
-            statusIcon = '⚠️';
-            statusText = t('app.api_rate_limited', 'Bị giới hạn (Rate Limited)');
-          }
-
-          let details = '';
-          if (item.ok && item.model) {
-            details = ` - Model: <code>${esc(item.model)}</code>`;
-          } else if (item.error) {
-            details = ` - Lỗi: <span style="color:var(--error); font-weight:600;">${esc(item.error)}</span>`;
-          }
-
-          html += `
-            <div class="api-key-row" style="display:flex; align-items:center; justify-content:space-between; padding:8px 12px; border:1px solid var(--border); border-radius:var(--radius-sm); background:var(--card-bg);">
-              <div>
-                <span class="font-semibold">${esc(t('app.key_label', 'Key {0}', item.key))}</span>${details}
-              </div>
-              <span class="api-key-status ${item.ok ? 'ok' : 'fail'} font-semibold">
-                ${statusIcon} ${statusText}
-              </span>
-            </div>
-          `;
-        });
-        html += `
-          <div style="margin-top:10px; font-weight:600; text-align:center; font-size:14px; width:100%;">
-            ${esc(t('app.api_active_count', '{0}/{1} hoạt động', ok, results.length))}
-          </div>
-        </div>`;
-        out.innerHTML = html;
+        if (okCount > 0) {
+          out.innerHTML = `<span class="badge-status-ok" style="display:inline-flex; align-items:center; gap:6px; padding:6px 14px; border-radius:16px; background:rgba(34,197,94,0.12); color:#16a34a; font-weight:600; font-size:13px; margin-top:8px;">🟢 ${okCount}/${totalCount} API Key hoạt động (OK)</span>`;
+        } else if (totalCount > 0) {
+          out.innerHTML = `<span class="badge-status-err" style="display:inline-flex; align-items:center; gap:6px; padding:6px 14px; border-radius:16px; background:rgba(239,68,68,0.12); color:#dc2626; font-weight:600; font-size:13px; margin-top:8px;">🔴 0/${totalCount} API Key hoạt động</span>`;
+        } else {
+          out.innerHTML = `<span class="badge-status-warn" style="display:inline-flex; align-items:center; gap:6px; padding:6px 14px; border-radius:16px; background:rgba(234,179,8,0.12); color:#ca8a04; font-weight:600; font-size:13px; margin-top:8px;">⚠️ Chưa cấu hình API Key</span>`;
+        }
       }
     }catch(e){
       if(e.name==='AbortError'||e.error_code==='E_ABORTED')return;

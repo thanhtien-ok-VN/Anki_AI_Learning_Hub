@@ -192,6 +192,8 @@ class AIEngine:
         try:
             elapsed = self.timer.stop()
             self.settings.set("last_session_duration", elapsed)
+            from core.logger import flow
+            flow(phase="EVENT", message="Anki session stopped", duration_ms=elapsed * 1000 if elapsed else 0)
             log.info("AIEngine stopped", {"session_seconds": elapsed})
         except Exception as e:
             log.error(f"Error stopping AIEngine: {e}")
@@ -676,7 +678,8 @@ class AIEngine:
 
     def _handle_close_hub(self, data: dict = None) -> dict:
         from aqt import mw
-
+        from core.logger import flow
+        flow(phase="EVENT", message="AI Hub closed via bridge RPC")
         if hasattr(mw, "ai_hub_view") and mw.ai_hub_view is not None:
             mw.ai_hub_view.close()
         return {}
