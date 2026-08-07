@@ -208,6 +208,13 @@ const t = (key, fallback, ...args) => {
   const normalizeAnswer = s => normalizeText(s).trim().toLowerCase();
   const norm = normalizeText;
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const renderExplanationBox = (text, title) => {
+    if (!text || typeof text !== 'string') return '';
+    const trimmed = text.trim();
+    if (!trimmed || trimmed === 'null' || trimmed === 'undefined') return '';
+    const displayTitle = title || t('app.explanation_title', '💡 Giải thích từ AI');
+    return `<div class="explanation-card"><h4>${esc(displayTitle)}</h4><div class="explanation-content">${esc(trimmed)}</div></div>`;
+  };
   const timers = [];
   const activeIntervals = [];
 
@@ -1372,21 +1379,9 @@ function renderFillBlank(x) {
               </div>
             </div>
 
-            <div class="mb-3">
-              <b>💡 ${esc(t('feedback.reason_choice', 'Lý do chọn'))}:</b>
-              <div style="margin-top:4px; padding:10px 12px; background:var(--color-surface-tint); border-radius:6px; font-size:13.5px; line-height:1.5;">
-                ${esc(q.explanation || q.explanation_short || t('feedback.no_explanation', 'Không có giải thích'))}
-              </div>
-            </div>
+            ${renderExplanationBox(q.explanation || q.explanation_short, t('feedback.reason_choice', 'Lý do chọn'))}
 
-            ${q.grammar_note ? `
-            <div class="mb-3">
-              <b>📌 ${esc(t('feedback.grammar_rule', 'Ghi chú ngữ pháp'))}:</b>
-              <div style="margin-top:4px; padding:10px 12px; background:var(--color-surface-tint); border-radius:6px; font-size:13.5px; line-height:1.5;">
-                ${esc(q.grammar_note)}
-              </div>
-            </div>
-            ` : ''}
+            ${q.grammar_note ? renderExplanationBox(q.grammar_note, t('feedback.grammar_rule', 'Ghi chú ngữ pháp')) : ''}
 
             ${buildOptionDetailsHtml(q, chosen)}
           </div>
@@ -2671,15 +2666,7 @@ function renderStory(x) {
           </div>
         ` : '';
 
-        const explanationSection = q.explanation ? `
-          <div class="story-explanation-box">
-            <span class="story-box-icon">💡</span>
-            <div>
-              <b>${esc(t('feedback.explanation_label', 'Giải thích đáp án'))}:</b>
-              <div class="story-exp-text">${esc(q.explanation)}</div>
-            </div>
-          </div>
-        ` : '';
+        const explanationSection = renderExplanationBox(q.explanation, t('feedback.explanation_label', 'Giải thích đáp án'));
 
         explanationHtml = `
           <div class="story-feedback-details fade-in">
@@ -3178,12 +3165,9 @@ function renderStory(x) {
           html += `<p>🌐 <b>${esc(t('taboo.definition_label', 'Dịch nghĩa'))}:</b> ${esc(q.meaning)}</p>`;
         }
         
-        if (r.ai_analysis || r.explanation || r.feedback) {
-          html += '<hr><p><b>💡 ' + esc(t('taboo.ai_analysis_label', 'PHÂN TÍCH TỪ AI')) + ':</b></p>';
-          if (r.word_definition) {
-            html += `<p>• <b>${esc(t('taboo.word_definition_label', 'Nghĩa gốc'))}:</b> ${esc(r.word_definition)}</p>`;
-          }
-          html += `<p>• <b>${esc(t('taboo.comment_label', 'Nhận xét'))}:</b> ${esc(r.ai_analysis || r.explanation || r.feedback)}</p>`;
+        const aiAnalysisText = r.ai_analysis || r.explanation || r.feedback || '';
+        if (aiAnalysisText) {
+          html += renderExplanationBox(aiAnalysisText, t('taboo.ai_analysis_label', 'PHÂN TÍCH TỪ AI'));
         }
         
         const feedbackList = r.guess_feedback || [];
