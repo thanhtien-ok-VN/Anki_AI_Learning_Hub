@@ -126,7 +126,7 @@ class GeminiProvider(BaseLLMProvider):
         start_t = time.time()
 
         try:
-            resp = urlopen(req, timeout=12)
+            resp = urlopen(req, timeout=60)
             self.last_response = resp
             raw = json.loads(resp.read().decode("utf-8"))
             latency_ms = int((time.time() - start_t) * 1000)
