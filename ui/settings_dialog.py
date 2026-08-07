@@ -4,13 +4,14 @@ from aqt.qt import (
     QVBoxLayout,
     QHBoxLayout,
     QLabel,
-    QSpinBox,
     QLineEdit,
     QCheckBox,
     QPushButton,
     QComboBox,
     QDoubleSpinBox,
     QDialogButtonBox,
+    QScrollArea,
+    QWidget
 )
 from core.logger import log
 from core.i18n import t, load_strings
@@ -45,28 +46,14 @@ class SettingsDialog(QDialog):
         # ===== API Keys =====
         self._section(layout, "settings.api_keys")
 
-        count_row = QHBoxLayout()
-        count_lbl = QLabel(self._add_i18n_key("settings.api_key_count"))
-        count_row.addWidget(count_lbl)
-        self.i18n_widgets.append((count_lbl, "settings.api_key_count"))
-
-        active_keys_count = len([k for k in s.get_api_keys() if k]) if s else 0
-        default_count = max(1, min(10, active_keys_count))
-        if default_count < 3 and s and not s.get("api_key_count"):
-            default_count = 3
-        api_key_count = s.get("api_key_count", default_count) if s else 3
-
-        num_keys_spin = QSpinBox()
-        num_keys_spin.setRange(1, 10)
-        num_keys_spin.setValue(api_key_count)
-        num_keys_spin.setFixedWidth(50)
-        count_row.addWidget(num_keys_spin)
-        count_row.addStretch()
-        layout.addLayout(count_row)
+        keys_scroll = QScrollArea()
+        keys_scroll.setWidgetResizable(True)
+        keys_scroll.setMaximumHeight(350)
+        keys_container = QWidget()
+        keys_layout = QVBoxLayout(keys_container)
 
         self.key_inputs = []
         self.key_statuses = []
-        self.key_rows = []
 
         stored_keys = s.get_api_keys() if s else [""] * 10
 
@@ -106,22 +93,11 @@ class SettingsDialog(QDialog):
             )
             row.addWidget(test_btn)
 
-            layout.addLayout(row)
+            keys_layout.addLayout(row)
             self.key_inputs.append(inp)
-            self.key_rows.append((lbl, inp, status_label, show_btn, test_btn))
 
-        def update_key_visibility():
-            count = num_keys_spin.value()
-            for i, (lbl, inp, status_lbl, show_btn, test_btn) in enumerate(self.key_rows):
-                visible = i < count
-                lbl.setVisible(visible)
-                inp.setVisible(visible)
-                status_lbl.setVisible(visible)
-                show_btn.setVisible(visible)
-                test_btn.setVisible(visible)
-
-        num_keys_spin.valueChanged.connect(update_key_visibility)
-        update_key_visibility()
+        keys_scroll.setWidget(keys_container)
+        layout.addWidget(keys_scroll)
 
         # ===== Model =====
         self._section(layout, "settings.model")
@@ -194,7 +170,7 @@ class SettingsDialog(QDialog):
         buttons = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
         )
-        buttons.accepted.connect(lambda: self._on_accept(num_keys_spin.value()))
+        buttons.accepted.connect(self._on_accept)
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)
 
@@ -262,21 +238,31 @@ class SettingsDialog(QDialog):
 
         mw.taskman.run_in_background(run_test, on_done)
 
-    def _on_accept(self, count: int):
+    def _on_accept(self):
         s = self.s
         if s:
             try:
-                s.set("api_key_count", count)
+                payload = {}
                 for i in range(10):
-                    val = self.key_inputs[i].text().strip() if i < count else ""
-                    s.set(f"api_key{i+1}", val)
-                s.set("api_key", self.key_inputs[0].text().strip() if count > 0 else "")
-                s.set("model", self.model_cb.currentText())
-                s.set("temperature", self.temp_spin.value())
-                s.set("ui_lang", self.ui_lang_cb.currentText())
-                s.set("learn_lang", self.learn_lang_cb.currentData())
+                    payload[f"api_key{i+1}"] = self.key_inputs[i].text().strip()
+                payload["model"] = self.model_cb.currentText()
+                payload["temperature"] = self.temp_spin.value()
+                payload["ui_lang"] = self.ui_lang_cb.currentText()
+                payload["learn_lang"] = self.learn_lang_cb.currentData()
+
+                result = s.set_many(payload)
+                if not result.get("ok"):
+                    from aqt.utils import showWarning
+                    showWarning(f"Error saving settings: {result.get('message', 'Unknown error')}")
+                    return
+
+                changed = result.get("changed_keys", [])
                 if hasattr(mw, "ai_engine") and mw.ai_engine:
-                    mw.ai_engine._reset_api_client()
+                    if any(k.startswith("api_key") or k == "model" for k in changed):
+                        mw.ai_engine._reset_api_client()
+                        mw.ai_engine._gamemode_cache.clear()
+                    elif any(k in ("temperature", "learn_lang") for k in changed):
+                        mw.ai_engine._gamemode_cache.clear()
                 log.info("Settings dialog accepted")
             except Exception as e:
                 log.error(f"Error saving settings: {e}")

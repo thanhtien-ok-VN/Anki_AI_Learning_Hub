@@ -468,23 +468,30 @@ class AIEngine:
     def _handle_save_settings(self, data: dict) -> dict:
         to_update = {}
         for key, value in data.items():
-            if key == "ui_lang":
-                value = valid_ui_lang(value, self.settings.get("ui_lang", DEFAULT_UI_LANG))
-            elif key == "learn_lang":
-                value = valid_learn_lang(value, self.settings.get("learn_lang", DEFAULT_LEARN_LANG))
-            elif key.startswith("api_key"):
+            # Skip masked API keys (user didn't change them)
+            if key.startswith("api_key"):
                 val_str = str(value or "").strip()
                 if not val_str or "*" in val_str or "..." in val_str:
                     continue
             to_update[key] = value
 
-        self.settings.set_many(to_update)
-        if any(k.startswith("api_key") for k in to_update):
+        result = self.settings.set_many(to_update)
+        if not result.get("ok"):
+            error_code = result.get("error_code", "E_SETTINGS_SAVE")
+            return {"success": False, "error_code": error_code, "message": result.get("message", "Save failed")}
+
+        changed = result.get("changed_keys", [])
+        if any(k.startswith("api_key") or k == "model" for k in changed):
             self._reset_api_client()
             self._gamemode_cache.clear()
-            log.info("API keys changed, client+cache reset")
-        log.info("Settings saved via JS", {"keys": list(to_update.keys())})
-        return {"saved": list(to_update.keys())}
+            log.info("API keys/model changed, client+cache reset")
+        elif any(k in ("temperature", "learn_lang") for k in changed):
+            self._gamemode_cache.clear()
+            log.info("Temperature/learn_lang changed, cache cleared")
+        if "ui_lang" in changed:
+            log.info("UI language changed")
+        log.info("Settings saved via bridge", {"changed": changed})
+        return {"success": True, "saved": changed}
 
     def _handle_get_settings(self, data: dict = None) -> dict:
         settings_copy = {
@@ -512,36 +519,43 @@ class AIEngine:
             return {"ok": False, "error": "Empty key"}
         from core.api_client import GeminiClient
 
-        client = GeminiClient([key], "auto", cancel_event=self.cancel_event)
-        result = client.test_key(key, progress_callback=self._send_progress)
-        log.info(f"test_key result: ok={result.get('ok')} model={result.get('model')}")
-        if hasattr(client, "close"):
-            client.close()
-        return result
+        configured_model = self.settings.get("model", "auto")
+        client = GeminiClient([key], configured_model, cancel_event=self.cancel_event)
+        try:
+            result = client.test_key(key, progress_callback=self._send_progress)
+            log.info(f"test_key result: ok={result.get('ok')} model={result.get('model')}")
+            return result
+        finally:
+            if hasattr(client, "close"):
+                client.close()
 
     def _handle_test_all_keys(self, data: dict = None) -> dict:
         keys = self.settings.get_api_keys()
+        configured_model = self.settings.get("model", "auto")
         from core.api_client import GeminiClient
 
         results = []
         for idx, key in enumerate(keys):
+            slot = idx + 1
             if not key.strip():
-                results.append({"key": idx + 1, "ok": False, "error": "Empty"})
+                results.append({"key": slot, "ok": False, "error": "Empty"})
                 continue
-            client = GeminiClient([key], "auto", cancel_event=self.cancel_event)
-            res = client.test_key_with_waterfall(key, progress_callback=self._send_progress)
-            results.append(
-                {
-                    "key": idx + 1,
-                    "ok": res.get("ok", False),
-                    "model": res.get("model", ""),
-                    "error_code": res.get("error_code", ""),
-                    "error": res.get("error", ""),
-                    "response": res.get("response", ""),
-                }
-            )
-            if hasattr(client, "close"):
-                client.close()
+            client = GeminiClient([key], configured_model, cancel_event=self.cancel_event)
+            try:
+                res = client.test_key_with_waterfall(key, progress_callback=self._send_progress)
+                results.append(
+                    {
+                        "key": slot,
+                        "ok": res.get("ok", False),
+                        "model": res.get("model", ""),
+                        "error_code": res.get("error_code", ""),
+                        "error": res.get("error", ""),
+                        "response": res.get("response", ""),
+                    }
+                )
+            finally:
+                if hasattr(client, "close"):
+                    client.close()
         log.info(
             f"test_all_keys: {sum(1 for r in results if r['ok'])}/{len(results)} ok"
         )
