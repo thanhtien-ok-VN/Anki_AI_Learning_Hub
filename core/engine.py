@@ -301,6 +301,7 @@ class AIEngine:
         game = data.get("game", "")
         extra = data.get("extra") or {}
         log.info(f"User event: {event}", {"game": game, **extra})
+        from core.logger import flow
         flow(phase="EVENT", gamemode=game, message=f"User event: {event}", extra=extra)
         return {"logged": True}
 

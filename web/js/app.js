@@ -395,11 +395,21 @@ function setBusy(on, text = t('app.generating', 'Đang tạo bài…')) {
       const cBtn = document.querySelector('#loading-cancel-btn');
       if (cBtn) {
         cBtn.textContent = text.includes('tạo bài') || text.includes('Generating') ? t('app.cancel_gen', 'Hủy tạo bài') : t('app.cancel_action', 'Hủy thao tác');
+        cBtn.onclick = () => {
+          abortCurrentRequest();
+          setBusy(false);
+          setStatus(t('app.action_cancelled', 'Đã hủy thao tác.'), 'info');
+        };
       }
     }
     const cancelGen = document.querySelector('#cancel-gen');
     if (cancelGen) {
       cancelGen.style.display = on ? 'inline-block' : 'none';
+      cancelGen.onclick = () => {
+        abortCurrentRequest();
+        setBusy(false);
+        setStatus(t('app.action_cancelled', 'Đã hủy thao tác.'), 'info');
+      };
     }
     document.querySelectorAll('button,input,select,textarea').forEach(x => {
       if (x.id !== 'close-hub' && x.id !== 'loading-cancel-btn' && x.id !== 'cancel-gen' && x.id !== 'back') {

@@ -1322,6 +1322,7 @@ body {
 .loading-overlay { position:fixed; inset:0; z-index:9998; display:flex; flex-direction:column; gap:14px; align-items:center; justify-content:center; background:rgba(11,20,44,.48); color:#fff; font-weight:600; }
 .loading-overlay[hidden] { display:none; }
 .loading-overlay .spinner { border-color:rgba(255,255,255,.25); border-top-color:#5b9cf5; margin:0; }
+.loading-overlay .btn-cancel-gen, #loading-cancel-btn, #cancel-gen, .btn-cancel-gen { position:relative !important; z-index:10000 !important; pointer-events:auto !important; cursor:pointer !important; }
 .feedback { margin-top:16px; padding:14px; border:1px solid var(--border); border-radius:var(--radius-sm); background:var(--primary-light); }
 .feedback.good { border-color:var(--success); }.feedback.bad { border-color:var(--error); }
 .api-check { display:flex; justify-content:center; align-items:center; flex-wrap:wrap; gap:10px; margin-top:16px; font-size:13px; }
