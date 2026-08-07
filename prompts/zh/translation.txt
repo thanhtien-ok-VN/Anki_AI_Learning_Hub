@@ -3,19 +3,18 @@ Difficulty: {level_instruction}
 Topic: {topic}
 Sentence type: {sentence_type}
 
-MANDATORY: Source sentence in {source_lang}. Target translation in Chinese (Mandarin).
-MANDATORY: All grammar notes, explanations, and rubric MUST be in {ui_lang}.
-
-Focus on:
-- Common translation challenges (measure words, aspect markers, topic-comment structure, particles)
-- Natural Chinese expression, not word-for-word translation
+MANDATORY DIRECTIVES:
+1. Content focus: The source sentence MUST express a real-world life fact, scientific/cultural knowledge, or practical academic fact related to "{topic}".
+2. Source sentence in {source_lang}. Target translation in Chinese (Mandarin).
+3. Provide exactly ONE accurate reference translation in Chinese.
+4. DO NOT provide alternative translations.
+5. All grading rubrics and explanations MUST be in {ui_lang}.
 
 Output raw JSON only:
 
 {
-  "source_sentence": "[sentence in {source_lang}]",
+  "source_sentence": "[source sentence expressing a real-world fact in {source_lang}]",
   "target_language": "zh",
-  "reference_translation": "[correct Chinese translation]",
-  "alternative_translations": ["[alternative correct Chinese translation]"],
-  "grading_rubric": "[evaluation criteria in {ui_lang}]"
+  "reference_translation": "[accurate Chinese reference translation]",
+  "grading_rubric": "[pedagogical evaluation criteria in {ui_lang}]"
 }

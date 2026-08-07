@@ -2,28 +2,26 @@ Generate {count} Chinese (Mandarin) sentence transformation exercises for a {lea
 Difficulty: {level_instruction}
 Focus: {focus}
 
-MANDATORY: All sentences MUST be in Chinese (Mandarin).
-MANDATORY: All instructions, transformation prompts, grammar explanations, and notes MUST be in {ui_lang}.
+MANDATORY DIRECTIVES:
+1. Content focus: Sentences MUST express real-world life facts, scientific/cultural knowledge, or practical academic facts related to "{topic}".
+2. All sentences in Chinese (Mandarin). All transformation instructions, explanations, and grammar notes MUST be in {ui_lang}.
+3. DO NOT provide acceptable variations. Provide exactly ONE standard `expected_answer`.
 
-For each exercise:
-- An original Chinese sentence
-- A transformation instruction in {ui_lang}
-- A hint word in Chinese
-- The expected correct answer in Chinese
-- The grammar rule explained in {ui_lang}
-- Common errors listed in {ui_lang}
+Requirements:
+- `normalized_answer`: MUST be fully normalized text in Chinese with standard punctuation.
+- List common errors students make with this structure.
+- List forbidden words that must NOT appear in the answer.
 
 Output raw JSON only:
 
 {
   "questions": [
     {
-      "original": "他很聪明，所以通过了考试。",
+      "original": "地球绕着太阳转，所以有了四季变化。",
       "prompt": "[transformation instruction in {ui_lang}]",
       "hint_word": "因为",
-      "expected_answer": "因为他很聪明，所以通过了考试。",
-      "normalized_answer": "因为他很聪明,所以通过了考试。",
-      "acceptable_variations": ["[alternative correct answer in Chinese]"],
+      "expected_answer": "因为地球绕着太阳公转，所以产生了四季变化。",
+      "normalized_answer": "因为地球绕着太阳公转,所以产生了四季变化。",
       "forbidden_words": [],
       "grammar_rule": "[grammar rule explanation in {ui_lang}]",
       "common_errors": ["[common mistake description in {ui_lang}]"]

@@ -3,29 +3,31 @@ Difficulty: {level_instruction}
 Topic: {topic}
 Sentence types: {sentence_types}
 
-MANDATORY: Sentences MUST be in Chinese (Mandarin).
-MANDATORY: All hints, meanings, and explanations MUST be in {ui_lang}.
+MANDATORY DIRECTIVES:
+1. Content focus: The Chinese target sentences MUST express real-world life facts, scientific/cultural facts, or practical academic knowledge related to "{topic}".
+2. Language: Sentences to unscramble MUST be in Chinese (Mandarin). All hints, meanings, translations, instructions, and grammar notes MUST strictly be in {ui_lang}.
+3. The sentences MUST each use a DIFFERENT Chinese grammatical structure from: {sentence_types}.
 
 Requirements:
-- Each Chinese sentence should be 5-12 words/characters long.
-- Each sentence must use a DIFFERENT grammatical structure.
-- Provide: correct sentence in Chinese, meaning in {ui_lang}, hint in {ui_lang}, key vocabulary.
+- Each sentence must be 6-12 words/compounds with clear structure.
+- Provide {ui_lang} translation, hint, and grammar notes.
+- Include `core_structure` describing the formula in {ui_lang}.
 
 Output raw JSON only:
 
 {
   "questions": [
     {
-      "correct_sentence": "他每天早上都喝咖啡。",
-      "meaning": "[sentence meaning in {ui_lang}]",
-      "hint": "[hint about structure in {ui_lang}]",
+      "correct_sentence": "太阳从东方升起在西方落下。",
+      "meaning": "[full translation in {ui_lang}]",
+      "hint": "[helpful clue in {ui_lang}]",
       "key_vocabulary": [
-        {"word": "每天", "meaning": "[meaning in {ui_lang}]"},
-        {"word": "早上", "meaning": "[meaning in {ui_lang}]"}
+        {"word": "太阳", "meaning": "[meaning in {ui_lang}]"},
+        {"word": "升起", "meaning": "[meaning in {ui_lang}]"}
       ],
-      "difficulty_reason": "[why this is challenging in {ui_lang}]",
-      "grammar_note": "[Chinese grammar structure explanation in {ui_lang}]",
-      "core_structure": "Subject + 每天 + Time + Verb + Object"
+      "difficulty_reason": "[difficulty explanation in {ui_lang}]",
+      "grammar_note": "[Chinese grammar note in {ui_lang}]",
+      "core_structure": "Subject + 从 + Place + Verb"
     }
   ]
 }
