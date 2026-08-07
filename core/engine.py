@@ -510,8 +510,8 @@ class AIEngine:
             return {"ok": False, "error": "Empty key"}
         from core.api_client import GeminiClient
 
-        client = GeminiClient([key], "auto")
-        result = client.test_key(key)
+        client = GeminiClient([key], "auto", cancel_event=self.cancel_event)
+        result = client.test_key(key, progress_callback=self._send_progress)
         log.info(f"test_key result: ok={result.get('ok')} model={result.get('model')}")
         if hasattr(client, "close"):
             client.close()
@@ -526,8 +526,8 @@ class AIEngine:
             if not key.strip():
                 results.append({"key": idx + 1, "ok": False, "error": "Empty"})
                 continue
-            client = GeminiClient([key], "auto")
-            res = client.test_key_with_waterfall(key)
+            client = GeminiClient([key], "auto", cancel_event=self.cancel_event)
+            res = client.test_key_with_waterfall(key, progress_callback=self._send_progress)
             results.append(
                 {
                     "key": idx + 1,

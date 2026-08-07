@@ -377,16 +377,26 @@ class GeminiProvider(BaseLLMProvider):
             return None
         return json.dumps(result, ensure_ascii=False)
 
-    def test_key_with_waterfall(self, key: str, max_retries: int = 2) -> dict:
+    def test_key_with_waterfall(self, key: str, max_retries: int = 2, progress_callback: Optional[Callable[[str], None]] = None) -> dict:
         models = self._models_for_call(key)
         last_error = ""
         error_code = EC["API_ERROR"]
         last_model = models[0] if models else "gemini-1.5-flash"
-        
+
+        def notify(text: str):
+            if progress_callback:
+                try:
+                    progress_callback(text)
+                except Exception as ex:
+                    log.error(f"progress_callback error in test_key: {ex}")
+
         for step, model in enumerate(models):
             for attempt in range(max_retries):
+                if self.cancel_event and self.cancel_event.is_set():
+                    return {"ok": False, "error_code": "E_CANCELLED", "error": t("app.cancelled_gen", lang=self.ui_lang)}
                 try:
                     self._throttle()
+                    notify(t("api.calling", lang=self.ui_lang, idx=self.keys.index(key)+1 if key in self.keys else 1, model=model))
                     payload = {
                         "contents": [{"parts": [{"text": "Say OK and nothing else."}]}],
                         "generationConfig": {"temperature": 0, "maxOutputTokens": 10},
@@ -433,7 +443,7 @@ class GeminiProvider(BaseLLMProvider):
             else:
                 continue
             break
-        
+
         return {
             "ok": False,
             "model": last_model,
@@ -441,8 +451,8 @@ class GeminiProvider(BaseLLMProvider):
             "error": last_error or "AI is temporarily unavailable. Please try again later.",
         }
 
-    def test_key(self, key: str) -> dict:
-        return self.test_key_with_waterfall(key)
+    def test_key(self, key: str, progress_callback: Optional[Callable[[str], None]] = None) -> dict:
+        return self.test_key_with_waterfall(key, progress_callback=progress_callback)
 
 
 class RateLimitError(Exception):
