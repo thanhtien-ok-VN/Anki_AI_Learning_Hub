@@ -1400,7 +1400,7 @@ function renderFillBlank(x) {
               <button class="btn btn-outline hint-btn" data-hint-q="${i}" style="padding: 4px 10px; font-size: 12.5px; border-color:var(--color-warn); color:var(--color-warn-dark);">
                 💡 Gợi ý
               </button>
-              <div class="hint-text-box" id="hint-text-${i}" class="hint-text-box"></div>
+              <div class="hint-text-box" id="hint-text-${i}" style="text-align: left !important; width: 100% !important; box-sizing: border-box !important;"></div>
             </div>
           ` : ''}
           <div id="feedback-${i}">${feedbackHtml}</div>
@@ -2900,7 +2900,7 @@ function renderStory(x) {
     const expectedText = q.expected_answer || '';
     const normExpected = q.normalized_answer || norm(expectedText);
 
-    document.querySelector('#play').innerHTML='<div class="question-card"><p class="q-text"><b>'+esc(t('feedback.requirement', 'Yêu cầu:'))+'</b> '+esc(instructionText)+'</p><p class="q-text"><b>'+esc(t('feedback.original_sentence', 'Câu gốc:'))+'</b> '+esc(originalText)+'</p><textarea id="answer" placeholder="'+esc(t('placeholder.sentence_transform', 'Nhập câu trả lời...'))+'"></textarea><div class="flex gap-3 mt-3"><button class="btn primary" id="grade">'+esc(t('app.grade', 'Chấm điểm'))+'</button><button class="btn btn-outline" id="hint-transform" class="btn-hint">💡 Gợi ý</button></div><div class="hint-text-box" id="hint-text-transform" class="hint-text-box"></div><div id="feedback"></div></div>';
+    document.querySelector('#play').innerHTML='<div class="question-card"><p class="q-text"><b>'+esc(t('feedback.requirement', 'Yêu cầu:'))+'</b> '+esc(instructionText)+'</p><p class="q-text"><b>'+esc(t('feedback.original_sentence', 'Câu gốc:'))+'</b> '+esc(originalText)+'</p><textarea id="answer" placeholder="'+esc(t('placeholder.sentence_transform', 'Nhập câu trả lời...'))+'"></textarea><div class="flex gap-3 mt-3"><button class="btn primary" id="grade">'+esc(t('app.grade', 'Chấm điểm'))+'</button><button class="btn btn-outline" id="hint-transform" class="btn-hint">💡 Gợi ý</button></div><div class="hint-text-box" id="hint-text-transform" style="text-align: left !important; width: 100% !important; box-sizing: border-box !important;"></div><div id="feedback"></div></div>';
     
     let hintLevel = 0;
     const hintBtn = document.querySelector('#hint-transform');
@@ -3066,7 +3066,7 @@ function renderStory(x) {
           <button class="btn primary" id="grade">${esc(t('app.grade', 'Chấm điểm'))}</button>
           <button class="btn btn-outline" id="hint-taboo" class="btn-hint">💡 Gợi ý</button>
         </div>
-        <div class="hint-text-box" id="hint-text-taboo" class="hint-text-box"></div>
+        <div class="hint-text-box" id="hint-text-taboo" style="text-align: left !important; width: 100% !important; box-sizing: border-box !important;"></div>
         <div id="feedback"></div>
         
         <div class="taboo-guide-callout" style="margin-top: 24px; padding: 12px; background:var(--color-surface-tint); border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; line-height: 1.4; color: var(--text-secondary);">
