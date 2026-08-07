@@ -1439,38 +1439,12 @@ function renderFillBlank(x) {
       });
 
       d.querySelectorAll('[data-hint-q]').forEach(btn => {
-        let hintLevel = 0;
         btn.onclick = () => {
           const qIdx = +btn.dataset.hintQ;
           const q = x.questions[qIdx];
           const textEl = document.querySelector(`#hint-text-${qIdx}`);
-          if (!textEl) return;
-          textEl.style.display = 'block';
-
-          let correctIdx = q.options.findIndex(o => typeof o === 'object' ? o.is_correct : false);
-          if (correctIdx === -1) correctIdx = q.correct_index;
-          const correctOpt = q.options[correctIdx];
-          const word = typeof correctOpt === 'object' ? correctOpt.word : correctOpt;
-          const translation = q.user_definition || q.meaning || (typeof correctOpt === 'object' ? correctOpt.translation : '');
-
-          hintLevel++;
-          if (hintLevel === 1) {
-            textEl.innerHTML = `⭐ <b>Gợi ý 1:</b> Chữ cái đầu là: <code style="font-size:14px; font-weight:700;">${word.charAt(0)}</code>`;
-          } else if (hintLevel === 2) {
-            textEl.innerHTML = `⭐ <b>Gợi ý 1:</b> Chữ cái đầu là: <code>${word.charAt(0)}</code><br>⭐ <b>Gợi ý 2:</b> Nghĩa: <i>${translation || 'Không có'}</i>`;
-          } else if (hintLevel === 3) {
-            textEl.innerHTML = `⭐ <b>Đáp án là:</b> <code>${word}</code> (Đã tự động điền & tính sai câu này)`;
-            state.answers[qIdx] = correctIdx;
-            if (!state.hintedQuestions) state.hintedQuestions = new Set();
-            state.hintedQuestions.add(qIdx);
-
-            const choices = document.querySelectorAll(`#choices-${qIdx} [data-choice]`);
-            choices.forEach(btn => btn.classList.remove('selected'));
-            const correctBtn = document.querySelector(`#choices-${qIdx} [data-choice="${correctIdx}"]`);
-            if (correctBtn) correctBtn.classList.add('selected');
-
-            btn.disabled = true;
-            btn.style.opacity = '0.5';
+          if (window.HintSystem) {
+            window.HintSystem.requestHint('fill_blank', q, qIdx, textEl, btn);
           }
         };
       });
@@ -2878,29 +2852,14 @@ function renderStory(x) {
     const expectedText = q.expected_answer || '';
     const normExpected = q.normalized_answer || norm(expectedText);
 
-    document.querySelector('#play').innerHTML='<div class="question-card"><p class="q-text"><b>'+esc(t('feedback.requirement', 'Yêu cầu:'))+'</b> '+esc(instructionText)+'</p><p class="q-text"><b>'+esc(t('feedback.original_sentence', 'Câu gốc:'))+'</b> '+esc(originalText)+'</p><textarea id="answer" placeholder="'+esc(t('placeholder.sentence_transform', 'Nhập câu trả lời...'))+'"></textarea><div class="flex gap-3 mt-3"><button class="btn primary" id="grade">'+esc(t('app.grade', 'Chấm điểm'))+'</button><button class="btn btn-outline" id="hint-transform" class="btn-hint">💡 Gợi ý</button></div><div class="hint-text-box" id="hint-text-transform" style="text-align: left !important; width: 100% !important; box-sizing: border-box !important;"></div><div id="feedback"></div></div>';
+    document.querySelector('#play').innerHTML='<div class="question-card"><p class="q-text"><b>'+esc(t('feedback.requirement', 'Yêu cầu:'))+'</b> '+esc(instructionText)+'</p><p class="q-text"><b>'+esc(t('feedback.original_sentence', 'Câu gốc:'))+'</b> '+esc(originalText)+'</p><textarea id="answer" placeholder="'+esc(t('placeholder.sentence_transform', 'Nhập câu trả lời...'))+'"></textarea><div class="flex gap-3 mt-3"><button class="btn primary" id="grade">'+esc(t('app.grade', 'Chấm điểm'))+'</button><button class="btn btn-outline" id="hint-transform" class="btn-hint">'+esc(t('hint.hint_btn', '💡 Gợi ý'))+'</button></div><div class="hint-text-box" id="hint-text-transform" style="text-align: left !important; width: 100% !important; box-sizing: border-box !important;"></div><div id="feedback"></div></div>';
     
-    let hintLevel = 0;
     const hintBtn = document.querySelector('#hint-transform');
     if (hintBtn) {
       hintBtn.onclick = () => {
         const textEl = document.querySelector('#hint-text-transform');
-        if (!textEl) return;
-        textEl.style.display = 'block';
-        hintLevel++;
-        if (hintLevel === 1) {
-          const firstWord = expectedText.split(' ')[0] || '';
-          textEl.innerHTML = `⭐ <b>Gợi ý 1:</b> Từ bắt đầu tiên của đáp án là: <code style="font-size:14px; font-weight:700;">${firstWord}</code>`;
-        } else if (hintLevel === 2) {
-          const firstWord = expectedText.split(' ')[0] || '';
-          textEl.innerHTML = `⭐ <b>Gợi ý 1:</b> Từ đầu tiên là: <code>${firstWord}</code><br>⭐ <b>Gợi ý 2:</b> Quy tắc ngữ pháp: <i>${q.grammar_rule || 'Không có'}</i>`;
-        } else if (hintLevel === 3) {
-          textEl.innerHTML = `⭐ <b>Đáp án là:</b> <code>${expectedText}</code> (Bạn đã xem đáp án nên câu này không tính điểm)`;
-          document.querySelector('#answer').value = expectedText;
-          if (!state.hintedQuestions) state.hintedQuestions = new Set();
-          state.hintedQuestions.add(0);
-          hintBtn.disabled = true;
-          hintBtn.style.opacity = '0.5';
+        if (window.HintSystem) {
+          window.HintSystem.requestHint('sentence_transform', q, 0, textEl, hintBtn);
         }
       };
     }
@@ -3035,14 +2994,14 @@ function renderStory(x) {
     
     document.querySelector('#play').innerHTML=`
       <div class="question-card taboo-card fade-in">
-        <div style="font-size: 13.5px; color: var(--text-secondary); margin-bottom: 12px; font-weight:600;">Lượt chơi ${state.tabooCursor + 1} / ${x.rounds.length}</div>
+        <div style="font-size: 13.5px; color: var(--text-secondary); margin-bottom: 12px; font-weight:600;">${esc(t('taboo.round_counter', 'Lượt chơi {0} / {1}', state.tabooCursor + 1, x.rounds.length))}</div>
         <div class="secret-word">???</div>
         <div class="forbidden">${forbidden.map(w=>'<span>🚫 '+esc(w)+'</span>').join('')}</div>
         <div class="description">${esc(clueText)}</div>
         <textarea id="answer" placeholder="${esc(t('placeholder.taboo', 'Nhập từ bạn đoán bằng {0}...', langLabel))}"></textarea>
         <div class="flex gap-3 mt-3">
           <button class="btn primary" id="grade">${esc(t('app.grade', 'Chấm điểm'))}</button>
-          <button class="btn btn-outline" id="hint-taboo" class="btn-hint">💡 Gợi ý</button>
+          <button class="btn btn-outline" id="hint-taboo" class="btn-hint">${esc(t('hint.hint_btn', '💡 Gợi ý'))}</button>
         </div>
         <div class="hint-text-box" id="hint-text-taboo" style="text-align: left !important; width: 100% !important; box-sizing: border-box !important;"></div>
         <div id="feedback"></div>
@@ -3059,20 +3018,15 @@ function renderStory(x) {
       </div>
     `;
     
-    let hintLevel = 0;
     const hintBtn = document.querySelector('#hint-taboo');
     if (hintBtn) {
       hintBtn.onclick = () => {
         const textEl = document.querySelector('#hint-text-taboo');
-        if (!textEl) return;
-        textEl.style.display = 'block';
-        hintLevel++;
-        if (hintLevel === 1) {
-          textEl.innerHTML = `⭐ <b>${esc(t('taboo.hint_1', 'Gợi ý 1'))}:</b> ${esc(t('taboo.starts_with_letter', 'Từ này bắt đầu bằng chữ'))}: <code style="font-size:14px; font-weight:700;">${secretWord.charAt(0).toUpperCase()}</code>`;
-        } else if (hintLevel === 2) {
-          textEl.innerHTML = `⭐ <b>${esc(t('taboo.hint_1', 'Gợi ý 1'))}:</b> ${esc(t('taboo.starts_with_letter', 'Từ này bắt đầu bằng chữ'))}: <code>${secretWord.charAt(0).toUpperCase()}</code><br>⭐ <b>${esc(t('taboo.hint_2', 'Gợi ý 2'))}:</b> ${esc(t('taboo.meaning_hint', 'Nghĩa'))}: <i>${q.meaning || t('feedback.no_explanation', 'Không có')}</i>`;
-        } else if (hintLevel === 3) {
-          textEl.innerHTML = `⭐ <b>${esc(t('taboo.answer_is', 'Đáp án là'))}:</b> <code>${secretWord}</code> (${esc(t('taboo.hint_penalty_note', 'Bạn đã xem đáp án nên câu này không tính điểm'))})`;
+        if (window.HintSystem) {
+          window.HintSystem.requestHint('taboo', q, currentRoundIdx, textEl, hintBtn);
+        }
+      };
+    }
           document.querySelector('#answer').value = secretWord;
           if (!state.hintedQuestions) state.hintedQuestions = new Set();
           state.hintedQuestions.add(currentRoundIdx);
