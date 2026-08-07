@@ -3027,14 +3027,6 @@ function renderStory(x) {
         }
       };
     }
-          document.querySelector('#answer').value = secretWord;
-          if (!state.hintedQuestions) state.hintedQuestions = new Set();
-          state.hintedQuestions.add(currentRoundIdx);
-          hintBtn.disabled = true;
-          hintBtn.style.opacity = '0.5';
-        }
-      };
-    }
 
     document.querySelector('#grade').onclick=async()=>{
       const signal = getSignal();
