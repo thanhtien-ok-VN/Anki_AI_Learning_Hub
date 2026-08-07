@@ -47,14 +47,17 @@ class Logger:
             pass
 
     def _write(self, level: str, message: str, extra: dict = None):
-        self._rotate_if_needed(LOG_PATH)
+        import sys
+        target_path = getattr(sys.modules.get("core.logger"), "LOG_PATH", LOG_PATH)
+        os.makedirs(os.path.dirname(target_path), exist_ok=True)
+        self._rotate_if_needed(target_path)
         ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:23]
         parts = [f"[{ts}]", f"[{level}]", f"[{self.name}]", message]
         if extra:
             parts.append(json.dumps(extra, ensure_ascii=False, default=str))
         line = " ".join(parts)
         try:
-            with open(LOG_PATH, "a", encoding="utf-8") as f:
+            with open(target_path, "a", encoding="utf-8") as f:
                 f.write(line + "\n")
         except Exception:
             pass

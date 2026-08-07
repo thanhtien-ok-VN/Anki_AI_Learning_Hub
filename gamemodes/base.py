@@ -72,59 +72,78 @@ class GameModeBase(ABC):
         if not mw.col:
             return 0
 
-        # Create Anki Undo Checkpoint
-        mw.checkpoint("Save AI Learning Cards")
+        saved_count = [0]
 
-        model = mw.col.models.by_name("Basic")
-        if not model:
-            model = mw.col.models.current()
-        if not model or "flds" not in model:
-            return 0
+        def _do_save():
+            mw.checkpoint("Save AI Learning Cards")
 
-        fields = [f["name"] for f in model.get("flds", [])]
-        if not fields:
-            return 0
+            model = mw.col.models.by_name("Basic")
+            if not model:
+                model = mw.col.models.current()
+            if not model or "flds" not in model:
+                return
 
-        front_field = fields[0]
-        back_field = fields[1] if len(fields) > 1 else fields[0]
+            fields = [f["name"] for f in model.get("flds", [])]
+            if not fields:
+                return
 
-        deck = mw.col.decks.by_name(deck_name)
-        if not deck:
-            deck_id = mw.col.decks.add_normal_deck_with_name(deck_name)
-        else:
-            deck_id = deck["id"]
+            # Heuristic Field Mapping for custom note types
+            front_field = fields[0]
+            for f in fields:
+                if f.lower() in ("front", "word", "question", "term", "text"):
+                    front_field = f
+                    break
 
-        count = 0
-        for item in items:
-            front, back = self._format_anki_note(item)
-            if not front and not back:
-                continue
+            back_field = fields[1] if len(fields) > 1 else fields[0]
+            for f in fields:
+                if f.lower() in ("back", "answer", "meaning", "definition", "translation"):
+                    back_field = f
+                    break
 
-            # Duplicate Check: Check if front already exists in this deck or collection
-            clean_front = front.strip()
-            existing = mw.col.find_notes(f"did:{deck_id}")
-            is_dup = False
-            for nid in existing:
+            deck = mw.col.decks.by_name(deck_name)
+            if not deck:
+                deck_id = mw.col.decks.add_normal_deck_with_name(deck_name)
+            else:
+                deck_id = deck["id"]
+
+            # Single-pass O(1) Duplicate Scanning
+            existing_fronts = set()
+            for nid in mw.col.find_notes(f"did:{deck_id}"):
                 try:
                     n = mw.col.get_note(nid)
-                    if n[front_field].strip() == clean_front:
-                        is_dup = True
-                        break
+                    val = n[front_field].strip().lower()
+                    if val:
+                        existing_fronts.add(val)
                 except Exception:
+                    pass
+
+            count = 0
+            for item in items:
+                front, back = self._format_anki_note(item)
+                if not front and not back:
                     continue
 
-            if is_dup:
-                continue
+                clean_front = front.strip().lower()
+                if clean_front in existing_fronts:
+                    continue
 
-            note = Note(mw.col, model)
-            note[front_field] = front
-            if len(fields) > 1:
-                note[back_field] = back
-            note.note_type()["did"] = deck_id
-            mw.col.add_note(note, deck_id)
-            count += 1
+                note = Note(mw.col, model)
+                note[front_field] = front
+                if len(fields) > 1:
+                    note[back_field] = back
+                note.note_type()["did"] = deck_id
+                mw.col.add_note(note, deck_id)
+                existing_fronts.add(clean_front)
+                count += 1
 
-        if count > 0:
-            mw.reset()
+            if count > 0:
+                mw.reset()
 
-        return count
+            saved_count[0] = count
+
+        if mw.taskman and hasattr(mw.taskman, "run_on_main"):
+            mw.taskman.run_on_main(_do_save)
+        else:
+            _do_save()
+
+        return saved_count[0]

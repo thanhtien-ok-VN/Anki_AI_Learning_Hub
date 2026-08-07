@@ -8,3 +8,7 @@ Plans/
 # Python cache files
 __pycache__/
 *.pyc
+
+# Local runtime logs and user settings
+user_files/
+

@@ -27,7 +27,6 @@ BACKGROUND_ACTIONS = {
     "sample_vocab_pairs",
     "list_source_models",
     "list_source_fields",
-    "save_to_anki",
 }
 
 

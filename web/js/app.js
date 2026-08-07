@@ -79,7 +79,18 @@ function loadPrefs() {
         delete state.history['matching'];
         localStorage.setItem(PFX + 'history', JSON.stringify(state.history));
       }
-    } catch (e) {}
+    } catch (e) {
+      try {
+        if (state.history) {
+          Object.keys(state.history).forEach(k => {
+            if (Array.isArray(state.history[k]) && state.history[k].length > 10) {
+              state.history[k] = state.history[k].slice(0, 10);
+            }
+          });
+          localStorage.setItem(PFX + 'history', JSON.stringify(state.history));
+        }
+      } catch (_) {}
+    }
   }
 
   function savePrefs() {
@@ -1125,7 +1136,7 @@ async function generate(id, optsOverride){
           if (fs) opts.focus = fs.value;
         }
       }
-      state.exercise = await Bridge.sendAsync('generate', opts, { signal });
+      state.exercise = await Bridge.sendAsync('generate', opts, { signal, timeoutMs: 180000 });
       if (signal.aborted) return;
       state.index = 0;
       state.answers = {};
@@ -1139,7 +1150,7 @@ async function generate(id, optsOverride){
       if (e.name === 'AbortError' || e.error_code === 'E_ABORTED') return;
       showBridgeFailure(e);
     } finally {
-      if (!signal.aborted) setBusy(false);
+      setBusy(false);
     }
   }
 
@@ -1165,7 +1176,7 @@ async function generate(id, optsOverride){
       total: totalQ
     };
     state.history[id].unshift(item);
-    if (state.history[id].length > 50) state.history[id].length = 50;
+    if (state.history[id].length > 20) state.history[id].length = 20;
     state.currentHistoryItem = item;
     saveHistory();
     return item;

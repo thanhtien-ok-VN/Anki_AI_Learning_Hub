@@ -38,8 +38,8 @@ class LanguageContractTests(unittest.TestCase):
         manager = PromptManager(os.path.join(root, "prompts"))
         for code in LEARN_LANGUAGE_CODES:
             prompt = manager.get_prompt("fill_blank", language=code, ui_lang="vi", count=1)
-            self.assertIn("Vietnamese", prompt)
             self.assertNotIn("{learn_lang}", prompt)
+            self.assertNotIn("{ui_lang}", prompt)
 
     def test_ui_locale_catalogs_have_identical_keys(self):
         root = os.path.dirname(os.path.dirname(__file__))

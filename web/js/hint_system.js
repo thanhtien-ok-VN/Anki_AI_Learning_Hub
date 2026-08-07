@@ -39,7 +39,7 @@
         let hintBodyHtml = '';
 
         if (hintData && hintData.content) {
-          titleText = hintData.hint_title || window.t('hint.hint_btn', '💡 Gợi ý');
+          titleText = hintData.hint_title || window.t('hint.hint_btn', '💡 Hint');
           hintBodyHtml = window.esc(hintData.content);
         } else {
           // Client-side Fallback 3-Tier Rendering
@@ -48,27 +48,27 @@
           const grammarText = (questionData.grammar_note || questionData.grammar_rule || '').trim();
 
           if (currentLevel === 1) {
-            titleText = window.t('hint.level_1', 'Cấp 1: Cấu trúc & Ngữ pháp');
+            titleText = window.t('hint.level_1', 'Level 1: Structure & Grammar');
             if (grammarText) {
-              hintBodyHtml = `📌 <b>${window.esc(window.t('hint.grammar_structure', 'Quy tắc ngữ pháp: {0}', grammarText))}</b>`;
+              hintBodyHtml = `📌 <b>${window.esc(window.t('hint.grammar_structure', 'Grammar rule: {0}', grammarText))}</b>`;
             } else if (secretWord) {
-              hintBodyHtml = `📏 <b>${window.esc(window.t('hint.word_length', 'Độ dài từ: {0} ký tự', secretWord.length))}</b>`;
+              hintBodyHtml = `📏 <b>${window.esc(window.t('hint.word_length', 'Word length: {0} characters', secretWord.length))}</b>`;
             } else {
-              hintBodyHtml = `💡 <b>${window.esc(window.t('hint.structure_tip', 'Hãy chú ý đến cấu trúc ngữ pháp và ngữ cảnh câu.'))}</b>`;
+              hintBodyHtml = `💡 <b>${window.esc(window.t('hint.structure_tip', 'Pay attention to sentence structure and context.'))}</b>`;
             }
           } else if (currentLevel === 2) {
-            titleText = window.t('hint.level_2', 'Cấp 2: Ký tự đầu & Nghĩa');
+            titleText = window.t('hint.level_2', 'Level 2: First Character & Meaning');
             const hintsArr = [];
             if (secretWord) {
-              hintsArr.push(`🔤 <b>${window.esc(window.t('hint.starts_with', 'Chữ cái đầu: {0}', secretWord.charAt(0).toUpperCase()))}</b>`);
+              hintsArr.push(`🔤 <b>${window.esc(window.t('hint.starts_with', 'First letter: {0}', secretWord.charAt(0).toUpperCase()))}</b>`);
             }
             if (meaningText) {
-              hintsArr.push(`📖 <b>${window.esc(window.t('hint.meaning_label', 'Nghĩa: {0}', meaningText))}</b>`);
+              hintsArr.push(`📖 <b>${window.esc(window.t('hint.meaning_label', 'Meaning: {0}', meaningText))}</b>`);
             }
             hintBodyHtml = hintsArr.join('<br>');
           } else {
-            titleText = window.t('hint.level_3', 'Cấp 3: Đáp án chuẩn (0 điểm)');
-            hintBodyHtml = `🎯 <b>${window.esc(window.t('feedback.answer_label_short', 'Đáp án'))}:</b> <code style="font-size:15px; font-weight:700;">${window.esc(secretWord)}</code>`;
+            titleText = window.t('hint.level_3', 'Level 3: Correct Answer (0 Points)');
+            hintBodyHtml = `🎯 <b>${window.esc(window.t('feedback.answer_label_short', 'Answer'))}:</b> <code style="font-size:15px; font-weight:700;">${window.esc(secretWord)}</code>`;
             if (hintBtn) {
               hintBtn.disabled = true;
               hintBtn.style.opacity = '0.5';

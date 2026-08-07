@@ -111,6 +111,7 @@ class AIEngine:
         self.settings = SettingsManager()
         self.timer = SessionTimer()
         self.cancel_event = threading.Event()
+        self._api_lock = threading.RLock()
         self._api_client = None
         self._prompt_mgr = None
         self._gamemode_cache = {}
@@ -135,21 +136,26 @@ class AIEngine:
 
 
     def _get_api_client(self):
-        if self._api_client is None:
-            from core.api_client import GeminiClient
+        with self._api_lock:
+            if self._api_client is None:
+                from core.api_client import GeminiClient
 
-            keys = self.settings.get_active_keys()
-            if keys:
-                self._api_client = GeminiClient(
-                    keys,
-                    self.settings.get("model", "auto"),
-                    ui_lang=self.settings.get("ui_lang", "en"),
-                    cancel_event=self.cancel_event
-                )
-        return self._api_client
+                keys = self.settings.get_active_keys()
+                if keys:
+                    self._api_client = GeminiClient(
+                        keys,
+                        self.settings.get("model", "auto"),
+                        ui_lang=self.settings.get("ui_lang", "en"),
+                        cancel_event=self.cancel_event
+                    )
+            elif self._api_client and self._api_client.cancel_event is None:
+                self._api_client.cancel_event = self.cancel_event
+            return self._api_client
 
     def _reset_api_client(self):
-        self._api_client = None
+        with self._api_lock:
+            self._api_client = None
+            self._gamemode_cache.clear()
 
     def get_prompt_manager(self):
         if self._prompt_mgr is None:
@@ -178,7 +184,8 @@ class AIEngine:
             self._api_client = GeminiClient(
                 self.settings.get_active_keys(),
                 self.settings.get("model", "auto"),
-                ui_lang=self.settings.get("ui_lang", "en")
+                ui_lang=self.settings.get("ui_lang", "en"),
+                cancel_event=self.cancel_event
             )
         log.info(
             "AIEngine started",
@@ -317,6 +324,14 @@ class AIEngine:
         self.cancel_event.clear()
         data = normalize_language_fields(dict(data or {}))
         gamemode = data.get("gamemode", "fill_blank")
+
+        gm_pre = self.get_gamemode(gamemode)
+        if gm_pre and getattr(gm_pre, "is_offline", False) and hasattr(gm_pre, "generate"):
+            log.info(f"Generating offline game content for {gamemode}")
+            rendered = gm_pre.generate(**data)
+            rendered = normalize_language_fields(rendered)
+            rendered = sanitize_dict(rendered)
+            return self._result(True, rendered)
 
         # Phase 1: CONNECT
         with FlowTimer("CONNECT", gamemode=gamemode, message="Checking client and API keys") as timer:
@@ -513,6 +528,7 @@ class AIEngine:
         }
 
     def _handle_test_key(self, data: dict) -> dict:
+        self.cancel_event.clear()
         key = data.get("key", "").strip()
         if not key:
             log.warn("test_key called with empty key")
@@ -530,6 +546,7 @@ class AIEngine:
                 client.close()
 
     def _handle_test_all_keys(self, data: dict = None) -> dict:
+        self.cancel_event.clear()
         keys = self.settings.get_api_keys()
         configured_model = self.settings.get("model", "auto")
         from core.api_client import GeminiClient
@@ -577,6 +594,7 @@ class AIEngine:
         return list_source_fields(data.get("model_id"))
 
     def _handle_sample_vocab_pairs(self, data: dict) -> dict:
+        self.cancel_event.clear()
         from core.deck_source import sample_vocab_pairs
 
         return sample_vocab_pairs(
@@ -596,12 +614,14 @@ class AIEngine:
         self.settings.set("ui_lang", lang)
         if self._api_client:
             self._api_client.ui_lang = lang
+        self._gamemode_cache.clear()
         log.info(f"UI language set to: {lang}")
         return {"ui_lang": lang, "lang": lang}
 
     def _handle_set_learn_lang(self, data: dict) -> dict:
         lang = valid_learn_lang(data.get("lang"), self.settings.get("learn_lang", DEFAULT_LEARN_LANG))
         self.settings.set("learn_lang", lang)
+        self._gamemode_cache.clear()
         log.info(f"Learning language set to: {lang}")
         return {"learn_lang": lang}
 
@@ -628,6 +648,7 @@ class AIEngine:
         return HintManager.get_hint_data(gamemode, question_data, hint_level, ui_lang)
 
     def _handle_ai_grade(self, data: dict) -> dict:
+        self.cancel_event.clear()
         data = normalize_language_fields(dict(data or {}))
         gamemode = data.get("gamemode", "fill_blank")
         learn_lang = valid_learn_lang(self.settings.get("learn_lang"))

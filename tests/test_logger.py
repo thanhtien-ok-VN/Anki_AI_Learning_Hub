@@ -15,11 +15,12 @@ class LoggerTests(unittest.TestCase):
                 logger.warn("rate limited")
                 logger.error("network failed")
 
-            self.assertFalse(output.called)
-            with open(log_path, encoding="utf-8") as log_file:
-                content = log_file.read()
-            self.assertIn("[WARN] [Test] rate limited", content)
-            self.assertIn("[ERROR] [Test] network failed", content)
+                self.assertFalse(output.called)
+                self.assertTrue(os.path.exists(log_path))
+                with open(log_path, encoding="utf-8") as log_file:
+                    content = log_file.read()
+                self.assertIn("[WARN] [Test] rate limited", content)
+                self.assertIn("[ERROR] [Test] network failed", content)
 
 
 if __name__ == "__main__":

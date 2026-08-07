@@ -57,18 +57,19 @@ class FlowLoggerTests(unittest.TestCase):
 
     def test_key_masking_security(self):
         sm = SettingsManager()
-        sm.data = {
+        sm._settings.clear()
+        sm._settings.update({
             "api_key1": "AQ.Ab8",          # 6 chars: <= 12 -> AQ****b8
             "api_key2": "AQ.Ab8123456789",  # 16 chars: > 12 -> AQ.A...6789
             "api_key3": "   ",             # whitespace -> ignored
             "api_key4": "",                # empty -> ignored
-        }
+        })
         active = sm.get_active_keys()
         self.assertEqual(len(active), 2)
         self.assertEqual(active[0], "AQ.Ab8")
         self.assertEqual(active[1], "AQ.Ab8123456789")
 
-        masked = sm.get_masked_api_keys()
+        masked = [m for m in sm.get_masked_api_keys() if m]
         self.assertEqual(len(masked), 2)
         self.assertEqual(masked[0], "AQ****b8")
         self.assertEqual(masked[1], "AQ.A...6789")

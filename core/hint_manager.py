@@ -1,6 +1,7 @@
 from typing import Dict, Any, Optional
 from core.logger import flow
 from core.languages import get_language_name
+from core.i18n import t
 
 
 class HintManager:
@@ -44,16 +45,16 @@ class HintManager:
 
         if hint_level == 1:
             # Level 1: Structure / Part of Speech hint
-            res["hint_title"] = "Level 1: Structure & Grammar"
+            res["hint_title"] = t("hint.level_1", lang=ui_lang)
             if grammar_rule:
                 res["content"] = f"Grammar Rule: {grammar_rule}"
             elif target_word:
-                res["content"] = f"Word length: {len(target_word)} characters"
+                res["content"] = f"{t('hint.word_length', lang=ui_lang)}: {len(target_word)} characters"
             else:
-                res["content"] = "Pay attention to sentence structure and context."
+                res["content"] = t("hint.structure_tip", lang=ui_lang)
         elif hint_level == 2:
             # Level 2: First letter / Contextual meaning hint
-            res["hint_title"] = "Level 2: First Character & Meaning"
+            res["hint_title"] = t("hint.level_2", lang=ui_lang)
             hints = []
             if target_word:
                 hints.append(f"First letter: '{target_word[0].upper()}'")
@@ -62,7 +63,7 @@ class HintManager:
             res["content"] = " | ".join(hints) if hints else "Analyze context carefully."
         elif hint_level >= 3:
             # Level 3: Full Answer & Score Penalty
-            res["hint_title"] = "Level 3: Correct Answer (0 Points)"
+            res["hint_title"] = t("hint.level_3", lang=ui_lang)
             res["content"] = f"Answer: {target_word}" if target_word else "Solution revealed."
             res["penalty"] = True
 

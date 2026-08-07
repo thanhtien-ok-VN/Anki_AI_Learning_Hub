@@ -40,7 +40,7 @@ Explain why the correct answer is right or wrong. Include:
 Respond entirely in {feedback_lang}. Respond in JSON:
 {{
     "correct": true/false,
-    "score": 0.0-1.0,
+    "score": 0-10,
     "semantic": "string",
     "grammar": "string",
     "vocabulary_relation": "string"

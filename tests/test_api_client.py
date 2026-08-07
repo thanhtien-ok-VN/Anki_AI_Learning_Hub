@@ -8,7 +8,7 @@ from core.api_client import ApiError, GeminiClient, RateLimitError
 
 class GeminiClientErrorTests(unittest.TestCase):
     def setUp(self):
-        self.log_patch = patch("core.api_client.log")
+        self.log_patch = patch("llm.gemini.log")
         self.log_patch.start()
         self.addCleanup(self.log_patch.stop)
         GeminiClient._last_request_time = 0
@@ -44,7 +44,7 @@ class GeminiClientErrorTests(unittest.TestCase):
             "https://example.test", 429, "Too many requests", None,
             io.BytesIO(b'{"error": "too many requests"}'),
         )
-        with patch("core.api_client.urlopen", side_effect=http_error):
+        with patch("llm.gemini.urlopen", side_effect=http_error):
             result = client.generate_structured("prompt", max_retries=1)
 
         self.assertEqual(result["error_code"], "E_RATE_LIMIT")
@@ -52,7 +52,7 @@ class GeminiClientErrorTests(unittest.TestCase):
 
     def test_network_failure_becomes_safe_api_result(self):
         client = GeminiClient(["AIzaSy-test"], model_name="test-model")
-        with patch("core.api_client.urlopen", side_effect=URLError("offline host")):
+        with patch("llm.gemini.urlopen", side_effect=URLError("offline host")):
             result = client.generate_structured("prompt", max_retries=1)
 
         self.assertEqual(result["error_code"], "E_API_ERROR")
@@ -64,7 +64,7 @@ class GeminiClientErrorTests(unittest.TestCase):
             "https://example.test", 500, "Server error", None,
             io.BytesIO(b'{"private": "response body"}'),
         )
-        with patch("core.api_client.urlopen", side_effect=http_error):
+        with patch("llm.gemini.urlopen", side_effect=http_error):
             result = client.test_key_with_waterfall("AIzaSy-test", max_retries=1)
 
         self.assertEqual(result["error_code"], "E_RATE_LIMIT")

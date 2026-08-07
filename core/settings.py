@@ -175,20 +175,21 @@ class SettingsManager:
             return [self._settings.get(f"api_key{i}", "") for i in range(1, 11)]
 
     def get_active_keys(self) -> list[str]:
-        return [k for k in self.get_api_keys() if k]
+        return [k.strip() for k in self.get_api_keys() if k and k.strip()]
 
     def get_masked_api_keys(self) -> list[str]:
         masked = []
         for k in self.get_api_keys():
-            if not k:
+            k_clean = (k or "").strip()
+            if not k_clean:
                 masked.append("")
-            elif len(k) <= 12:
-                if len(k) >= 6:
-                    masked.append(f"{k[:2]}****{k[-2:]}")
+            elif len(k_clean) <= 12:
+                if len(k_clean) >= 6:
+                    masked.append(f"{k_clean[:2]}****{k_clean[-2:]}")
                 else:
                     masked.append("****")
             else:
-                masked.append(f"{k[:4]}...{k[-4:]}")
+                masked.append(f"{k_clean[:4]}...{k_clean[-4:]}")
         return masked
 
     def has_any_key(self) -> bool:

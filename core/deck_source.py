@@ -36,16 +36,35 @@ def _plain(value: str) -> str:
     return " ".join(html.unescape(value).split())
 
 
+def _run_on_main(fn):
+    from aqt import mw
+    if mw and hasattr(mw, "taskman") and hasattr(mw.taskman, "run_on_main"):
+        result = []
+        exc = []
+        def wrapper():
+            try:
+                result.append(fn())
+            except Exception as e:
+                exc.append(e)
+        mw.taskman.run_on_main(wrapper)
+        if exc:
+            raise exc[0]
+        return result[0] if result else None
+    return fn()
+
+
 def list_decks() -> dict:
-    col = _collection()
-    if not col:
-        return _error("E_COLLECTION_CLOSED", "Open a profile before reading decks.")
-    decks = [
-        {"id": int(did), "name": deck["name"], "level": deck["name"].count("::")}
-        for did, deck in col.decks.decks.items()
-        if deck.get("name")
-    ]
-    return _ok({"decks": sorted(decks, key=lambda deck: deck["name"].lower())})
+    def _inner():
+        col = _collection()
+        if not col:
+            return _error("E_COLLECTION_CLOSED", "Open a profile before reading decks.")
+        decks = [
+            {"id": int(did), "name": deck["name"], "level": deck["name"].count("::")}
+            for did, deck in col.decks.decks.items()
+            if deck.get("name")
+        ]
+        return _ok({"decks": sorted(decks, key=lambda deck: deck["name"].lower())})
+    return _run_on_main(_inner)
 
 
 def _note_ids(deck_id: int | None = None, model_id: int | None = None) -> list[int]:

@@ -361,5 +361,14 @@
   "unscramble.translation_label": "📖 Dịch nghĩa:",
   "unscramble.wrong_mark": "🔴 SAI",
   "unscramble.wrong_position": "Vị trí sai",
-  "unscramble.your_answer": "❌ Câu của bạn:"
+  "unscramble.your_answer": "❌ Câu của bạn:",
+  "settings.title": "Cài đặt AI Hub",
+  "settings.test": "Kiểm tra",
+  "app.action_cancelled": "Đã hủy thao tác.",
+  "app.explanation_title": "Giải thích",
+  "hint.structure_tip": "Gợi ý cấu trúc",
+  "hint.word_length": "Độ dài từ",
+  "story.new_btn": "Bài đọc mới",
+  "unscramble.word_order_incorrect": "Thứ tự từ chưa chính xác.",
+  "app.ai_overloaded": "Hệ thống đang quá tải, vui lòng thử lại sau."
 }

@@ -359,5 +359,14 @@
   "unscramble.translation_label": "📖 Translation:",
   "unscramble.wrong_mark": "🔴 WRONG",
   "unscramble.wrong_position": "Wrong positions",
-  "unscramble.your_answer": "❌ Your answer:"
+  "unscramble.your_answer": "❌ Your answer:",
+  "settings.title": "AI Hub Settings",
+  "settings.test": "Test",
+  "app.action_cancelled": "Action cancelled.",
+  "app.explanation_title": "Explanation",
+  "hint.structure_tip": "Structure Hint",
+  "hint.word_length": "Word Length",
+  "story.new_btn": "New Story",
+  "unscramble.word_order_incorrect": "Word order is incorrect.",
+  "app.ai_overloaded": "The system is currently busy. Please try again later."
 }

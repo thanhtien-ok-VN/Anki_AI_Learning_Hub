@@ -325,20 +325,20 @@ class GeminiProvider(BaseLLMProvider):
         if not eligible and not last_error:
             last_error = "No active or valid API keys available."
             final_code = EC["NO_KEYS"]
-            message = t("app.ai_no_keys", "Không tìm thấy API key hợp lệ nào.", lang=self.ui_lang)
+            message = t("app.ai_no_keys", lang=self.ui_lang)
             return self._err(final_code, message, last_error)
 
         from core.logger import flow
         flow(phase="API", message=f"All API keys/models exhausted or timed out. Last error: {last_error}")
 
         if final_code == EC["RATE_LIMIT"]:
-            message = t("app.ai_rate_limited", "Hệ thống đang quá tải, vui lòng thử lại sau.", lang=self.ui_lang)
+            message = t("app.ai_rate_limited", lang=self.ui_lang)
         elif final_code == EC["INTERNAL_ERROR"]:
-            message = t("app.ai_overloaded", "Hệ thống đang quá tải, vui lòng thử lại sau.", lang=self.ui_lang)
+            message = t("app.ai_overloaded", lang=self.ui_lang)
         elif final_code == EC["NO_KEYS"]:
-            message = t("app.ai_no_keys", "Không tìm thấy API key hợp lệ nào.", lang=self.ui_lang)
+            message = t("app.ai_no_keys", lang=self.ui_lang)
         else:
-            message = t("app.ai_overloaded", "Hệ thống đang quá tải, vui lòng thử lại sau.", lang=self.ui_lang)
+            message = t("app.ai_overloaded", lang=self.ui_lang)
         return self._err(final_code, message, last_error)
 
     def generate_structured(
