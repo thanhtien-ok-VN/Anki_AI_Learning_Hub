@@ -402,17 +402,8 @@ function setBusy(on, text = t('app.generating', 'Đang tạo bài…')) {
         };
       }
     }
-    const cancelGen = document.querySelector('#cancel-gen');
-    if (cancelGen) {
-      cancelGen.style.display = on ? 'inline-block' : 'none';
-      cancelGen.onclick = () => {
-        abortCurrentRequest();
-        setBusy(false);
-        setStatus(t('app.action_cancelled', 'Đã hủy thao tác.'), 'info');
-      };
-    }
     document.querySelectorAll('button,input,select,textarea').forEach(x => {
-      if (x.id !== 'close-hub' && x.id !== 'loading-cancel-btn' && x.id !== 'cancel-gen' && x.id !== 'back') {
+      if (x.id !== 'close-hub' && x.id !== 'loading-cancel-btn' && x.id !== 'back') {
         x.disabled = on;
       }
     });
@@ -479,7 +470,7 @@ function source() {
       return '<section class="config-panel"><div class="selector-grid">' + countSelect + '</div><div class="flex items-center flex-wrap gap-3 mt-3"><button class="btn primary" id="generate">' + esc(t('controls.generate', 'Tạo bài')) + '</button></div></section>';
     }
 
-    return '<section class="config-panel"><div class="selector-grid"><label>' + esc(t('app.language', 'Learning language')) + '<select id="language">' + buildLanguageOptionsHtml() + '</select></label><label>' + esc(t('app.level', 'Level')) + '<select id="level"><option value="beginner">' + esc(t('controls.level_beginner', 'A1 Beginner')) + '</option><option value="elementary">' + esc(t('controls.level_elementary', 'A2 Elementary')) + '</option><option value="intermediate" selected>' + esc(t('controls.level_intermediate', 'B1 Intermediate')) + '</option><option value="upper_intermediate">' + esc(t('controls.level_upper_intermediate', 'B2 Upper-intermediate')) + '</option><option value="advanced">' + esc(t('controls.level_advanced', 'C1–C2 Advanced')) + '</option></select></label>' + countSelect + extra + '<label>' + esc(t('app.topic', 'Topic')) + '<input id="topic" value="daily_life"></label></div><div class="flex items-center flex-wrap gap-3 mt-3"><button class="btn primary" id="generate">' + esc(t('controls.generate', 'Generate')) + '</button><button class="btn btn-cancel-gen" id="cancel-gen" style="display:none;" type="button">' + esc(t('app.cancel_gen', 'Cancel generation')) + '</button></div></section>';
+    return '<section class="config-panel"><div class="selector-grid"><label>' + esc(t('app.language', 'Learning language')) + '<select id="language">' + buildLanguageOptionsHtml() + '</select></label><label>' + esc(t('app.level', 'Level')) + '<select id="level"><option value="beginner">' + esc(t('controls.level_beginner', 'A1 Beginner')) + '</option><option value="elementary">' + esc(t('controls.level_elementary', 'A2 Elementary')) + '</option><option value="intermediate" selected>' + esc(t('controls.level_intermediate', 'B1 Intermediate')) + '</option><option value="upper_intermediate">' + esc(t('controls.level_upper_intermediate', 'B2 Upper-intermediate')) + '</option><option value="advanced">' + esc(t('controls.level_advanced', 'C1–C2 Advanced')) + '</option></select></label>' + countSelect + extra + '<label>' + esc(t('app.topic', 'Topic')) + '<input id="topic" value="daily_life"></label></div><div class="flex items-center flex-wrap gap-3 mt-3"><button class="btn primary" id="generate">' + esc(t('controls.generate', 'Generate')) + '</button></div></section>';
   }
 
   function game() {
