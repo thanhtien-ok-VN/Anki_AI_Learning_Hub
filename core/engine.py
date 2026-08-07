@@ -239,6 +239,7 @@ class AIEngine:
                 "get_ui_strings": self._handle_get_ui_strings,
                 "get_supported_languages": self._handle_get_supported_languages,
                 "ai_grade": self._handle_ai_grade,
+                "get_hint": self._handle_get_hint,
                 "close_hub": self._handle_close_hub,
                 "cancel_gen": self._handle_cancel_gen,
                 "log_event": self._handle_log_event,
@@ -601,6 +602,14 @@ class AIEngine:
     def _handle_get_supported_languages(self, data: dict = None) -> dict:
         return bridge_languages()
 
+    def _handle_get_hint(self, data: dict) -> dict:
+        from core.hint_manager import HintManager
+        gamemode = data.get("gamemode", "fill_blank")
+        question_data = data.get("question_data", {})
+        hint_level = data.get("hint_level", 1)
+        ui_lang = self.settings.get("ui_lang", "en")
+        return HintManager.get_hint_data(gamemode, question_data, hint_level, ui_lang)
+
     def _handle_ai_grade(self, data: dict) -> dict:
         data = normalize_language_fields(dict(data or {}))
         gamemode = data.get("gamemode", "fill_blank")
@@ -608,9 +617,19 @@ class AIEngine:
         ui_lang = valid_ui_lang(self.settings.get("ui_lang"))
         level = data.get("level", "intermediate")
 
+        from core.languages import get_language_name
+        learn_lang_full = get_language_name(learn_lang)
+        ui_lang_full = get_language_name(ui_lang)
+
+        from core.logger import flow
+        flow(
+            phase="GRADER",
+            message=f"AI Grade evaluated for gamemode={gamemode}, feedback_lang={ui_lang_full}"
+        )
+
         from core.ai_grader import get_grader_prompt
 
-        common = {"learn_lang": learn_lang, "level": level, "feedback_lang": ui_lang}
+        common = {"learn_lang": learn_lang_full, "level": level, "feedback_lang": ui_lang_full}
         if gamemode == "fill_blank":
             prompt_data = {
                 **common,
