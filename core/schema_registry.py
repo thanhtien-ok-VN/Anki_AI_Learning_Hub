@@ -33,7 +33,6 @@ if HAS_PYDANTIC:
         id: str                    # "BLANK_1", "BLANK_2"
         answer: str
         meaning: str
-        hint: str
         distractors: List[str] = []
         explanation: str
 
@@ -42,18 +41,12 @@ if HAS_PYDANTIC:
         blanks: List[ClozeBlank]
         full_solution_text: str
         story_translation: str
-        context_summary: str
 
     # ===================== 3. TRANSLATION =====================
-    class AltTranslation(BaseModel):
-        text: str
-        note: str
-
     class TranslationSchema(BaseModel):
         source_sentence: str
         target_language: str
         reference_translation: str
-        alternative_translations: List[AltTranslation]
         grading_rubric: str
 
     # ===================== 4. UNSCRAMBLE =====================
@@ -104,10 +97,6 @@ if HAS_PYDANTIC:
         discussion_prompt: str
 
     # ===================== 7. SENTENCE TRANSFORM =====================
-    class AcceptableVariation(BaseModel):
-        text: str
-        note: str
-
     class CommonError(BaseModel):
         error: str
         feedback: str
@@ -117,7 +106,6 @@ if HAS_PYDANTIC:
         prompt: str
         expected_answer: str
         normalized_answer: str
-        acceptable_variations: List[AcceptableVariation]
         forbidden_words: List[str]
         grammar_rule: str
         common_errors: List[CommonError]
@@ -210,18 +198,16 @@ RAW_DICT_SCHEMAS = {
                         "id": {"type": "STRING"},
                         "answer": {"type": "STRING"},
                         "meaning": {"type": "STRING"},
-                        "hint": {"type": "STRING"},
                         "distractors": {"type": "ARRAY", "items": {"type": "STRING"}},
                         "explanation": {"type": "STRING"}
                     },
-                    "required": ["id", "answer", "meaning", "hint", "explanation"]
+                    "required": ["id", "answer", "meaning", "explanation"]
                 }
             },
             "full_solution_text": {"type": "STRING"},
-            "story_translation": {"type": "STRING"},
-            "context_summary": {"type": "STRING"}
+            "story_translation": {"type": "STRING"}
         },
-        "required": ["paragraph", "blanks", "full_solution_text", "story_translation", "context_summary"]
+        "required": ["paragraph", "blanks", "full_solution_text", "story_translation"]
     },
     "translation": {
         "type": "OBJECT",
@@ -229,20 +215,9 @@ RAW_DICT_SCHEMAS = {
             "source_sentence": {"type": "STRING"},
             "target_language": {"type": "STRING"},
             "reference_translation": {"type": "STRING"},
-            "alternative_translations": {
-                "type": "ARRAY",
-                "items": {
-                    "type": "OBJECT",
-                    "properties": {
-                        "text": {"type": "STRING"},
-                        "note": {"type": "STRING"}
-                    },
-                    "required": ["text", "note"]
-                }
-            },
             "grading_rubric": {"type": "STRING"}
         },
-        "required": ["source_sentence", "target_language", "reference_translation", "alternative_translations", "grading_rubric"]
+        "required": ["source_sentence", "target_language", "reference_translation", "grading_rubric"]
     },
     "unscramble": {
         "type": "OBJECT",
@@ -331,17 +306,6 @@ RAW_DICT_SCHEMAS = {
                         "prompt": {"type": "STRING"},
                         "expected_answer": {"type": "STRING"},
                         "normalized_answer": {"type": "STRING"},
-                        "acceptable_variations": {
-                            "type": "ARRAY",
-                            "items": {
-                                "type": "OBJECT",
-                                "properties": {
-                                    "text": {"type": "STRING"},
-                                    "note": {"type": "STRING"}
-                                },
-                                "required": ["text", "note"]
-                            }
-                        },
                         "forbidden_words": {"type": "ARRAY", "items": {"type": "STRING"}},
                         "grammar_rule": {"type": "STRING"},
                         "common_errors": {
@@ -356,7 +320,7 @@ RAW_DICT_SCHEMAS = {
                             }
                         }
                     },
-                    "required": ["original", "prompt", "expected_answer", "normalized_answer", "acceptable_variations", "forbidden_words", "grammar_rule", "common_errors"]
+                    "required": ["original", "prompt", "expected_answer", "forbidden_words", "grammar_rule"]
                 }
             }
         },
@@ -379,7 +343,7 @@ RAW_DICT_SCHEMAS = {
                         "sample_acceptable_phrases": {"type": "ARRAY", "items": {"type": "STRING"}},
                         "sample_forbidden_phrases": {"type": "ARRAY", "items": {"type": "STRING"}}
                     },
-                    "required": ["target_word", "meaning", "taboo_words", "clue", "difficulty_level", "sample_acceptable_phrases", "sample_forbidden_phrases"]
+                    "required": ["target_word", "meaning", "taboo_words", "clue", "sample_acceptable_phrases", "sample_forbidden_phrases"]
                 }
             }
         },
@@ -387,62 +351,81 @@ RAW_DICT_SCHEMAS = {
     }
 }
 
-def model_to_gemini_schema(model_class) -> dict:
-    """Convert Pydantic BaseModel -> Gemini response_schema dict."""
-    if not HAS_PYDANTIC or not hasattr(model_class, "model_json_schema"):
-        return {}
-    schema = model_class.model_json_schema()
-    defs = schema.get("$defs", {})
 
-    def convert(props):
-        out = {}
-        for name, prop in props.items():
-            ref = prop.get("$ref", "")
-            if ref:
-                prop = defs.get(ref.split("/")[-1], prop)
+def get_schema(gamemode: str) -> dict:
+    if gamemode in RAW_DICT_SCHEMAS:
+        return RAW_DICT_SCHEMAS[gamemode]
+    return {}
 
-            if prop.get("type") == "array":
-                items = prop.get("items", {})
-                iref = items.get("$ref", "")
-                if iref:
-                    idef = defs.get(iref.split("/")[-1], {})
-                    out[name] = {
-                        "type": "ARRAY",
-                        "items": {
-                            "type": "OBJECT",
-                            "properties": convert(idef.get("properties", {})),
-                            "required": list(idef.get("required", [])),
-                        },
-                    }
-                else:
-                    out[name] = {
-                        "type": "ARRAY",
-                        "items": {"type": TYPE_MAP.get(items.get("type", "string"), "STRING")},
-                    }
-            elif prop.get("properties"):
-                out[name] = {
-                    "type": "OBJECT",
-                    "properties": convert(prop["properties"]),
-                    "required": list(prop.get("required", [])),
-                }
-            else:
-                out[name] = {"type": TYPE_MAP.get(prop.get("type", "string"), "STRING")}
-        return out
-
-    return {
-        "type": "OBJECT",
-        "properties": convert(schema.get("properties", {})),
-        "required": list(schema.get("required", [])),
-    }
-
-def get_schema(gamemode: str) -> Optional[dict]:
-    if HAS_PYDANTIC and gamemode in REGISTRY:
-        cls = REGISTRY.get(gamemode)
-        return model_to_gemini_schema(cls) if cls else None
-    return RAW_DICT_SCHEMAS.get(gamemode)
 
 def get_pydantic_model(gamemode: str):
-    return REGISTRY.get(gamemode) if HAS_PYDANTIC else None
+    return REGISTRY.get(gamemode)
 
-def list_gamemodes() -> list[str]:
-    return list(RAW_DICT_SCHEMAS.keys())
+
+def _pydantic_to_gemini_schema(model) -> dict:
+    if not HAS_PYDANTIC or model is None:
+        return {}
+
+    schema = model.schema()
+    defs = schema.get("$defs", schema.get("definitions", {}))
+
+    def resolve_ref(ref_str: str) -> dict:
+        def_name = ref_str.split("/")[-1]
+        return defs.get(def_name, {})
+
+    def convert_prop(prop_schema: dict) -> dict:
+        if "$ref" in prop_schema:
+            prop_schema = resolve_ref(prop_schema["$ref"])
+
+        p_type = prop_schema.get("type", "string")
+
+        if "anyOf" in prop_schema:
+            for item in prop_schema["anyOf"]:
+                if item.get("type") != "null":
+                    return convert_prop(item)
+            p_type = "string"
+
+        if p_type == "array":
+            items_schema = prop_schema.get("items", {})
+            return {
+                "type": "ARRAY",
+                "items": convert_prop(items_schema)
+            }
+        elif p_type == "object":
+            props = prop_schema.get("properties", {})
+            req = prop_schema.get("required", [])
+            converted_props = {}
+            for k, v in props.items():
+                converted_props[k] = convert_prop(v)
+            res = {
+                "type": "OBJECT",
+                "properties": converted_props
+            }
+            if req:
+                res["required"] = req
+            return res
+        else:
+            return {"type": TYPE_MAP.get(p_type, "STRING")}
+
+    props = schema.get("properties", {})
+    req = schema.get("required", [])
+    converted_props = {}
+    for k, v in props.items():
+        converted_props[k] = convert_prop(v)
+
+    res = {
+        "type": "OBJECT",
+        "properties": converted_props
+    }
+    if req:
+        res["required"] = req
+    return res
+
+
+def model_to_gemini_schema(gamemode: str) -> dict:
+    if HAS_PYDANTIC and gamemode in REGISTRY:
+        try:
+            return _pydantic_to_gemini_schema(REGISTRY[gamemode])
+        except Exception:
+            pass
+    return get_schema(gamemode)
