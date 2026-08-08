@@ -1,0 +1,144 @@
+<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #2d3748; max-width: 900px; margin: 0 auto; padding: 20px; background-color: #ffffff;">
+
+  <!-- HEADER & BANNER -->
+  <div style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); color: #ffffff; padding: 28px; border-radius: 12px; margin-bottom: 24px; text-align: center; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+    <h1 style="margin: 0 0 10px 0; font-size: 28px; font-weight: 800; color: #ffffff;">🚀 AI Learning Hub for Anki</h1>
+    <p style="margin: 0; font-size: 16px; opacity: 0.95; font-weight: 500;">Hệ thống 8 Trò Chơi Học Ngôn Ngữ Tích Hợp Trí Tuệ Nhân Tạo (Gemini AI API)</p>
+  </div>
+
+  <!-- GIỚI THIỆU TỔNG QUAN -->
+  <section style="margin-bottom: 24px; background: #f8fafc; padding: 20px; border-radius: 8px; border-left: 4px solid #4f46e5;">
+    <h2 style="margin-top: 0; color: #1e293b; font-size: 20px;">🌟 Giới Thiệu Tổng Quan</h2>
+    <p style="margin-bottom: 0;"><b>AI Learning Hub</b> là add-on biến việc ôn tập từ vựng Anki thành trải nghiệm học tập tương tác cao với 8 chế độ game thông minh. Sử dụng mô hình AI tiên tiến từ Google (Gemini API), add-on tự động phát sinh bài tập, chấm điểm chi tiết 5 dòng, phân tích lỗi sai ngữ pháp, và gợi ý đa cấp theo ngữ cảnh.</p>
+  </section>
+
+  <!-- BẢNG HƯỚNG DẪN STEP BY STEP -->
+  <h2 style="color: #1e293b; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; margin-top: 32px; font-size: 22px;">📌 Hướng Dẫn Sử Dụng Chi Tiết Từ A Đến Z</h2>
+
+  <!-- BƯỚC 1 -->
+  <div style="margin-bottom: 20px; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+    <div style="background-color: #eff6ff; padding: 12px 16px; border-bottom: 1px solid #bfdbfe; font-weight: 700; color: #1e40af; font-size: 16px;">
+      1️⃣ Bước 1: Cài Đặt Add-on Vào Anki
+    </div>
+    <div style="padding: 16px;">
+      <ol style="margin: 0; padding-left: 20px;">
+        <li style="margin-bottom: 8px;">Mở phần mềm <b>Anki</b> trên máy tính của bạn.</li>
+        <li style="margin-bottom: 8px;">Trêu thanh menu trên cùng, chọn <b>Công cụ (Tools)</b> ➔ <b>Add-ons</b> (hoặc phím tắt <code>Ctrl + Shift + A</code> trên Windows / <code>Cmd + Shift + A</code> trên Mac).</li>
+        <li style="margin-bottom: 8px;"><b>Nếu cài từ Mã AnkiWeb:</b> Nhấn nút <b>Get Add-ons...</b> ➔ Dán mã Code 9 chữ số ➔ Nhấn <b>OK</b>.</li>
+        <li style="margin-bottom: 8px;"><b>Nếu cài từ file (.ankiaddon):</b> Nhấn nút <b>Install from file... (Cài đặt từ file...)</b> ➔ Chọn file <code>AI_Learning_Hub.ankiaddon</code>.</li>
+        <li style="margin-bottom: 0;"><b>Khởi động lại Anki</b> để hoàn tất kích hoạt.</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- BƯỚC 2 -->
+  <div style="margin-bottom: 20px; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+    <div style="background-color: #f0fdf4; padding: 12px 16px; border-bottom: 1px solid #bbf7d0; font-weight: 700; color: #166534; font-size: 16px;">
+      2️⃣ Bước 2: Đăng Ký Tạo Gemini API Key Miễn Phí (Google AI Studio)
+    </div>
+    <div style="padding: 16px;">
+      <p style="margin-top: 0;">Add-on kết nối trực tiếp với Google Gemini AI để sinh bài tập. Bạn có thể lấy API Key <b>hoàn toàn miễn phí</b> chỉ trong 1 phút:</p>
+      <ol style="margin: 0; padding-left: 20px;">
+        <li style="margin-bottom: 8px;">Truy cập trang Google AI Studio: <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color: #2563eb; text-decoration: none; font-weight: 600;">https://aistudio.google.com/app/apikey</a></li>
+        <li style="margin-bottom: 8px;">Đăng nhập bằng tài khoản Google (Gmail) của bạn.</li>
+        <li style="margin-bottom: 8px;">Nhấn vào nút <b>Create API key</b> (Tạo khóa API).</li>
+        <li style="margin-bottom: 8px;">Chọn một dự án (Create API key in new project) ➔ Google sẽ hiển thị một chuỗi ký tự dài bắt đầu bằng <code>AIzaSy...</code></li>
+        <li style="margin-bottom: 0;">Nhấn <b>Copy</b> để sao chép chuỗi API Key đó.</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- BƯỚC 3 -->
+  <div style="margin-bottom: 20px; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+    <div style="background-color: #fef3c7; padding: 12px 16px; border-bottom: 1px solid #fde68a; font-weight: 700; color: #92400e; font-size: 16px;">
+      3️⃣ Bước 3: Thêm Key Vào AI Learning Hub & Kiểm Tra (Test Key)
+    </div>
+    <div style="padding: 16px;">
+      <ol style="margin: 0; padding-left: 20px;">
+        <li style="margin-bottom: 8px;">Trên Anki, chọn <b>Công cụ (Tools)</b> ➔ <b>🚀 AI Learning Hub...</b></li>
+        <li style="margin-bottom: 8px;">Khi màn hình Hub mở ra, nhấn vào nút <b>⚙️ Cài đặt (Settings)</b> ở góc trên bên phải.</li>
+        <li style="margin-bottom: 8px;">Tại ô <b>Gemini API Keys</b>, dán API Key (bắt đầu bằng <code>AIzaSy...</code>) vào khung nhập liệu (mỗi key 1 dòng nếu bạn có nhiều key).</li>
+        <li style="margin-bottom: 8px;">Nhấn nút <b>🧪 Kiểm tra tất cả Key (Test All Keys)</b>:
+          <ul style="margin-top: 4px; padding-left: 20px;">
+            <li>🟢 Hiển thị màu xanh <b>Hoạt động (Active)</b>: Key của bạn chuẩn xác và sẵn sàng sử dụng!</li>
+            <li>🔴 Hiển thị màu đỏ: Kiểm tra lại xem có sao chép nhầm hoặc thiếu ký tự nào không.</li>
+          </ul>
+        </li>
+        <li style="margin-bottom: 0;">Nhấn <b>💾 Lưu cài đặt (Save)</b> để lưu trữ an toàn.</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- BƯỚC 4 -->
+  <div style="margin-bottom: 20px; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+    <div style="background-color: #faf5ff; padding: 12px 16px; border-bottom: 1px solid #e9d5ff; font-weight: 700; color: #6b21a8; font-size: 16px;">
+      4️⃣ Bước 4: Tùy Chỉnh Ngôn Ngữ & Bộ Thẻ Anki Học Tập
+    </div>
+    <div style="padding: 16px;">
+      <ul style="margin: 0; padding-left: 20px;">
+        <li style="margin-bottom: 8px;"><b>Ngôn Ngữ Học (Learning Language):</b> Chọn ngôn ngữ môn học bạn muốn thực hành (ví dụ: <code>Tiếng Anh</code>, <code>Tiếng Trung (Mandarin)</code>...). Bài tập tạo ra sẽ 100% bằng ngôn ngữ này.</li>
+        <li style="margin-bottom: 8px;"><b>Ngôn Ngữ Giao Diện & Giải Thích (UI Language):</b> Chọn <code>Tiếng Việt</code> hoặc <code>Tiếng Anh</code>. Toàn bộ nút bấm, hướng dẫn và lời phân tích lỗi sai từ AI sẽ tự động điều chỉnh 100% theo ngôn ngữ này.</li>
+        <li style="margin-bottom: 0;"><b>Bộ Thẻ Anki (Anki Deck Source):</b> Chọn bộ thẻ từ vựng Anki sẵn có trên máy bạn để AI tự động trích xuất các cặp từ vựng đưa vào bài tập!</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- BƯỚC 5 -->
+  <div style="margin-bottom: 24px; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+    <div style="background-color: #eff6ff; padding: 12px 16px; border-bottom: 1px solid #bfdbfe; font-weight: 700; color: #1d4ed8; font-size: 16px;">
+      5️⃣ Bước 5: Bắt Đầu Chơi & Luyện Tập 8 Chế Độ AI Game
+    </div>
+    <div style="padding: 16px;">
+      <p style="margin-top: 0;">Chọn 1 trong 8 chế độ game từ màn hình chính để bắt đầu luyện tập:</p>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin-top: 12px;">
+        <div style="background-color: #f8fafc; border: 1px solid #cbd5e1; padding: 12px; border-radius: 6px;">
+          <b style="color: #2563eb;">✏️ 1. Điền từ vào chỗ trống (Fill in the blank):</b><br>
+          Điền từ thích hợp vào vị trí chỗ trống trên câu. Hỗ trợ bấm chọn từ điền mượt mà vào thẻ Interactive Blank Pill.
+        </div>
+        <div style="background-color: #f8fafc; border: 1px solid #cbd5e1; padding: 12px; border-radius: 6px;">
+          <b style="color: #2563eb;">📖 2. Đoạn văn đục lỗ (Cloze Test):</b><br>
+          Đọc đoạn văn chủ đề và điền nhiều từ còn thiếu vào vị trí [BLANK_1], [BLANK_2]...
+        </div>
+        <div style="background-color: #f8fafc; border: 1px solid #cbd5e1; padding: 12px; border-radius: 6px;">
+          <b style="color: #2563eb;">🌐 3. Dịch câu (Sentence Translation):</b><br>
+          Dịch câu sang ngôn ngữ đích. AI chấm điểm 0-10, phân tích chi tiết 5 trường lỗi (Tên lỗi, Phần sai, Lý do, Hướng sửa, Vì sao sửa).
+        </div>
+        <div style="background-color: #f8fafc; border: 1px solid #cbd5e1; padding: 12px; border-radius: 6px;">
+          <b style="color: #2563eb;">🧩 4. Sắp xếp lại câu (Sentence Unscramble):</b><br>
+          Kéo thả hoặc bấm sắp xếp các mảnh từ bị xáo trộn thành câu hoàn chỉnh đúng ngữ pháp.
+        </div>
+        <div style="background-color: #f8fafc; border: 1px solid #cbd5e1; padding: 12px; border-radius: 6px;">
+          <b style="color: #2563eb;">📚 5. Tạo bài đọc AI (Story Generator):</b><br>
+          AI viết đoạn văn đọc hiểu theo trình độ (A1-C2) kèm các câu hỏi đọc hiểu 4 lựa chọn (Main Idea, Detail, Vocabulary).
+        </div>
+        <div style="background-color: #f8fafc; border: 1px solid #cbd5e1; padding: 12px; border-radius: 6px;">
+          <b style="color: #2563eb;">🔄 6. Biến đổi câu (Sentence Transformation):</b><br>
+          Viết lại câu theo yêu cầu (Passive voice, Conditionals...). Phân tích lỗi 4 khối chuẩn hóa kèm đáp án gợi ý thông thường & nâng cao.
+        </div>
+        <div style="background-color: #f8fafc; border: 1px solid #cbd5e1; padding: 12px; border-radius: 6px;">
+          <b style="color: #2563eb;">🚫 7. Đoán từ cấm (Taboo Word Guessing):</b><br>
+          Đoán từ mục tiêu qua mô tả gợi ý của AI mà không được chạm vào các từ cấm (Taboo words).
+        </div>
+        <div style="background-color: #f8fafc; border: 1px solid #cbd5e1; padding: 12px; border-radius: 6px;">
+          <b style="color: #2563eb;">🔗 8. Nối từ (Word Matching):</b><br>
+          Nối các cặp thuật ngữ và định nghĩa từ bộ thẻ Anki. Hoạt động mượt mà 100% cả khi ngoại tuyến (Offline).
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TÍNH NĂNG GỢI Ý & LỊCH SỬ -->
+  <section style="background-color: #f1f5f9; padding: 16px; border-radius: 8px; margin-bottom: 24px;">
+    <h3 style="margin-top: 0; color: #334155; font-size: 18px;">💡 Hệ Thống Gợi Ý Multi-Tier & Lịch Sử Luyện Tập</h3>
+    <ul style="margin: 0; padding-left: 20px;">
+      <li style="margin-bottom: 6px;"><b>💡 Hệ thống Gợi ý (Hint System):</b> 3 cấp độ gợi ý thông minh (Cấp 1: Quy tắc ngữ pháp, Cấp 2: Ký tự đầu & Nghĩa, Cấp 3: Đáp án chuẩn). Tự động tính toán điểm trừ phạt chính xác theo cấp gợi ý đã dùng.</li>
+      <li style="margin-bottom: 0;"><b>📜 Lịch sử luyện tập (Exercise History):</b> Xem lại chi tiết từng lượt làm bài, điểm số, badge gợi ý và lời giải thích từ AI để ôn tập lại bất kỳ lúc nào.</li>
+    </ul>
+  </section>
+
+  <!-- FOOTER / CHÂN TRANG -->
+  <div style="text-align: center; border-top: 1px solid #e2e8f0; padding-top: 16px; color: #64748b; font-size: 14px;">
+    <p style="margin: 0;"><b>AI Learning Hub</b> — Nâng tầm trải nghiệm học từ vựng Anki bằng Trí Tuệ Nhân Tạo 🚀</p>
+  </div>
+
+</div>
