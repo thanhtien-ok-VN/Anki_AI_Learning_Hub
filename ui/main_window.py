@@ -77,6 +77,7 @@ class AIHubView:
             msg = json.loads(cmd)
             action = msg.get("action", "")
             request_id = msg.get("request_id", "")
+            log.info(f"Bridge cmd received: action={action}, request_id={request_id}")
             if action == "close_hub":
                 self.close()
                 return json.dumps(self._result(True))
@@ -158,6 +159,7 @@ class AIHubView:
         self._hub_web = AnkiWebView(title="AI Learning Hub")
         self._hub_web.set_open_links_externally(False)
         self._hub_web.set_bridge_command(self._on_bridge_cmd, self)
+        ui.webview_bridge.setup_bridge(self._hub_web, self.engine, self)
         self._hub_web.loadFinished.connect(self._on_load_finished)
         self._tabs.addTab(self._hub_web, "AI Hub")
         self._tabs.setCurrentWidget(self._hub_web)

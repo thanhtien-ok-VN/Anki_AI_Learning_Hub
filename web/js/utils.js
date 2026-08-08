@@ -2,14 +2,14 @@ const Utils = {
     __: {},
 
     async initI18n() {
-        for (let i = 0; i < 100; i++) {
-            const res = await Bridge.sendAsync('get_ui_strings').catch(() => null);
+        for (let i = 0; i < 3; i++) {
+            const res = await Bridge.sendAsync('get_ui_strings', {}, 2000).catch(() => null);
             if (res && res.strings && Object.keys(res.strings).length > 0) {
                 this.__ = res.strings;
                 this.currentLang = res.lang || 'en';
                 break;
             }
-            await new Promise(r => setTimeout(r, 200));
+            await new Promise(r => setTimeout(r, 100));
         }
         this.renderI18n();
     },

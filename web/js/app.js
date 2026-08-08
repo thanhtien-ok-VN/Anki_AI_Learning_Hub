@@ -3380,15 +3380,17 @@ async function testKeys(){
     window.addEventListener('beforeunload', handleSave);
     window.addEventListener('pagehide', handleSave);
 
-    try {
+    const watchdog = new Promise(resolve => setTimeout(resolve, 4000));
+
+    const bootTask = (async () => {
       if (window.Utils && typeof window.Utils.initI18n === 'function') {
         await window.Utils.initI18n().catch(e => console.warn("initI18n failed:", e));
       }
 
       try {
-        const settings = await Bridge.sendAsync('get_settings', {}, 3000);
+        const settings = await Bridge.sendAsync('get_settings', {}, 2000).catch(() => ({}));
         if (settings && Object.keys(settings).length) Object.assign(state.userPrefs, settings);
-        const p = await Bridge.sendAsync('load_prefs', {}, 3000);
+        const p = await Bridge.sendAsync('load_prefs', {}, 2000).catch(() => ({}));
         if (p && Object.keys(p).length) Object.assign(state.userPrefs, p);
         state.userPrefs.learn_lang = (settings && settings.learn_lang) || state.userPrefs.learn_lang || state.userPrefs.language || 'en';
         state.userPrefs.language = state.userPrefs.learn_lang;
@@ -3396,7 +3398,7 @@ async function testKeys(){
       } catch (e) { console.warn("Failed to load language settings:", e); }
 
       try {
-        const langsData = await Bridge.sendAsync('get_supported_languages', {}, 3000);
+        const langsData = await Bridge.sendAsync('get_supported_languages', {}, 2000).catch(() => ({}));
         if (langsData && langsData.learn_languages) {
           state.supportedLanguages = langsData.learn_languages;
           state.uiLanguages = langsData.ui_languages || ['en', 'vi'];
@@ -3404,9 +3406,10 @@ async function testKeys(){
       } catch (e) {
         console.warn("Failed to load supported languages:", e);
       }
-    } finally {
-      render();
-    }
+    })();
+
+    await Promise.race([bootTask, watchdog]);
+    render();
   }
   if (!window.Bridge) window.Bridge = {};
   window.Bridge.updateStatus = function(text) {

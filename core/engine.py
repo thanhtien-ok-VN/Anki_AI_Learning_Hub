@@ -228,8 +228,8 @@ class AIEngine:
             msg = json.loads(message)
             action = msg.get("action", "")
             data = msg.get("data", {})
-            log.debug(
-                f"JS message: {action}",
+            log.info(
+                f"Engine handling RPC action: {action}",
                 {"data_keys": list(data.keys()) if data else None},
             )
 
