@@ -109,21 +109,32 @@ Original Sentence: {original}
 Expected Answer: {expected_answer}
 Student's Answer: {user_answer}
 Student's level: {level}
+Hint level used by student: {hint_level} (Level 0=No hint, Level 1=Grammar, Level 2=First letter/Meaning, Level 3=Answer revealed)
 
 Task:
-Evaluate the student's answer. If it matches the expected answer or is grammatically identical, set correct to true.
-If it is incorrect, identify the specific error, explain why it is wrong, how to fix it, and why this fix works.
+Evaluate the student's transformation answer, identify specific errors (e.g., Passive Voice Structure, Verb Tense, Word Order, Forbidden Word), and provide granular grading and suggestions.
+For each error identified, you MUST provide 5 fields: name, wrong, reason, suggestion, and why.
 Explain all reasons and notes in {feedback_lang}.
 
 Respond in JSON matching the exact schema below:
 {{
     "correct": true/false,
     "score": 0-10,
-    "specific_error": "Error category (e.g., Passive Voice, Comparative Structure)",
-    "why_wrong": "Why the student's answer is wrong",
-    "how_to_fix": "How to fix it",
-    "why_fix": "Why this correction is correct under the grammar rule",
-    "grammar_rule": "The grammar rule being tested"
+    "level": "Pass" or "Needs improvement",
+    "errors": [
+        {{
+            "name": "Error category (e.g., Passive Voice Structure, Verb Tense, Word Choice)",
+            "wrong": "The incorrect part of the student's answer",
+            "reason": "Why it is incorrect under the target grammar rule",
+            "suggestion": "How to fix it",
+            "why": "Why this correction makes the sentence correct"
+        }}
+    ],
+    "suggested_answers": {{
+        "common": "A natural, standard correct sentence transformation",
+        "advanced": "A more advanced, sophisticated transformation with richer vocabulary"
+    }},
+    "grammar_rule": "The core grammar rule being tested"
 }}
 """
 

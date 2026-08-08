@@ -3037,7 +3037,8 @@ function renderStory(x) {
             expected_answer:expectedText,
             instruction:instructionText,
             prompt:instructionText,
-            original:originalText
+            original:originalText,
+            hint_level: wasHinted ? 1 : 0
           }, { signal });
         }
 
@@ -3053,31 +3054,62 @@ function renderStory(x) {
         const fb=document.querySelector('#feedback');
         if(!fb)return;
 
-        let html = '';
-        if (r.correct) {
-          html += '<div class="feedback good"><b>🎉 ' + esc(t('feedback.exact', 'Chính xác!')) + '</b>';
-          html += `<p style="margin-top:10px;">• <b>${esc(t('feedback.your_answer', 'Câu trả lời của bạn'))}:</b> <span style="color:var(--success); font-weight:600;">${esc(ansVal)}</span></p>`;
-          if (r.explanation) {
-            html += `<p style="color:var(--text-secondary); font-size:13px; margin:4px 0;"><i>(${esc(r.explanation)})</i></p>`;
-          }
-        } else {
-          html += '<div class="feedback bad"><b>❌ ' + esc(t('feedback.needs_improvement', 'Chưa chính xác rồi!')) + '</b>';
-          html += `<p style="margin-top:10px;">• <b>${esc(t('feedback.your_answer', 'Câu trả lời của bạn'))}:</b> <span style="color:var(--error); font-weight:600;">${esc(ansVal)}</span></p>`;
+        let html = '<div class="feedback ' + (r.correct ? 'good' : 'bad') + '"><b>' + (r.correct ? '🎉 ' + esc(t('feedback.exact', 'Chính xác!')) : '❌ ' + esc(t('feedback.needs_improvement', 'Cần cải thiện'))) + '</b>';
+
+        // 1. ĐÁNH GIÁ CHUNG
+        if (typeof r.score !== 'undefined') {
+          let lv = r.level;
+          if (lv === 'Pass') lv = t('feedback.grade_pass', 'Đạt');
+          else if (lv === 'Needs improvement') lv = t('feedback.grade_improve', 'Cần cải thiện');
+          else if (!lv) lv = r.correct ? t('feedback.grade_pass', 'Đạt') : t('feedback.grade_improve', 'Cần cải thiện');
+
+          html += `<div class="overall-grade" style="margin-top:10px; padding:10px; background:var(--color-surface-tint); border-radius:6px; border-left:4px solid ${r.correct?'var(--success)':'var(--error)'}">
+            <p style="margin: 0;">📊 <b>${esc(t('feedback.overall_grade', 'ĐÁNH GIÁ CHUNG'))}:</b> ${esc(t('feedback.score_label', 'Điểm số'))}: <span style="font-size:16px; font-weight:700; color:${r.correct?'var(--success)':'var(--error)'}">${r.score}/10</span> (${esc(lv)})</p>
+          </div>`;
+        }
+
+        html += `<p style="margin-top:10px;">• <b>${esc(t('feedback.your_answer', 'Câu trả lời của bạn'))}:</b> <span style="color:${r.correct?'var(--success)':'var(--error)'}; font-weight:600;">${esc(ansVal)}</span></p>`;
+        if (!r.correct) {
           html += `<p>• <b>${esc(t('feedback.expected_answer', 'Đáp án chuẩn'))}:</b> <span style="color:var(--success); font-weight:600;">${esc(expectedText)}</span></p>`;
-          
-          // Phân tích lỗi chi tiết 4 bước từ AI
-          if (r.specific_error || r.why_wrong || r.how_to_fix || r.why_fix) {
-            html += `<hr><p><b>🔍 ${esc(t('feedback.detailed_error_analysis', 'Phân tích chi tiết lỗi sai'))}:</b></p>
-            <div class="error-item error-item-block">
-              <p style="margin:2px 0;">🔴 <b>${esc(t('feedback.error_label', 'Lỗi'))}:</b> ${esc(r.specific_error || t('feedback.grammar_vocab_error', 'Lỗi cấu trúc/Từ vựng'))}</p>
-              <p style="margin:2px 0; padding-left:14px; font-size:13px;">❌ <b>${esc(t('feedback.wrong_label', 'Lỗi sai'))}:</b> <span style="color:var(--error);">${esc(ansVal)}</span> ➔ <b>${esc(t('feedback.reason_label', 'Vì sao sai'))}:</b> <i>${esc(r.why_wrong || t('feedback.grammar_structure_error', 'Chưa biến đổi đúng cấu trúc ngữ pháp yêu cầu'))}</i></p>
-              <p style="margin:2px 0; padding-left:14px; font-size:13px;">💡 <b>${esc(t('feedback.suggestion_label', 'Cách sửa'))}:</b> <span style="color:var(--success); font-weight:600;">${esc(r.how_to_fix || expectedText)}</span> ➔ <b>${esc(t('feedback.fix_label', 'Vì sao sửa'))}:</b> <i>${esc(r.why_fix || t('feedback.rule_fix_error', 'Đảm bảo đúng quy tắc biến đổi câu'))}</i></p>
-            </div>`;
-          } else if (r.explanation || r.feedback) {
-            html += `<p>${esc(r.explanation || r.feedback)}</p>`;
+        }
+
+        // 2. PHÂN TÍCH LỖI CHI TIẾT
+        if (r.errors && r.errors.length) {
+          html += '<hr><p><b>🔍 ' + esc(t('feedback.detailed_error_analysis', 'PHÂN TÍCH LỖI:')) + '</b></p>';
+          r.errors.forEach(err => {
+            if (typeof err === 'object' && err.name) {
+              html += `<div class="error-item error-item-block">
+                <p style="margin:2px 0;">🔴 <b>${esc(t('feedback.error_label', 'Lỗi'))}:</b> ${esc(err.name)}</p>
+                <p style="margin:2px 0; padding-left:14px; font-size:13px;">❌ <b>${esc(t('feedback.wrong_label', 'Lỗi sai'))}:</b> <span style="color:var(--error);">${esc(err.wrong)}</span> ➔ <b>${esc(t('feedback.reason_label', 'Vì sao sai'))}:</b> <i>${esc(err.reason)}</i></p>
+                <p style="margin:2px 0; padding-left:14px; font-size:13px;">💡 <b>${esc(t('feedback.suggestion_label', 'Gợi ý sửa'))}:</b> <span style="color:var(--success); font-weight:600;">${esc(err.suggestion)}</span> ➔ <b>${esc(t('feedback.fix_label', 'Vì sao sửa'))}:</b> <i>${esc(err.why)}</i></p>
+              </div>`;
+            } else {
+              html += `<p>• ${esc(err)}</p>`;
+            }
+          });
+        } else if (r.specific_error || r.why_wrong || r.how_to_fix || r.why_fix) {
+          html += `<hr><p><b>🔍 ${esc(t('feedback.detailed_error_analysis', 'Phân tích chi tiết lỗi sai'))}:</b></p>
+          <div class="error-item error-item-block">
+            <p style="margin:2px 0;">🔴 <b>${esc(t('feedback.error_label', 'Lỗi'))}:</b> ${esc(r.specific_error || t('feedback.grammar_vocab_error', 'Lỗi cấu trúc/Từ vựng'))}</p>
+            <p style="margin:2px 0; padding-left:14px; font-size:13px;">❌ <b>${esc(t('feedback.wrong_label', 'Lỗi sai'))}:</b> <span style="color:var(--error);">${esc(ansVal)}</span> ➔ <b>${esc(t('feedback.reason_label', 'Vì sao sai'))}:</b> <i>${esc(r.why_wrong || t('feedback.grammar_structure_error', 'Chưa biến đổi đúng cấu trúc ngữ pháp yêu cầu'))}</i></p>
+            <p style="margin:2px 0; padding-left:14px; font-size:13px;">💡 <b>${esc(t('feedback.suggestion_label', 'Cách sửa'))}:</b> <span style="color:var(--success); font-weight:600;">${esc(r.how_to_fix || expectedText)}</span> ➔ <b>${esc(t('feedback.fix_label', 'Vì sao sửa'))}:</b> <i>${esc(r.why_fix || t('feedback.rule_fix_error', 'Đảm bảo đúng quy tắc biến đổi câu'))}</i></p>
+          </div>`;
+        } else if (r.explanation || r.feedback) {
+          html += `<p>${esc(r.explanation || r.feedback)}</p>`;
+        }
+
+        // 3. ĐÁP ÁN GỢI Ý
+        if (r.suggested_answers) {
+          html += '<hr><p><b>✅ ' + esc(t('feedback.suggested_answers_title', 'ĐÁP ÁN GỢI Ý:')) + '</b></p>';
+          if (r.suggested_answers.common) {
+            html += `<p style="margin:4px 0;">• <b>${esc(t('feedback.common_translation', 'Thông thường (Common)'))}:</b> <span style="color:var(--success); font-weight:600;">${esc(r.suggested_answers.common)}</span></p>`;
+          }
+          if (r.suggested_answers.advanced) {
+            html += `<p style="margin:4px 0;">• <b>${esc(t('feedback.advanced_translation', 'Nâng cao (Advanced)'))}:</b> <span style="color:var(--success); font-weight:600;">${esc(r.suggested_answers.advanced)}</span></p>`;
           }
         }
 
+        // 4. QUY TẮC NGỮ PHÁP & ACCEPTABLE VARIATIONS
         const grammar = q.grammar_rule || r.grammar_rule;
         if (grammar) {
           html += '<hr><p><b>📌 ' + esc(t('feedback.grammar_rule', 'Quy tắc ngữ pháp')) + ':</b> ' + esc(grammar) + '</p>';

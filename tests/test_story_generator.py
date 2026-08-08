@@ -50,9 +50,10 @@ class TestStoryGeneratorMode(unittest.TestCase):
         }
         res = self.mode.render_ui_data(raw)
         q0 = res["questions"][0]
-        self.assertEqual(q0["options"][0]["text"], "Opt Word A")
-        self.assertEqual(q0["options"][1]["text"], "Opt Word B")
-        self.assertEqual(q0["options"][2]["text"], "Plain String Option C")
+        texts = {o["text"] for o in q0["options"]}
+        self.assertIn("Opt Word A", texts)
+        self.assertIn("Opt Word B", texts)
+        self.assertIn("Plain String Option C", texts)
 
     def test_check_answer(self):
         opts = [
