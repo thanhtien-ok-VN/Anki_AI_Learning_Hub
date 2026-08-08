@@ -41,9 +41,15 @@ class AIHubView:
         self._bg_lock = threading.Lock()
 
     def _hub_url(self) -> QUrl:
-        package = mw.addonManager.addonFromModule("AI_Learning_Hub")
+        package = (
+            mw.addonManager.addonFromModule(__name__) or
+            mw.addonManager.addonFromModule("AI_Learning_Hub") or
+            os.path.basename(ADDON_PATH)
+        )
         port = mw.mediaServer.getPort()
-        return QUrl(f"http://127.0.0.1:{port}/_addons/{package}/web/index.html")
+        url_str = f"http://127.0.0.1:{port}/_addons/{package}/web/index.html"
+        log.info(f"Loading Hub URL: {url_str}")
+        return QUrl(url_str)
 
     @staticmethod
     def _result(
@@ -135,8 +141,11 @@ class AIHubView:
 
     def _on_load_finished(self, ok: bool) -> None:
         try:
+            log.info(f"Hub web view loadFinished ok={ok}")
             if ok and self._hub_web:
                 self._hub_web.eval("window.Bridge && window.Bridge.hostReady();")
+            elif not ok and self._hub_web:
+                log.error("Hub web view loadFinished failed (ok=False)!")
         except Exception as e:
             log.error(f"loadFinished eval failed: {e}")
 

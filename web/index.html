@@ -12,6 +12,37 @@
   <title>AI Learning Hub</title>
   <link rel="preload" href="css/style.css" as="style">
   <link rel="stylesheet" href="css/style.css">
+  <style>
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .boot-spinner {
+      width: 42px; height: 42px;
+      border: 4px solid rgba(148, 163, 184, 0.2);
+      border-top: 4px solid #3b82f6;
+      border-radius: 50%;
+      animation: spin 0.9s linear infinite;
+    }
+  </style>
+  <script>
+    window.addEventListener('error', function(e) {
+      var errEl = document.getElementById('boot-error');
+      var retryBtn = document.getElementById('boot-retry-btn');
+      if (errEl) {
+        errEl.textContent = '❌ Lỗi khởi động UI: ' + (e.message || e);
+        errEl.hidden = false;
+      }
+      if (retryBtn) retryBtn.style.display = 'inline-block';
+    });
+    window.addEventListener('unhandledrejection', function(e) {
+      var errEl = document.getElementById('boot-error');
+      var retryBtn = document.getElementById('boot-retry-btn');
+      if (errEl) {
+        var msg = e.reason ? (e.reason.message || e.reason) : 'Unknown Promise error';
+        errEl.textContent = '❌ Lỗi hệ thống: ' + msg;
+        errEl.hidden = false;
+      }
+      if (retryBtn) retryBtn.style.display = 'inline-block';
+    });
+  </script>
 </head>
 <body>
   <div id="status-banner" class="status-banner" role="status" aria-live="polite" hidden>
@@ -19,7 +50,15 @@
     <span id="status-banner-message" class="status-banner__message"></span>
     <button id="status-banner-close" type="button" aria-label="Dismiss notification">×</button>
   </div>
-  <div id="app"></div>
+  <div id="app">
+    <div id="boot-overlay" style="display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:80vh; padding:24px; text-align:center; font-family:system-ui, -apple-system, sans-serif;">
+      <div class="boot-spinner" style="margin-bottom:12px;"></div>
+      <h3 id="boot-status" style="margin:12px 0 6px 0; font-size:18px; font-weight:600; color:var(--text, #1e293b);">🚀 Đang khởi động AI Learning Hub...</h3>
+      <p style="font-size:13px; color:var(--text-secondary, #64748b); margin:0 0 12px 0;">Đang kết nối Anki Bridge &amp; nạp thiết lập...</p>
+      <div id="boot-error" style="color:#ef4444; max-width:500px; text-align:center; margin-top:12px; font-size:13.5px; background:rgba(239,68,68,0.1); padding:10px 14px; border-radius:8px;" hidden></div>
+      <button id="boot-retry-btn" onclick="location.reload()" style="margin-top:16px; padding:8px 18px; display:none; border-radius:6px; background:#3b82f6; color:#fff; border:none; font-weight:600; cursor:pointer;">🔄 Tải lại trang</button>
+    </div>
+  </div>
   <script src="js/bridge.js"></script>
   <script src="js/utils.js"></script>
   <script src="js/hint_system.js"></script>

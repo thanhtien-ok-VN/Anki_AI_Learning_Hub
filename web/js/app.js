@@ -3380,31 +3380,33 @@ async function testKeys(){
     window.addEventListener('beforeunload', handleSave);
     window.addEventListener('pagehide', handleSave);
 
-    if (window.Utils && typeof window.Utils.initI18n === 'function') {
-      await window.Utils.initI18n();
-    }
-
     try {
-      const settings = await Bridge.sendAsync('get_settings');
-      if (settings && Object.keys(settings).length) Object.assign(state.userPrefs, settings);
-      const p = await Bridge.sendAsync('load_prefs');
-      if (p && Object.keys(p).length) Object.assign(state.userPrefs, p);
-      state.userPrefs.learn_lang = (settings && settings.learn_lang) || state.userPrefs.learn_lang || state.userPrefs.language || 'en';
-      state.userPrefs.language = state.userPrefs.learn_lang;
-      document.documentElement.lang = state.userPrefs.ui_lang || 'en';
-    } catch (e) { console.warn("Failed to load language settings:", e); }
-
-    try {
-      const langsData = await Bridge.sendAsync('get_supported_languages');
-      if (langsData && langsData.learn_languages) {
-        state.supportedLanguages = langsData.learn_languages;
-        state.uiLanguages = langsData.ui_languages || ['en', 'vi'];
+      if (window.Utils && typeof window.Utils.initI18n === 'function') {
+        await window.Utils.initI18n().catch(e => console.warn("initI18n failed:", e));
       }
-    } catch (e) {
-      console.warn("Failed to load supported languages:", e);
-    }
 
-    render();
+      try {
+        const settings = await Bridge.sendAsync('get_settings', {}, 3000);
+        if (settings && Object.keys(settings).length) Object.assign(state.userPrefs, settings);
+        const p = await Bridge.sendAsync('load_prefs', {}, 3000);
+        if (p && Object.keys(p).length) Object.assign(state.userPrefs, p);
+        state.userPrefs.learn_lang = (settings && settings.learn_lang) || state.userPrefs.learn_lang || state.userPrefs.language || 'en';
+        state.userPrefs.language = state.userPrefs.learn_lang;
+        document.documentElement.lang = state.userPrefs.ui_lang || 'en';
+      } catch (e) { console.warn("Failed to load language settings:", e); }
+
+      try {
+        const langsData = await Bridge.sendAsync('get_supported_languages', {}, 3000);
+        if (langsData && langsData.learn_languages) {
+          state.supportedLanguages = langsData.learn_languages;
+          state.uiLanguages = langsData.ui_languages || ['en', 'vi'];
+        }
+      } catch (e) {
+        console.warn("Failed to load supported languages:", e);
+      }
+    } finally {
+      render();
+    }
   }
   if (!window.Bridge) window.Bridge = {};
   window.Bridge.updateStatus = function(text) {
