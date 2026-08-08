@@ -405,7 +405,7 @@ class GeminiProvider(BaseLLMProvider):
                     data = json.dumps(payload).encode("utf-8")
                     headers = {"Content-Type": "application/json", "x-goog-api-key": key}
                     req = Request(url, data=data, headers=headers)
-                    resp = urlopen(req, timeout=4)
+                    resp = urlopen(req, timeout=5)
                     if self.cancel_event and self.cancel_event.is_set():
                         return {"ok": False, "error_code": "E_CANCELLED", "error": t("app.cancelled_gen", lang=self.ui_lang)}
                     raw = json.loads(resp.read().decode("utf-8"))

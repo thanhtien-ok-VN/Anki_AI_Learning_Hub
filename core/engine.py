@@ -537,7 +537,7 @@ class AIEngine:
         }
 
     def _handle_test_key(self, data: dict) -> dict:
-        self._new_cancel_event()
+        cancel_evt = self._new_cancel_event()
         key = data.get("key", "").strip()
         if not key:
             log.warn("test_key called with empty key")
@@ -545,7 +545,7 @@ class AIEngine:
         from core.api_client import GeminiClient
 
         configured_model = self.settings.get("model", "auto")
-        client = GeminiClient([key], configured_model, cancel_event=self.cancel_event)
+        client = GeminiClient([key], configured_model, cancel_event=cancel_evt)
         try:
             result = client.test_key(key, progress_callback=self._send_progress)
             log.info(f"test_key result: ok={result.get('ok')} model={result.get('model')}")
@@ -555,14 +555,14 @@ class AIEngine:
                 client.close()
 
     def _handle_test_all_keys(self, data: dict = None) -> dict:
-        self._new_cancel_event()
+        cancel_evt = self._new_cancel_event()
         keys = self.settings.get_api_keys()
         configured_model = self.settings.get("model", "auto")
         from core.api_client import GeminiClient
 
         results = []
         for idx, key in enumerate(keys):
-            if self.cancel_event and self.cancel_event.is_set():
+            if cancel_evt and cancel_evt.is_set():
                 log.info(f"test_all_keys cancelled by user before slot {idx+1}/{len(keys)}")
                 return {"results": results, "cancelled": True}
 
@@ -570,10 +570,10 @@ class AIEngine:
             if not key.strip():
                 results.append({"key": slot, "ok": False, "error": "Empty"})
                 continue
-            client = GeminiClient([key], configured_model, cancel_event=self.cancel_event)
+            client = GeminiClient([key], configured_model, cancel_event=cancel_evt)
             try:
                 res = client.test_key_with_waterfall(key, progress_callback=self._send_progress)
-                if self.cancel_event and self.cancel_event.is_set():
+                if cancel_evt and cancel_evt.is_set():
                     log.info(f"test_all_keys cancelled by user after slot {slot}/{len(keys)}")
                     results.append(
                         {

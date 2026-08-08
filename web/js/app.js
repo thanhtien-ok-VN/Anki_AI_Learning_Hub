@@ -3228,13 +3228,21 @@ async function testKeys(){
       }
       setBusy(true, t('app.testing_api_status', 'Đang kiểm tra API…'));
       const data=await Bridge.sendAsync('test_all_keys', {}, { signal });
-      if (signal.aborted) return;
+      if (signal.aborted || data?.cancelled) {
+        if (out) {
+          out.innerHTML = `<span class="badge-status-warn" style="display:inline-flex; align-items:center; gap:6px; padding:6px 14px; border-radius:16px; background:rgba(234,179,8,0.12); color:#ca8a04; font-weight:600; font-size:13px; margin-top:8px;">⚠️ ${esc(t('app.action_cancelled', 'Đã hủy kiểm tra API'))}</span>`;
+        }
+        return;
+      }
       const results=data.results||[];
       const okCount=results.filter(item=>item.ok).length;
       const totalCount=results.length;
+      const rateLimited = results.some(item => item.error_code === 'E_RATE_LIMIT');
       if (out) {
         if (okCount > 0) {
           out.innerHTML = `<span class="badge-status-ok" style="display:inline-flex; align-items:center; gap:6px; padding:6px 14px; border-radius:16px; background:rgba(34,197,94,0.12); color:#16a34a; font-weight:600; font-size:13px; margin-top:8px;">🟢 ${okCount}/${totalCount} API Key hoạt động (OK)</span>`;
+        } else if (rateLimited) {
+          out.innerHTML = `<span class="badge-status-warn" style="display:inline-flex; align-items:center; gap:6px; padding:6px 14px; border-radius:16px; background:rgba(234,179,8,0.12); color:#ca8a04; font-weight:600; font-size:13px; margin-top:8px;">🟡 API bận/vượt quá giới hạn (429) - Vui lòng đợi 30s</span>`;
         } else if (totalCount > 0) {
           out.innerHTML = `<span class="badge-status-err" style="display:inline-flex; align-items:center; gap:6px; padding:6px 14px; border-radius:16px; background:rgba(239,68,68,0.12); color:#dc2626; font-weight:600; font-size:13px; margin-top:8px;">🔴 0/${totalCount} API Key hoạt động</span>`;
         } else {
