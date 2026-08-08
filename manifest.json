@@ -1,6 +1,5 @@
 {
     "name": "AI Learning Hub",
     "package": "ai_learning_hub",
-    "human_version": "1.0.0",
-    "mod": 1786214000
+    "conflicts": []
 }
