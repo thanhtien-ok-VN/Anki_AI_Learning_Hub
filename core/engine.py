@@ -11,7 +11,14 @@ from aqt.utils import tooltip
 
 from core.logger import log
 from core.language_normalizer import normalize_language_fields
-from core.languages import DEFAULT_LEARN_LANG, DEFAULT_UI_LANG, bridge_languages, valid_learn_lang, valid_ui_lang
+from core.languages import (
+    DEFAULT_LEARN_LANG,
+    DEFAULT_UI_LANG,
+    bridge_languages,
+    get_language_name,
+    valid_learn_lang,
+    valid_ui_lang,
+)
 
 import re
 
@@ -705,7 +712,6 @@ class AIEngine:
         ui_lang = valid_ui_lang(self.settings.get("ui_lang"))
         level = data.get("level", "intermediate")
 
-        from core.languages import get_language_name
         learn_lang_full = get_language_name(learn_lang)
         ui_lang_full = get_language_name(ui_lang)
 

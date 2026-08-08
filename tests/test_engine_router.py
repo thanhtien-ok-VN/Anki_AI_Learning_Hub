@@ -79,6 +79,43 @@ class TestEngineRouter(unittest.TestCase):
             self.assertFalse(res.get("success"))
             self.assertEqual(res.get("error_code"), "E_NOT_ENOUGH_VOCAB")
 
+    def test_handle_generate_ai_fill_blank_language_names(self):
+        mock_client = MagicMock()
+        mock_payload = {
+            "questions": [
+                {
+                    "sentence": "She ______ a book.",
+                    "target_word": "read",
+                    "meaning": "đọc",
+                    "full_translation": "Cô ấy đọc một cuốn sách.",
+                    "options": [
+                        {"word": "read", "is_correct": True, "type": "correct", "reason": "phù hợp"},
+                        {"word": "red", "is_correct": False, "type": "wrong_context", "reason": "sai nghĩa"},
+                        {"word": "write", "is_correct": False, "type": "wrong_context", "reason": "sai nghĩa"},
+                        {"word": "sing", "is_correct": False, "type": "wrong_context", "reason": "sai nghĩa"}
+                    ],
+                    "explanation": "Từ read là chính xác."
+                }
+            ]
+        }
+        mock_client.generate_structured.return_value = mock_payload
+
+        with patch.object(self.engine.settings, 'get_api_keys', return_value=['dummy_key']), \
+             patch.object(self.engine, '_get_api_client', return_value=mock_client), \
+             patch('core.prompt_manager.PromptManager.get_prompt', wraps=self.engine.get_prompt_manager().get_prompt) as mock_get_prompt:
+            res = self.engine._handle_generate({
+                "gamemode": "fill_blank",
+                "language": "en",
+                "level": "intermediate",
+                "count": 1,
+                "topic": "reading"
+            })
+            self.assertIn("questions", res)
+            mock_get_prompt.assert_called()
+            call_kwargs = mock_get_prompt.call_args.kwargs
+            self.assertEqual(call_kwargs.get("source_lang"), "English")
+            self.assertEqual(call_kwargs.get("target_lang"), "English")
+
 
 if __name__ == '__main__':
     unittest.main()
