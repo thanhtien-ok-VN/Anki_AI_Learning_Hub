@@ -18,6 +18,8 @@ from aqt.webview import AnkiWebView
 from core.logger import log
 import ui.webview_bridge
 
+from ui.bridge_server import BridgeServer
+
 ADDON_PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BACKGROUND_ACTIONS = {
     "generate",
@@ -39,12 +41,20 @@ class AIHubView:
         self._main_web = None
         self._closed = True
         self._bg_lock = threading.Lock()
+        self._bridge_server: BridgeServer | None = None
+
+    def _get_bridge_port(self) -> int:
+        if not self._bridge_server:
+            self._bridge_server = BridgeServer(self._on_bridge_cmd)
+            self._bridge_server.start()
+        return self._bridge_server.port
 
     def _hub_url(self) -> QUrl:
         dir_basename = os.path.basename(ADDON_PATH)
         package = mw.addonManager.addonFromModule(dir_basename) or dir_basename
         port = mw.mediaServer.getPort()
-        url_str = f"http://127.0.0.1:{port}/_addons/{package}/web/index.html"
+        bport = self._get_bridge_port()
+        url_str = f"http://127.0.0.1:{port}/_addons/{package}/web/index.html?bridge_port={bport}"
         log.info(f"Loading Hub URL: {url_str}")
         return QUrl(url_str)
 
@@ -177,6 +187,9 @@ class AIHubView:
         flow(phase="EVENT", message="AI Hub view closed")
         tabs, main_web = self._tabs, self._main_web
         self._closed = True
+        if self._bridge_server:
+            self._bridge_server.stop()
+            self._bridge_server = None
         self._hub_web = None
         self._tabs = None
         self._main_web = None

@@ -1,4 +1,38 @@
-/* Polyfill pycmd for web browser environments outside Anki Qt */
+/* Local HTTP Bridge & Native pycmd Client for Anki AI Learning Hub */
+
+const getBridgePort = () => {
+    try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const p = urlParams.get('bridge_port');
+        if (p) return parseInt(p, 10);
+    } catch (_) {}
+    return window.BRIDGE_PORT || null;
+};
+
+const sendViaHttpBridge = (message, callback, signal) => {
+    const port = getBridgePort();
+    if (!port) {
+        callback({ success: false, data: {}, error_code: 'E_NO_PORT', message: 'Bridge port not provided' });
+        return;
+    }
+    fetch(`http://127.0.0.1:${port}/bridge`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(message),
+        signal: signal || undefined
+    })
+    .then(res => res.json())
+    .then(data => callback(data))
+    .catch(err => {
+        if (err && err.name === 'AbortError') {
+            callback({ success: false, data: {}, error_code: 'E_ABORTED', message: 'Request aborted' });
+        } else {
+            callback({ success: false, data: {}, error_code: 'E_BRIDGE_NETWORK', message: err.message });
+        }
+    });
+};
+
+/* Mark dummy polyfill pycmd if created outside Anki Qt */
 if (typeof window.pycmd !== 'function') {
     window.pycmd = function(rawMessage, callback, signal) {
         let msg;
@@ -8,25 +42,11 @@ if (typeof window.pycmd !== 'function') {
             callback({ success: false, data: {}, error_code: 'E_BRIDGE_PARSE', message: e.message });
             return;
         }
-        fetch('/api/bridge', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(msg),
-            signal: signal || undefined
-        })
-        .then(res => res.json())
-        .then(data => callback(data))
-        .catch(err => {
-            if (err && err.name === 'AbortError') {
-                callback({ success: false, data: {}, error_code: 'E_ABORTED', message: 'Request aborted' });
-            } else {
-                callback({ success: false, data: {}, error_code: 'E_BRIDGE_NETWORK', message: err.message });
-            }
-        });
+        sendViaHttpBridge(msg, callback, signal);
     };
+    window.pycmd._isPolyfill = true;
 }
 
-/* A dependable pycmd client for an AnkiWebView served by the media server. */
 const Bridge = {
     _ready: false,
     _sequence: 0,
@@ -43,13 +63,8 @@ const Bridge = {
     },
 
     hostReady() {
-        this._ready = typeof pycmd === 'function';
-        if (this._ready) this._flush();
-    },
-
-    _waitForPycmd() {
-        if (typeof pycmd === 'function') { this.hostReady(); return; }
-        window.setTimeout(() => this._waitForPycmd(), 50);
+        this._ready = true;
+        this._flush();
     },
 
     _flush() {
@@ -58,14 +73,20 @@ const Bridge = {
     },
 
     _dispatch(item) {
+        const onResponse = raw => {
+            const result = this._normalise(raw);
+            if (result?.data?.pending) return;
+            this._settle(item.id, result);
+        };
+
         try {
-            pycmd(JSON.stringify(item.message), raw => {
-                const result = this._normalise(raw);
-                if (result?.data?.pending) return;
-                this._settle(item.id, result);
-            }, item.signal);
+            if (typeof pycmd === 'function' && !pycmd._isPolyfill) {
+                pycmd(JSON.stringify(item.message), onResponse, item.signal);
+            } else {
+                sendViaHttpBridge(item.message, onResponse, item.signal);
+            }
         } catch (error) {
-            this._settle(item.id, { success: false, data: {}, error_code: 'E_PYCMD', message: error.message });
+            sendViaHttpBridge(item.message, onResponse, item.signal);
         }
     },
 
@@ -90,6 +111,17 @@ const Bridge = {
     },
 
     complete(id, result) { this._settle(id, this._normalise(result)); },
+
+    receive(escapedJsonStr) {
+        try {
+            const data = JSON.parse(escapedJsonStr);
+            if (data && data.id) {
+                this._settle(data.id, data.data || data);
+            }
+        } catch (e) {
+            console.error('[Bridge] receive error:', e);
+        }
+    },
 
     abortAll() {
         this._queue = [];
@@ -136,7 +168,7 @@ const Bridge = {
 
             this._pending.set(id, { resolve, reject, timeout, signal, abortHandler });
             const item = { id, message: { action, data, request_id: id }, signal };
-            if (this._ready && typeof pycmd === 'function') this._dispatch(item);
+            if (this._ready) this._dispatch(item);
             else this._queue.push(item);
         });
     },
@@ -150,7 +182,10 @@ const Bridge = {
         }
     },
 
-    init() { this._waitForPycmd(); },
+    init() {
+        this._ready = true;
+        this._flush();
+    },
 };
 
 window.Bridge = Bridge;
