@@ -1,0 +1,10 @@
+[
+  {
+    "file": "web/js/app.js",
+    "line": 924,
+    "type": "Kiểu dữ liệu / Phụ thuộc DOM",
+    "description": "Thao tác DOM chọn `#$cancel-gen` nhưng ID này không xuất hiện trong HTML tĩnh hoặc template động.",
+    "old_code": "const cancelGen = document.querySelector('#cancel-gen');",
+    "fixed_code": "// Thêm null guard `if (document.querySelector('#cancel-gen')) ...`"
+  }
+]

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import os
+import secrets
 import threading
 from functools import partial
 
@@ -42,10 +43,11 @@ class AIHubView:
         self._closed = True
         self._bg_lock = threading.Lock()
         self._bridge_server: BridgeServer | None = None
+        self._bridge_token = secrets.token_hex(16)
 
     def _get_bridge_port(self) -> int:
         if not self._bridge_server:
-            self._bridge_server = BridgeServer(self._on_bridge_cmd)
+            self._bridge_server = BridgeServer(self._on_bridge_cmd, self._bridge_token)
             self._bridge_server.start()
         return self._bridge_server.port
 
@@ -54,7 +56,7 @@ class AIHubView:
         package = mw.addonManager.addonFromModule(dir_basename) or dir_basename
         port = mw.mediaServer.getPort()
         bport = self._get_bridge_port()
-        url_str = f"http://127.0.0.1:{port}/_addons/{package}/web/index.html?bridge_port={bport}"
+        url_str = f"http://127.0.0.1:{port}/_addons/{package}/web/index.html?bridge_port={bport}&bridge_token={self._bridge_token}"
         log.info(f"Loading Hub URL: {url_str}")
         return QUrl(url_str)
 
@@ -89,7 +91,7 @@ class AIHubView:
             request_id = msg.get("request_id", "")
             log.info(f"Bridge cmd received: action={action}, request_id={request_id}")
             if action == "close_hub":
-                self.close()
+                mw.taskman.run_on_main(self.close)
                 return json.dumps(self._result(True))
             if action in BACKGROUND_ACTIONS:
                 if not request_id:

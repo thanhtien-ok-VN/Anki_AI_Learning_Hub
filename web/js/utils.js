@@ -3,7 +3,7 @@ const Utils = {
 
     async initI18n() {
         for (let i = 0; i < 3; i++) {
-            const res = await Bridge.sendAsync('get_ui_strings', {}, 2000).catch(() => null);
+            const res = await Bridge.sendAsync('get_ui_strings', {}, 1500).catch(() => null);
             if (res && res.strings && Object.keys(res.strings).length > 0) {
                 this.__ = res.strings;
                 this.currentLang = res.lang || 'en';

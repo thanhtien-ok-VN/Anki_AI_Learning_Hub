@@ -1,0 +1,34 @@
+[
+  {
+    "file": "web\\js\\app.js",
+    "line": 1,
+    "type": "Cú pháp",
+    "description": "Ngoặc mở '(' chưa được đóng",
+    "old_code": "const App = (() => {",
+    "fixed_code": "// Close bracket"
+  },
+  {
+    "file": "web\\js\\app.js",
+    "line": 1,
+    "type": "Cú pháp",
+    "description": "Ngoặc mở '{' chưa được đóng",
+    "old_code": "const App = (() => {",
+    "fixed_code": "// Close bracket"
+  },
+  {
+    "file": "web\\js\\app.js",
+    "line": 215,
+    "type": "Cú pháp",
+    "description": "Ngoặc mở '(' chưa được đóng",
+    "old_code": "const esc = s => String(s ?? '').replace(/[&<>\"']/g, c => ({ '&': '&amp;', '<': ",
+    "fixed_code": "// Close bracket"
+  },
+  {
+    "file": "web\\js\\app.js",
+    "line": 215,
+    "type": "Cú pháp",
+    "description": "Ngoặc mở '[' chưa được đóng",
+    "old_code": "const esc = s => String(s ?? '').replace(/[&<>\"']/g, c => ({ '&': '&amp;', '<': ",
+    "fixed_code": "// Close bracket"
+  }
+]

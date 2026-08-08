@@ -1,0 +1,9 @@
+[
+  {
+    "location": "[web/js/app.js - Dòng 924]",
+    "type": "Loại lỗi: Kiểu dữ liệu / Phụ thuộc DOM",
+    "desc": "Mô tả: Thao tác DOM truy vấn `#cancel-gen` không có trong HTML/template làm trả về null. Cần bọc null guard an toàn.",
+    "old_code": "const cancelGen = document.querySelector('#cancel-gen');\nif (cancelGen) { cancelGen.onclick = ... }",
+    "fixed_code": "const cancelGen = document.querySelector('#loading-cancel-btn');\nif (cancelGen) { cancelGen.onclick = ... }"
+  }
+]

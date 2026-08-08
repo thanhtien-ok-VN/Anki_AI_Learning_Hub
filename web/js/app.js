@@ -380,10 +380,17 @@ function loadPrefs() {
       Bridge.send('log_event', { event: eventName, game: r, extra: { from: oldRoute } });
     }
   };
+  const getRoot = () => document.querySelector('#app') || document.body;
   const shell = body => {
     state.busy = false;
-    root.innerHTML = `<div class="timer-bar"><span class="timer-label">${esc(t('app.title', 'AI Learning Hub'))}</span><span id="busy-label"></span><button id="close-hub" aria-label="${esc(t('app.close_hub', 'Đóng Hub'))}">${esc(t('app.close_hub', 'Đóng Hub'))}</button></div>${body}<div id="loading" class="loading-overlay" hidden><div class="spinner"></div><span id="loading-text">${esc(t('app.processing', 'Đang xử lý…'))}</span><button id="loading-cancel-btn" class="btn btn-cancel-gen" style="margin-top:16px;" type="button">${esc(t('app.cancel_gen', 'Hủy tạo bài'))}</button></div>`;
-    document.querySelector('#loading').hidden = true;
+    const target = getRoot();
+    if (target) {
+      target.innerHTML = `<div class="timer-bar"><span class="timer-label">${esc(t('app.title', 'AI Learning Hub'))}</span><span id="busy-label"></span><button id="close-hub" aria-label="${esc(t('app.close_hub', 'Đóng Hub'))}">${esc(t('app.close_hub', 'Đóng Hub'))}</button></div>${body}<div id="loading" class="loading-overlay" hidden><div class="spinner"></div><span id="loading-text">${esc(t('app.processing', 'Đang xử lý…'))}</span><button id="loading-cancel-btn" class="btn btn-cancel-gen" style="margin-top:16px;" type="button">${esc(t('app.cancel_gen', 'Hủy tạo bài'))}</button></div>`;
+      const bootEl = document.querySelector('#boot-overlay');
+      if (bootEl) bootEl.remove();
+    }
+    const loadEl = document.querySelector('#loading');
+    if (loadEl) loadEl.hidden = true;
   };
 
   // ╔══════════════════════════════════════════════════════════════╗
@@ -919,14 +926,6 @@ function source() {
         abortActiveRequests();
         setBusy(false);
         showStatus(t('app.cancelled_action', 'Đã hủy thao tác.'));
-      };
-    }
-    const cancelGen = document.querySelector('#cancel-gen');
-    if (cancelGen) {
-      cancelGen.onclick = () => {
-        abortActiveRequests();
-        setBusy(false);
-        showStatus(t('app.cancelled_gen', 'Đã hủy tạo bài.'));
       };
     }
   }

@@ -11,8 +11,9 @@ class _BridgeHTTPHandler(BaseHTTPRequestHandler):
 
     def _set_cors_headers(self):
         self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Methods", "POST, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.send_header("Access-Control-Allow-Methods", "POST, OPTIONS, GET")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, X-Bridge-Token, Authorization")
+        self.send_header("Access-Control-Allow-Private-Network", "true")
 
     def do_OPTIONS(self):
         self.send_response(200)
@@ -22,7 +23,20 @@ class _BridgeHTTPHandler(BaseHTTPRequestHandler):
     def do_POST(self):
         if self.path != "/bridge":
             self.send_response(404)
+            self._set_cors_headers()
             self.end_headers()
+            return
+
+        # Secret Token Authentication check
+        req_token = self.headers.get("X-Bridge-Token") or self.headers.get("Authorization", "").replace("Bearer ", "")
+        expected_token = getattr(self.server, "expected_token", "")
+        if expected_token and req_token != expected_token:
+            self.send_response(403)
+            self._set_cors_headers()
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.end_headers()
+            err_bytes = json.dumps({"success": False, "error_code": "E_FORBIDDEN", "message": "Invalid bridge token"}).encode("utf-8")
+            self.wfile.write(err_bytes)
             return
 
         try:
@@ -57,8 +71,9 @@ class _BridgeHTTPHandler(BaseHTTPRequestHandler):
 
 
 class BridgeServer:
-    def __init__(self, bridge_handler):
+    def __init__(self, bridge_handler, token: str = ""):
         self.bridge_handler = bridge_handler
+        self.token = token
         self.httpd: HTTPServer | None = None
         self.thread: threading.Thread | None = None
         self.port: int = 0
@@ -69,6 +84,7 @@ class BridgeServer:
 
         self.httpd = HTTPServer(("127.0.0.1", 0), _BridgeHTTPHandler)
         self.httpd.bridge_handler = self.bridge_handler
+        self.httpd.expected_token = self.token
         self.port = self.httpd.server_address[1]
 
         self.thread = threading.Thread(target=self.httpd.serve_forever, daemon=True)

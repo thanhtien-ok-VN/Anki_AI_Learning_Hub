@@ -1,34 +1,41 @@
-/* Local HTTP Bridge & Native pycmd Client for Anki AI Learning Hub */
+/* Local HTTP-First Bridge & Native pycmd Client for Anki AI Learning Hub */
 
-const getBridgePort = () => {
+const getBridgeAuth = () => {
     try {
         const urlParams = new URLSearchParams(window.location.search);
-        const p = urlParams.get('bridge_port');
-        if (p) return parseInt(p, 10);
+        return {
+            port: parseInt(urlParams.get('bridge_port'), 10) || window.BRIDGE_PORT || null,
+            token: urlParams.get('bridge_token') || window.BRIDGE_TOKEN || ''
+        };
     } catch (_) {}
-    return window.BRIDGE_PORT || null;
+    return { port: window.BRIDGE_PORT || null, token: window.BRIDGE_TOKEN || '' };
 };
 
 const sendViaHttpBridge = (message, callback, signal) => {
-    const port = getBridgePort();
-    if (!port) {
+    const auth = getBridgeAuth();
+    if (!auth.port) {
         callback({ success: false, data: {}, error_code: 'E_NO_PORT', message: 'Bridge port not provided' });
         return;
     }
-    fetch(`http://127.0.0.1:${port}/bridge`, {
+    fetch(`http://127.0.0.1:${auth.port}/bridge`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Bridge-Token': auth.token
+        },
         body: JSON.stringify(message),
         signal: signal || undefined
     })
     .then(res => res.json())
     .then(data => callback(data))
     .catch(err => {
-        if (err && err.name === 'AbortError') {
-            callback({ success: false, data: {}, error_code: 'E_ABORTED', message: 'Request aborted' });
-        } else {
-            callback({ success: false, data: {}, error_code: 'E_BRIDGE_NETWORK', message: err.message });
-        }
+        const errCode = (err && err.name === 'AbortError') ? 'E_ABORTED' : 'E_BRIDGE_NETWORK';
+        callback({
+            success: false,
+            data: {},
+            error_code: errCode,
+            message: err ? (err.message || String(err)) : 'Network bridge failure'
+        });
     });
 };
 
@@ -79,13 +86,30 @@ const Bridge = {
             this._settle(item.id, result);
         };
 
-        try {
-            if (typeof pycmd === 'function' && !pycmd._isPolyfill) {
+        const auth = getBridgeAuth();
+        if (auth.port) {
+            // HTTP-First Priority for 100% reliable local socket RPC
+            sendViaHttpBridge(item.message, res => {
+                if (res && res.success !== false) {
+                    onResponse(res);
+                } else if (typeof pycmd === 'function' && !pycmd._isPolyfill) {
+                    // Fallback to pycmd if HTTP bridge reports error
+                    try {
+                        pycmd(JSON.stringify(item.message), onResponse, item.signal);
+                    } catch (_) {
+                        onResponse(res);
+                    }
+                } else {
+                    onResponse(res);
+                }
+            }, item.signal);
+        } else if (typeof pycmd === 'function' && !pycmd._isPolyfill) {
+            try {
                 pycmd(JSON.stringify(item.message), onResponse, item.signal);
-            } else {
-                sendViaHttpBridge(item.message, onResponse, item.signal);
+            } catch (error) {
+                onResponse({ success: false, data: {}, error_code: 'E_PYCMD', message: error.message });
             }
-        } catch (error) {
+        } else {
             sendViaHttpBridge(item.message, onResponse, item.signal);
         }
     },
