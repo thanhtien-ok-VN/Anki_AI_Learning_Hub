@@ -3219,6 +3219,7 @@ function renderStory(x) {
 // ╚══════════════════════════════════════════════════════════════╝
 async function testKeys(){
     const button=document.querySelector('#test-keys'),out=document.querySelector('#api-result');
+    abortActiveRequests();
     const signal = getSignal();
     try{
       if(button){
