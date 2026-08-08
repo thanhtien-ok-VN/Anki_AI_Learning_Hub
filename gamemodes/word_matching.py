@@ -3,6 +3,7 @@ import uuid
 from typing import Any, Optional
 from .base import GameModeBase
 
+
 class WordMatchingMode(GameModeBase):
     name = "matching"
     display_name = "Word Matching"
@@ -44,11 +45,17 @@ class WordMatchingMode(GameModeBase):
             pairs = [
                 (pair.get("term", ""), pair.get("definition", ""))
                 for pair in selected_pairs
+                if pair.get("term") and pair.get("definition")
             ]
         elif source == "deck":
             pairs = self._extract_from_deck(kwargs.get("deck_name", ""), count)
         else:
             pairs = self.BUILTIN_PAIRS[:]
+
+        if len(pairs) < count:
+            needed = count - len(pairs)
+            remaining_builtin = [p for p in self.BUILTIN_PAIRS if p not in pairs]
+            pairs.extend(random.sample(remaining_builtin, min(needed, len(remaining_builtin))))
 
         if len(pairs) < 5:
             return {
@@ -81,21 +88,37 @@ class WordMatchingMode(GameModeBase):
         }
 
     def _extract_from_deck(self, deck_name: str, count: int) -> list:
-        from aqt import mw
+        from core.deck_source import _run_on_main, _collection, _plain
+        from core.logger import log
 
-        pairs = []
-        try:
-            note_ids = mw.col.find_notes(f'deck:"{deck_name}"')
-            for nid in note_ids[: count * 3]:
-                note = mw.col.get_note(nid)
-                fields = list(note.keys())
-                if len(fields) >= 2:
-                    pairs.append((note[fields[0]], note[fields[1]]))
-                if len(pairs) >= count:
-                    break
-        except Exception:
-            pass
-        return pairs[:count] if pairs else self.BUILTIN_PAIRS[:count]
+        def _inner():
+            col = _collection()
+            if not col:
+                return []
+            pairs = []
+            try:
+                query = f'deck:"{deck_name}"' if deck_name else ""
+                note_ids = col.find_notes(query)
+                for nid in note_ids[: count * 4]:
+                    note = col.get_note(nid)
+                    fields = list(note.keys())
+                    if len(fields) >= 2:
+                        term = _plain(note[fields[0]])
+                        definition = _plain(note[fields[1]])
+                        if term and definition:
+                            pairs.append((term, definition))
+                    if len(pairs) >= count:
+                        break
+            except Exception as e:
+                log.exception(f"Error extracting notes for matching game from deck '{deck_name}': {e}")
+            return pairs
+
+        extracted = _run_on_main(_inner) or []
+        if len(extracted) < count:
+            needed = count - len(extracted)
+            remaining_builtin = [p for p in self.BUILTIN_PAIRS if p not in extracted]
+            extracted.extend(random.sample(remaining_builtin, min(needed, len(remaining_builtin))))
+        return extracted[:count]
 
     def render_ui_data(self, raw_result: dict) -> dict:
         return raw_result

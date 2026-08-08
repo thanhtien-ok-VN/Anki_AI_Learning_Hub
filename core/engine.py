@@ -337,10 +337,24 @@ class AIEngine:
         gm_pre = self.get_gamemode(gamemode)
         if gm_pre and getattr(gm_pre, "is_offline", False) and hasattr(gm_pre, "generate"):
             log.info(f"Generating offline game content for {gamemode}")
-            rendered = gm_pre.generate(**data)
-            rendered = normalize_language_fields(rendered)
-            rendered = sanitize_dict(rendered)
-            return self._result(True, rendered)
+            try:
+                rendered = gm_pre.generate(**data)
+                if isinstance(rendered, dict) and rendered.get("error"):
+                    return self._result(
+                        False,
+                        code=rendered.get("error_code", "E_OFFLINE_GEN"),
+                        message=rendered.get("message", "Offline generation failed"),
+                    )
+                rendered = normalize_language_fields(rendered)
+                rendered = sanitize_dict(rendered)
+                return self._result(True, rendered)
+            except Exception as e:
+                log.exception(f"Offline game generation error for {gamemode}: {e}")
+                return self._result(
+                    False,
+                    code="E_OFFLINE_GEN",
+                    message=f"Offline generation failed: {str(e)}",
+                )
 
         # Phase 1: CONNECT
         with FlowTimer("CONNECT", gamemode=gamemode, message="Checking client and API keys") as timer:
