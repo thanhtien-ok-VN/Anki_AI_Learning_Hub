@@ -49,6 +49,36 @@ class LanguageContractTests(unittest.TestCase):
             vietnamese = json.load(handle)
         self.assertEqual(set(english), set(vietnamese))
 
+    def test_get_language_name_zh(self):
+        from core.languages import get_language_name
+        self.assertEqual(get_language_name("zh"), "Chinese (Mandarin)")
+        self.assertEqual(get_language_name("en"), "English")
+        self.assertEqual(get_language_name("vi"), "Vietnamese")
+
+    def test_hint_manager_dynamic_ui_lang(self):
+        from core.hint_manager import HintManager
+        q_data = {"target_word": "apple", "meaning": "quả táo", "grammar_rule": "noun"}
+        
+        # Test English UI
+        hint_en = HintManager.get_hint_data("fill_blank", q_data, 1, ui_lang="en")
+        self.assertIn("Grammar rule", hint_en["content"])
+        
+        # Test Vietnamese UI
+        hint_vi = HintManager.get_hint_data("fill_blank", q_data, 1, ui_lang="vi")
+        self.assertIn("Quy tắc ngữ pháp", hint_vi["content"])
+
+    def test_ai_prompts_for_en_and_zh(self):
+        root = os.path.dirname(os.path.dirname(__file__))
+        manager = PromptManager(os.path.join(root, "prompts"))
+        modes = ["fill_blank", "cloze", "story", "taboo", "translation", "unscramble", "sentence_transform"]
+        for learn in ["en", "zh"]:
+            for ui in ["en", "vi"]:
+                for mode in modes:
+                    p = manager.get_prompt(mode, language=learn, ui_lang=ui, count=2, source_lang="English", target_lang="Chinese")
+                    self.assertNotIn("{learn_lang}", p)
+                    self.assertNotIn("{ui_lang}", p)
+                    self.assertNotIn("{feedback_lang}", p)
+
 
 if __name__ == "__main__":
     unittest.main()

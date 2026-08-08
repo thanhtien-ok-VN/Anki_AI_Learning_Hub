@@ -12,6 +12,7 @@ class TestAIGraderPrompts(unittest.TestCase):
             user_answer="The feature built by team.",
             level="intermediate",
             feedback_lang="Vietnamese",
+            learn_lang="English",
             hint_level=0,
         )
         self.assertIn("errors", prompt)

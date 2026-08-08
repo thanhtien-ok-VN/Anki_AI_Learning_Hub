@@ -62,7 +62,7 @@ Student's level: {level}
 Task:
 Evaluate the student's translation, identify specific errors, and provide grading and suggestions.
 For each error, you MUST provide 5 fields: name, wrong, reason, suggestion, and why.
-Explain all reasons and notes in {feedback_lang}.
+MANDATORY LANGUAGE RULE: All reference translations and suggested answers MUST be written in {learn_lang}. All error explanations, reasons, and fix suggestions MUST be written entirely in {feedback_lang}.
 
 Respond in JSON matching the exact schema below:
 {{
@@ -114,7 +114,7 @@ Hint level used by student: {hint_level} (Level 0=No hint, Level 1=Grammar, Leve
 Task:
 Evaluate the student's transformation answer, identify specific errors (e.g., Passive Voice Structure, Verb Tense, Word Order, Forbidden Word), and provide granular grading and suggestions.
 For each error identified, you MUST provide 5 fields: name, wrong, reason, suggestion, and why.
-Explain all reasons and notes in {feedback_lang}.
+MANDATORY LANGUAGE RULE: All corrected sentences and suggested answers MUST be written in {learn_lang}. All error explanations, reasons, and fix suggestions MUST be written entirely in {feedback_lang}.
 
 Respond in JSON matching the exact schema below:
 {{

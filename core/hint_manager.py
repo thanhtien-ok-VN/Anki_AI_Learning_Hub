@@ -64,9 +64,9 @@ class HintManager:
             # Level 1: Structure / Part of Speech hint
             res["hint_title"] = t("hint.level_1", lang=ui_lang)
             if grammar_rule:
-                res["content"] = f"Grammar Rule: {grammar_rule}"
+                res["content"] = t("hint.grammar_structure", grammar_rule, lang=ui_lang)
             elif target_word:
-                res["content"] = f"{t('hint.word_length', lang=ui_lang)}: {len(target_word)} characters"
+                res["content"] = f"{t('hint.word_length', lang=ui_lang)}: {len(target_word)}"
             else:
                 res["content"] = t("hint.structure_tip", lang=ui_lang)
         elif hint_level == 2:
@@ -74,13 +74,13 @@ class HintManager:
             res["hint_title"] = t("hint.level_2", lang=ui_lang)
             hints = []
             if target_word:
-                hints.append(f"First letter: '{target_word[0].upper()}'")
+                hints.append(t("hint.starts_with", target_word[0].upper(), lang=ui_lang))
             if meaning:
-                hints.append(f"Meaning: {meaning}")
-            res["content"] = " | ".join(hints) if hints else "Analyze context carefully."
+                hints.append(t("hint.meaning_label", meaning, lang=ui_lang))
+            res["content"] = " | ".join(hints) if hints else t("hint.analyze_context", lang=ui_lang)
         elif hint_level >= 3:
             # Level 3: Full Answer & Score Penalty
             res["hint_title"] = t("hint.level_3", lang=ui_lang)
-            res["content"] = f"Answer: {target_word}" if target_word else "Solution revealed."
+            res["content"] = t("hint.answer_label", target_word, lang=ui_lang) if target_word else t("hint.solution_revealed", lang=ui_lang)
 
         return res

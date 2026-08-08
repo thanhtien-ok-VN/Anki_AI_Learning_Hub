@@ -15,6 +15,7 @@ SUPPORTED_LANGUAGES = tuple(_REGISTRY["learn_languages"])
 LEARN_LANGUAGE_CODES = frozenset(item["code"] for item in SUPPORTED_LANGUAGES)
 _ALL_LANGUAGE_NAMES = {item["code"]: item["names"]["en"] for item in SUPPORTED_LANGUAGES}
 _ALL_LANGUAGE_NAMES["vi"] = "Vietnamese"
+_ALL_LANGUAGE_NAMES["zh"] = "Chinese (Mandarin)"
 
 def valid_ui_lang(value: object, fallback: str = DEFAULT_UI_LANG) -> str:
     return value if isinstance(value, str) and value in UI_LANGUAGES else fallback

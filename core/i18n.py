@@ -26,9 +26,12 @@ def load_strings(lang: str) -> dict:
     return strings
 
 
-def t(key: str, lang: str = DEFAULT_LANG, **kwargs) -> str:
+def t(key: str, *args, lang: str = DEFAULT_LANG, **kwargs) -> str:
     strings = load_strings(lang)
     text = strings.get(key, key)
-    if kwargs:
-        text = text.format(**kwargs)
+    if args or kwargs:
+        try:
+            text = text.format(*args, **kwargs)
+        except (IndexError, KeyError):
+            pass
     return text

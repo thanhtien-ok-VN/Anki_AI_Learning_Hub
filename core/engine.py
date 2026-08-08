@@ -424,8 +424,8 @@ class AIEngine:
             data.setdefault("paragraph_min_words", 80)
             data.setdefault("paragraph_max_words", 140)
             data.setdefault("num_blanks", min(5, int(count)))
-            data.setdefault("source_lang", self.settings.get("ui_lang", "en"))
-            data.setdefault("target_lang", language)
+            data.setdefault("source_lang", get_language_name(self.settings.get("ui_lang", "en")))
+            data.setdefault("target_lang", get_language_name(language))
             data.setdefault("word_count", 180)
             data.setdefault("question_count", count)
             data.setdefault("target_words", "")
@@ -731,8 +731,8 @@ class AIEngine:
         elif gamemode == "translation":
             prompt_data = {
                 **common,
-                "source_lang": ui_lang,
-                "target_lang": learn_lang,
+                "source_lang": ui_lang_full,
+                "target_lang": learn_lang_full,
                 "source_sentence": data.get("source_sentence", data.get("source_text", "")),
                 "reference_translation": data.get("reference_translation", data.get("expected", "")),
                 "user_target": data.get("user_answer", ""),

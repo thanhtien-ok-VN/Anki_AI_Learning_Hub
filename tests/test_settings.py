@@ -7,11 +7,6 @@ from unittest.mock import patch, MagicMock
 # Mock dependencies
 import sys
 sys.modules['core.logger'] = MagicMock()
-sys.modules['core.languages'] = MagicMock()
-sys.modules['core.languages'].DEFAULT_LEARN_LANG = "en"
-sys.modules['core.languages'].DEFAULT_UI_LANG = "en"
-sys.modules['core.languages'].valid_learn_lang = lambda x, fallback="en": x if x == "en" else fallback
-sys.modules['core.languages'].valid_ui_lang = lambda x, fallback="en": x if x == "en" else fallback
 
 from core.settings import SettingsManager, DEFAULT_SETTINGS
 
