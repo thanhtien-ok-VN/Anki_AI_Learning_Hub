@@ -119,11 +119,20 @@ class AIEngine:
         self.timer.tick.connect(self._on_timer_tick)
         gui_hooks.profile_will_close.append(self._on_profile_close)
 
+    def _new_cancel_event(self) -> threading.Event:
+        with self._api_lock:
+            self.cancel_event = threading.Event()
+            if self._api_client:
+                self._api_client.cancel_event = self.cancel_event
+            return self.cancel_event
+
     def cancel_current_task(self):
         self.cancel_event.set()
         log.info("Cancel current task event set")
 
     def _send_progress(self, text: str):
+        if self.cancel_event and self.cancel_event.is_set():
+            return
         from aqt import mw
         def update_ui():
             try:
@@ -321,7 +330,7 @@ class AIEngine:
     def _handle_generate(self, data: dict) -> dict:
         from core.logger import log, flow, FlowTimer, LogLevel
         from core.schema_registry import get_schema
-        self.cancel_event.clear()
+        self._new_cancel_event()
         data = normalize_language_fields(dict(data or {}))
         gamemode = data.get("gamemode", "fill_blank")
 
@@ -528,7 +537,7 @@ class AIEngine:
         }
 
     def _handle_test_key(self, data: dict) -> dict:
-        self.cancel_event.clear()
+        self._new_cancel_event()
         key = data.get("key", "").strip()
         if not key:
             log.warn("test_key called with empty key")
@@ -546,7 +555,7 @@ class AIEngine:
                 client.close()
 
     def _handle_test_all_keys(self, data: dict = None) -> dict:
-        self.cancel_event.clear()
+        self._new_cancel_event()
         keys = self.settings.get_api_keys()
         configured_model = self.settings.get("model", "auto")
         from core.api_client import GeminiClient
@@ -610,7 +619,7 @@ class AIEngine:
         return list_source_fields(data.get("model_id"))
 
     def _handle_sample_vocab_pairs(self, data: dict) -> dict:
-        self.cancel_event.clear()
+        self._new_cancel_event()
         from core.deck_source import sample_vocab_pairs
 
         return sample_vocab_pairs(
@@ -664,7 +673,7 @@ class AIEngine:
         return HintManager.get_hint_data(gamemode, question_data, hint_level, ui_lang)
 
     def _handle_ai_grade(self, data: dict) -> dict:
-        self.cancel_event.clear()
+        self._new_cancel_event()
         data = normalize_language_fields(dict(data or {}))
         gamemode = data.get("gamemode", "fill_blank")
         learn_lang = valid_learn_lang(self.settings.get("learn_lang"))

@@ -418,7 +418,7 @@ function setBusy(on, text = t('app.generating', 'Đang tạo bài…')) {
             console.error('Cancel request failed:', ex);
           }
           setBusy(false);
-          setStatus(t('app.action_cancelled', 'Đã hủy thao tác.'), 'info');
+          showStatus(t('app.action_cancelled', 'Đã hủy thao tác.'), 'info');
         };
       }
     }
@@ -3253,9 +3253,7 @@ async function testKeys(){
         button.innerHTML=esc(t('app.test_api', 'Kiểm tra API'));
         button.disabled = false;
       }
-      if(!signal.aborted){
-        setBusy(false);
-      }
+      setBusy(false);
     }
   }
 
