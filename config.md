@@ -6,7 +6,7 @@ Welcome to **AI Learning Hub for Anki**!
 
 1. **Gemini API Keys**:
    - Obtain your free Gemini API Key from [Google AI Studio](https://aistudio.google.com/app/apikey).
-   - Enter your key in `api_key1` (e.g., `"AIzaSy..."`). You can add up to 10 keys for automatic rotation and failover.
+   - Enter your key in `api_key1` (e.g., `"AQ..."`). You can add up to 10 keys for automatic rotation and failover.
    - Alternatively, launch **Tools -> 🚀 AI Learning Hub...** and click **⚙️ Settings** to manage keys interactively.
 
 2. **UI & Learning Languages**:
