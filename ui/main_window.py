@@ -41,11 +41,8 @@ class AIHubView:
         self._bg_lock = threading.Lock()
 
     def _hub_url(self) -> QUrl:
-        package = (
-            mw.addonManager.addonFromModule(__name__) or
-            mw.addonManager.addonFromModule("AI_Learning_Hub") or
-            os.path.basename(ADDON_PATH)
-        )
+        dir_basename = os.path.basename(ADDON_PATH)
+        package = mw.addonManager.addonFromModule(dir_basename) or dir_basename
         port = mw.mediaServer.getPort()
         url_str = f"http://127.0.0.1:{port}/_addons/{package}/web/index.html"
         log.info(f"Loading Hub URL: {url_str}")
