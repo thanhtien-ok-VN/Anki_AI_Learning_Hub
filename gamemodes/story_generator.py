@@ -33,11 +33,19 @@ class StoryGeneratorMode(GameModeBase):
                     correct_index = idx
                     break
             
+            normalized_options = []
+            for opt in shuffled_options:
+                if isinstance(opt, dict):
+                    text_val = opt.get("text") or opt.get("word") or opt.get("option") or ""
+                    normalized_options.append({"text": text_val, "is_correct": bool(opt.get("is_correct"))})
+                else:
+                    normalized_options.append({"text": str(opt), "is_correct": False})
+
             rendered_questions.append({
                 "id": q.get("id", i + 1),
                 "type": q.get("type", "detail"),
                 "question": q.get("question", ""),
-                "options": shuffled_options,
+                "options": normalized_options,
                 "correct_index": correct_index,
                 "explanation": q.get("explanation", ""),
                 "evidence_quote": q.get("evidence_quote", ""),

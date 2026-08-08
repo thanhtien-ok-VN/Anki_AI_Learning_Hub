@@ -12,7 +12,7 @@ class GameModeBase(ABC):
     display_name: str = ""
     icon: str = ""
 
-    def __init__(self, api_client: GeminiClient, prompt_mgr: PromptManager):
+    def __init__(self, api_client: Optional[GeminiClient] = None, prompt_mgr: Optional[PromptManager] = None):
         self.api = api_client
         self.prompts = prompt_mgr
 

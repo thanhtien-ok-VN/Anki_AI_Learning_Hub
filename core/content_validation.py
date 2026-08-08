@@ -61,11 +61,40 @@ def _validate_cloze(r: dict) -> dict:
 
 def _validate_story(r: dict) -> dict:
     questions = r.get("questions", [])
+    if not isinstance(questions, list):
+        return {"error": "Invalid questions list format."}
+
     for i, q in enumerate(questions):
-        options = q.get("options", [])
-        correct_count = sum(1 for o in options if o.get("is_correct"))
-        if correct_count != 1:
-            return {"error": f"Question {i+1}: expected 1 correct option, found {correct_count}."}
-        if q.get("type") not in VALID_QUESTION_TYPES:
-            return {"error": f"Question {i+1}: invalid type '{q.get('type')}'."}
+        if not isinstance(q, dict):
+            continue
+        raw_opts = q.get("options", [])
+        if not isinstance(raw_opts, list):
+            q["options"] = []
+            continue
+
+        # Normalize options array in-place
+        norm_opts = []
+        for o in raw_opts:
+            if isinstance(o, dict):
+                txt = str(o.get("text") or o.get("word") or o.get("option") or "").strip()
+                norm_opts.append({"text": txt, "is_correct": bool(o.get("is_correct"))})
+            else:
+                norm_opts.append({"text": str(o).strip(), "is_correct": False})
+        q["options"] = norm_opts
+
+        # Check exactly 1 correct option if options exist
+        if norm_opts:
+            correct_count = sum(1 for o in norm_opts if o["is_correct"])
+            if correct_count != 1:
+                return {"error": f"Question {i+1}: expected 1 correct option, found {correct_count}."}
+
+        # Auto-normalize question type seamlessly
+        q_type = str(q.get("type", "detail")).lower().strip()
+        if any(k in q_type for k in ("inference", "purpose", "main_idea", "summary")):
+            q["type"] = "inference"
+        elif any(k in q_type for k in ("vocab", "reference", "context")):
+            q["type"] = "vocabulary"
+        else:
+            q["type"] = "detail"
+
     return {}
