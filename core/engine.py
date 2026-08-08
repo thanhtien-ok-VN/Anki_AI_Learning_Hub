@@ -692,7 +692,8 @@ class AIEngine:
 
         from core.ai_grader import get_grader_prompt
 
-        common = {"learn_lang": learn_lang_full, "level": level, "feedback_lang": ui_lang_full}
+        hint_level = data.get("hint_level", 0)
+        common = {"learn_lang": learn_lang_full, "level": level, "feedback_lang": ui_lang_full, "hint_level": hint_level}
         if gamemode == "fill_blank":
             prompt_data = {
                 **common,
@@ -787,9 +788,15 @@ class AIEngine:
         gamemode = data.get("gamemode", "fill_blank")
         user_input = data.get("user_input")
         correct = data.get("correct")
+        hint_level = data.get("hint_level", 0)
         gm = self.get_gamemode(gamemode)
         if gm and hasattr(gm, "check_answer"):
-            result = gm.check_answer(user_input, correct)
+            import inspect
+            sig = inspect.signature(gm.check_answer)
+            if "hint_level" in sig.parameters:
+                result = gm.check_answer(user_input, correct, hint_level=hint_level)
+            else:
+                result = gm.check_answer(user_input, correct)
             log.debug(f"check_answer: {gamemode} -> {result}")
             return result
         log.warn(f"No check handler for {gamemode}")

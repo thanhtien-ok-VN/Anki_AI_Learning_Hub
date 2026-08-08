@@ -20,13 +20,30 @@ class HintManager:
             message=f"Hint requested: gamemode={gamemode}, hint_level={hint_level}, ui_lang={ui_lang_name}"
         )
 
+        # Multiplier map: L0=1.0, L1=0.75, L2=0.50, L3+=0.0
+        if hint_level <= 0:
+            multiplier = 1.0
+            penalty_pct = 0
+        elif hint_level == 1:
+            multiplier = 0.75
+            penalty_pct = 25
+        elif hint_level == 2:
+            multiplier = 0.50
+            penalty_pct = 50
+        else:
+            multiplier = 0.0
+            penalty_pct = 100
+
         res = {
             "gamemode": gamemode,
             "hint_level": hint_level,
             "ui_lang": ui_lang,
             "hint_title": "",
             "content": "",
-            "penalty": False
+            "penalty": hint_level >= 3,
+            "is_penalty": hint_level > 0,
+            "score_multiplier": multiplier,
+            "penalty_percent": penalty_pct,
         }
 
         target_word = (
@@ -65,6 +82,5 @@ class HintManager:
             # Level 3: Full Answer & Score Penalty
             res["hint_title"] = t("hint.level_3", lang=ui_lang)
             res["content"] = f"Answer: {target_word}" if target_word else "Solution revealed."
-            res["penalty"] = True
 
         return res

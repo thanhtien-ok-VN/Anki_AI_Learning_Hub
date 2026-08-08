@@ -1,6 +1,7 @@
 from typing import Any
 from .base import GameModeBase
 
+
 class TabooMode(GameModeBase):
     name = "taboo"
     display_name = "AI Taboo"
@@ -24,17 +25,29 @@ class TabooMode(GameModeBase):
             ]
         }
 
-    def check_answer(self, user_input: Any, correct: Any) -> dict:
+    def check_answer(self, user_input: Any, correct: Any, hint_level: int = 0) -> dict:
         guess = str(user_input).strip().lower() if user_input else ""
         word = str(correct).strip().lower() if correct else ""
         is_correct = guess == word
+
+        if not is_correct:
+            points = 0.0
+        elif hint_level == 0:
+            points = 1.0
+        elif hint_level == 1:
+            points = 0.75
+        elif hint_level == 2:
+            points = 0.50
+        else:
+            points = 0.0
 
         return {
             "correct": is_correct,
             "guess": user_input,
             "target_word": correct,
+            "hint_level": hint_level,
             "feedback": "Correct!" if is_correct else f"The word was: {correct}",
-            "points": 1 if is_correct else 0,
+            "points": points,
         }
 
     def generate_ai_guess(self, description: str, language: str = "en") -> str:

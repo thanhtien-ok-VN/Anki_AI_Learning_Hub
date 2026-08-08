@@ -1,6 +1,7 @@
 from typing import Any
 from .base import GameModeBase
 
+
 class SentenceTransformMode(GameModeBase):
     name = "sentence_transform"
     display_name = "Sentence Transformation"
@@ -27,24 +28,36 @@ class SentenceTransformMode(GameModeBase):
             ]
         }
 
-    def check_answer(self, user_input: Any, correct: Any) -> dict:
+    def check_answer(self, user_input: Any, correct: Any, hint_level: int = 0) -> dict:
         from core.engine import normalize_answer
         user_norm = normalize_answer(str(user_input or ""))
         expected_norm = normalize_answer(str(correct or ""))
         is_correct = user_norm == expected_norm
 
+        if not is_correct:
+            points = 0.0
+        elif hint_level == 0:
+            points = 1.0
+        elif hint_level == 1:
+            points = 0.75
+        elif hint_level == 2:
+            points = 0.50
+        else:
+            points = 0.0
+
         return {
             "correct": is_correct,
-            "score": 1.0 if is_correct else 0.0,
+            "score": points * 10.0,
             "exact_match": is_correct,
             "user_answer": str(user_input or ""),
             "expected": str(correct or ""),
+            "hint_level": hint_level,
             "feedback": (
                 "Perfect!"
                 if is_correct
                 else "Review the grammar rule and try again."
             ),
-            "points": 1 if is_correct else 0,
+            "points": points,
         }
 
     def _format_anki_note(self, data: dict) -> tuple:

@@ -667,6 +667,7 @@ function source() {
     if (gameId === 'fill_blank' && item.data?.questions) {
       const questions = item.data.questions;
       const userAnswers = item.answers || {};
+      const hintLevels = item.hint_levels || {};
 
       detailContent = questions.map((q, qIdx) => {
         const chosen = userAnswers[qIdx];
@@ -681,6 +682,27 @@ function source() {
         const chosenOpt = (chosen !== undefined && q.options && q.options[chosen]);
         const chosenWord = chosenOpt ? (typeof chosenOpt === 'object' ? chosenOpt.word : chosenOpt) : '';
         const sentenceHtml = formatSentenceWithBlank(rawSentence, chosenWord, chosen !== undefined, isCorrect, correctWord);
+
+        const trans = q.full_translation || q.sentence_translation || q.full_sentence_translation || 'Không có bản dịch';
+        const explanation = q.explanation || q.explanation_short || '';
+        const hLevel = (hintLevels[qIdx] !== undefined) ? hintLevels[qIdx] : (q._hint_level || 0);
+
+        let qPoints = 0.0;
+        if (isCorrect) {
+          if (hLevel === 0) qPoints = 1.0;
+          else if (hLevel === 1) qPoints = 0.75;
+          else if (hLevel === 2) qPoints = 0.50;
+          else qPoints = 0.0;
+        }
+
+        let hintNotice = '';
+        if (hLevel === 1) {
+          hintNotice = `<div style="font-size:13px; font-weight:600; color:#ca8a04; margin-bottom:8px;">💡 Đã dùng Gợi ý Cấp 1 (-25% điểm) ➔ Đạt ${qPoints}/1.0 điểm</div>`;
+        } else if (hLevel === 2) {
+          hintNotice = `<div style="font-size:13px; font-weight:600; color:#ca8a04; margin-bottom:8px;">💡 Đã dùng Gợi ý Cấp 2 (-50% điểm) ➔ Đạt ${qPoints}/1.0 điểm</div>`;
+        } else if (hLevel >= 3) {
+          hintNotice = `<div style="font-size:13px; font-weight:600; color:#dc2626; margin-bottom:8px;">💡 Đã dùng Gợi ý Cấp 3 (Hiện đáp án) ➔ 0.0/1.0 điểm</div>`;
+        }
 
         return `
           <div class="question-card mb-4">
@@ -1571,6 +1593,8 @@ function renderFillBlank(x) {
           if (state.currentHistoryItem) {
             state.currentHistoryItem.answers = { ...state.answers };
             state.currentHistoryItem.score = finalScore;
+            state.currentHistoryItem.correct_count = correctCount;
+            state.currentHistoryItem.hint_levels = { ...(window.HintSystem?.hintLevels || {}) };
           }
           saveHistory();
 

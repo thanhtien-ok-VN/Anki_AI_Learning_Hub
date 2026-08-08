@@ -6,8 +6,9 @@ Student's level: {level}
 Question: {question}
 Expected answer: {expected}
 Student's answer: {user_answer}
+Hint level used by student: {hint_level} (Level 0=No hint, Level 1=Grammar, Level 2=First letter/Meaning, Level 3=Answer revealed)
 
-Grade the answer considering the student's level. Provide:
+Grade the answer considering the student's level and hint usage. Provide:
 1. Whether it's correct (true/false)
 2. A score from 0.0 to 1.0
 3. Brief explanation of errors (if wrong) or confirmation (if correct)
@@ -31,6 +32,7 @@ Meaning: {meaning}
 Question: {question}
 Expected answer: {expected}
 Student's answer: {user_answer}
+Hint level used by student: {hint_level} (Level 0=No hint, Level 1=Grammar, Level 2=First letter/Meaning, Level 3=Answer revealed)
 
 Explain why the correct answer is right or wrong. Include:
 - Semantic meaning of the correct word in context
