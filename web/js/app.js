@@ -3413,6 +3413,16 @@ async function testKeys(){
     const el = document.querySelector('#loading-text');
     if (el) el.textContent = text;
   };
-  return {start:startApp,navigate:nav,retry:()=>{state.answers={};game()}};
+  const appObj = { start: startApp, navigate: nav, retry: () => { state.answers = {}; game(); } };
+  window.App = appObj;
+  return appObj;
 };
-})();window.App=App;document.addEventListener('DOMContentLoaded',App.start);
+})();
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    if (window.App && typeof window.App.start === 'function') window.App.start();
+  });
+} else {
+  if (window.App && typeof window.App.start === 'function') window.App.start();
+}
