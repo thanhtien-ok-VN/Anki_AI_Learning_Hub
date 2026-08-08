@@ -57,5 +57,28 @@ class TestEngineRouter(unittest.TestCase):
             self.assertTrue(res.get("cancelled"))
 
 
+    def test_aiengine_result_staticmethod(self):
+        res = AIEngine._result(True, {"key": "val"}, "E_CODE", "msg")
+        self.assertEqual(res, {"success": True, "data": {"key": "val"}, "error_code": "E_CODE", "message": "msg"})
+
+    def test_handle_generate_offline_matching(self):
+        mock_gm = MagicMock()
+        mock_gm.is_offline = True
+        mock_gm.generate.return_value = {"game_id": "123", "pairs": [1, 2, 3, 4, 5]}
+        with patch.object(self.engine, 'get_gamemode', return_value=mock_gm):
+            res = self.engine._handle_generate({"gamemode": "matching"})
+            self.assertTrue(res.get("success"))
+            self.assertEqual(res.get("data", {}).get("game_id"), "123")
+
+    def test_handle_generate_offline_not_enough_vocab(self):
+        mock_gm = MagicMock()
+        mock_gm.is_offline = True
+        mock_gm.generate.return_value = {"error": True, "error_code": "E_NOT_ENOUGH_VOCAB", "message": "Not enough vocab"}
+        with patch.object(self.engine, 'get_gamemode', return_value=mock_gm):
+            res = self.engine._handle_generate({"gamemode": "matching"})
+            self.assertFalse(res.get("success"))
+            self.assertEqual(res.get("error_code"), "E_NOT_ENOUGH_VOCAB")
+
+
 if __name__ == '__main__':
     unittest.main()

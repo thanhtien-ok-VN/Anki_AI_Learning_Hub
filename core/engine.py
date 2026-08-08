@@ -223,6 +223,17 @@ class AIEngine:
         except Exception as e:
             log.error(f"Error in _on_profile_close: {e}")
 
+    @staticmethod
+    def _result(
+        success: bool, data: dict | None = None, code: str = "", message: str = ""
+    ) -> dict:
+        return {
+            "success": success,
+            "data": data or {},
+            "error_code": code,
+            "message": message,
+        }
+
     def handle_js_message(self, message: str) -> dict:
         try:
             msg = json.loads(message)
