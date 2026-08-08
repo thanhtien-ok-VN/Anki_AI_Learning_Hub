@@ -178,9 +178,6 @@ function loadPrefs() {
     if (typeof Bridge !== 'undefined' && Bridge.abortAll) {
       Bridge.abortAll();
     }
-  }
-  const abortCurrentRequest = abortActiveRequests;
-
   function getSignal() {
     if (!currentAbortController || currentAbortController.signal.aborted) {
       currentAbortController = new AbortController();
@@ -193,12 +190,7 @@ function loadPrefs() {
   loadHistory();
 
   const root = document.querySelector('#app');
-  // ╔══════════════════════════════════════════════════════════════╗
-// ║  SECTION 2: CORE UTILITIES                                    ║
-// ║  (t, esc, normalizeText, setSafeTimeout, setSafeInterval,     ║
-// ║   disposeCurrentGame, showStatus, clearStatus, getWeakWords)  ║
-// ╚══════════════════════════════════════════════════════════════╝
-const t = (key, fallback, ...args) => {
+  const t = (key, fallback, ...args) => {
     if (window.t) return window.t(key, fallback, ...args);
     let text = fallback || key;
     if (args.length > 0) {
@@ -217,7 +209,6 @@ const t = (key, fallback, ...args) => {
       .replace(/[.,!?;:]$/, '')
       .replace(/\s+/g, ' ');
   };
-  const normalizeAnswer = s => normalizeText(s).trim().toLowerCase();
   const norm = normalizeText;
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   window.esc = esc;
@@ -400,6 +391,8 @@ const t = (key, fallback, ...args) => {
 function setBusy(on, text = t('app.generating', 'Đang tạo bài…')) {
     if (on) clearStatus();
     state.busy = on;
+    const busyLabel = document.querySelector('#busy-label');
+    if (busyLabel) busyLabel.textContent = on ? ` (${text})` : '';
     const e = document.querySelector('#loading');
     if (e) {
       e.hidden = !on;
@@ -422,8 +415,8 @@ function setBusy(on, text = t('app.generating', 'Đang tạo bài…')) {
         };
       }
     }
-    document.querySelectorAll('button,input,select,textarea').forEach(x => {
-      if (x.id !== 'close-hub' && x.id !== 'loading-cancel-btn' && x.id !== 'back') {
+    document.querySelectorAll('button,input,select,textarea,.back-btn,#back').forEach(x => {
+      if (x.id !== 'close-hub' && x.id !== 'loading-cancel-btn') {
         x.disabled = on;
       }
     });
@@ -2530,8 +2523,11 @@ function renderUnscrambleAll(x) {
             setBusy(true, t('unscramble.grading', 'Đang chấm bài bằng AI...'));
             const signal = getSignal();
             
+            const levelEl = document.querySelector('#level');
+            const levelVal = levelEl ? levelEl.value : 'intermediate';
+            
             for (let i = 0; i < x.questions.length; i++) {
-              if (signal.aborted) return;
+              if (signal.aborted || !document.querySelector('#play')) return;
               const q = x.questions[i];
               const userAns = (state.answers[i] || []).join(' ');
               
@@ -2546,12 +2542,13 @@ function renderUnscrambleAll(x) {
 
               const feedback = await Bridge.sendAsync('ai_grade', {
                 gamemode: 'unscramble',
-                level: document.querySelector('#level').value,
+                level: levelVal,
                 user_answer: userAns,
                 expected: q.correct_sentence,
                 correct_sentence: q.correct_sentence
               }, { signal });
               
+              if (signal.aborted || !document.querySelector('#play')) return;
               state.answers[`feedback_${i}`] = feedback;
             }
 
@@ -3290,21 +3287,30 @@ function renderStory(x) {
         fb.innerHTML=html;
 
         if (hasNext) {
-          document.querySelector('#next-taboo').onclick = () => {
-            state.tabooCursor++;
-            renderTaboo(x);
-          };
+          const nextBtn = document.querySelector('#next-taboo');
+          if (nextBtn) {
+            nextBtn.onclick = () => {
+              state.tabooCursor++;
+              renderTaboo(x);
+            };
+          }
         } else {
-          document.querySelector('#new-taboo-batch').onclick = () => {
-            state.answers = {};
-            generate(state.route);
-          };
+          const newBatchBtn = document.querySelector('#new-taboo-batch');
+          if (newBatchBtn) {
+            newBatchBtn.onclick = () => {
+              state.answers = {};
+              generate(state.route);
+            };
+          }
         }
 
-        document.querySelector('#retry-taboo-round').onclick = () => {
-          if (state.hintedQuestions) state.hintedQuestions.delete(currentRoundIdx);
-          renderTaboo(x);
-        };
+        const retryBtn = document.querySelector('#retry-taboo-round');
+        if (retryBtn) {
+          retryBtn.onclick = () => {
+            if (state.hintedQuestions) state.hintedQuestions.delete(currentRoundIdx);
+            renderTaboo(x);
+          };
+        }
       }catch(e){
         if(e.name==='AbortError'||e.error_code==='E_ABORTED')return;
         showBridgeFailure(e);
@@ -3405,5 +3411,6 @@ async function testKeys(){
     const el = document.querySelector('#loading-text');
     if (el) el.textContent = text;
   };
-  return {start:startApp,navigate:nav,retry:()=>{state.answers={};play(state.route)}}
+  return {start:startApp,navigate:nav,retry:()=>{state.answers={};game()}};
+};
 })();window.App=App;document.addEventListener('DOMContentLoaded',App.start);

@@ -96,6 +96,8 @@
         if (window.Bridge && typeof window.Bridge.sendAsync === 'function') {
           window.Bridge.sendAsync('log_event', {
             phase: 'HINT',
+            event: 'request_hint',
+            game: gamemode,
             message: `User requested level ${currentLevel} hint for ${gamemode} q_idx=${qIdx}`
           }).catch(() => {});
         }
