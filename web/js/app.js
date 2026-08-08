@@ -675,14 +675,17 @@ function source() {
         if (correctIdx === -1) correctIdx = q.correct_index;
         const isCorrect = chosen === correctIdx;
 
-        const sentenceText = q.sentence || q.sentence_with_blank || '';
-        const trans = q.full_translation || q.sentence_translation || q.full_sentence_translation || 'Không có bản dịch';
-        const explanation = q.explanation || q.explanation_short || '';
+        const rawSentence = q.sentence_with_blank || q.sentence || '';
+        const correctOpt = q.options && q.options.find(o => typeof o === 'object' ? o.is_correct : false);
+        const correctWord = q.target_word || (correctOpt ? correctOpt.word : '');
+        const chosenOpt = (chosen !== undefined && q.options && q.options[chosen]);
+        const chosenWord = chosenOpt ? (typeof chosenOpt === 'object' ? chosenOpt.word : chosenOpt) : '';
+        const sentenceHtml = formatSentenceWithBlank(rawSentence, chosenWord, chosen !== undefined, isCorrect, correctWord);
 
         return `
           <div class="question-card mb-4">
             <div class="q-number">Câu ${qIdx + 1}/${questions.length}</div>
-            <div class="q-text" style="font-size:16px; font-weight:600;">${esc(sentenceText)}</div>
+            <div class="q-text" style="font-size:16px; font-weight:600;">${sentenceHtml}</div>
 
             <div class="feedback ${chosen !== undefined ? (isCorrect ? 'good' : 'bad') : ''} mt-3">
               ${chosen !== undefined ? `
@@ -1338,23 +1341,71 @@ async function generate(id, optsOverride){
 // ║  (renderFillBlank, renderCloze, buildOptionDetailsHtml,       ║
 // ║   openHistoryModal, renderHistoryList, renderHistoryDetail)   ║
 // ╚══════════════════════════════════════════════════════════════╝
+function formatSentenceWithBlank(sentenceText, chosenWord, isGraded, isCorrect, correctWord) {
+  if (!sentenceText) return '';
+  const pattern = /______+|___+|\[BLANK\]|\(\.\.\.\)|____+/gi;
+  const hasMatch = pattern.test(sentenceText);
+  
+  let replacement = '';
+  if (isGraded) {
+    if (isCorrect) {
+      replacement = `<span class="blank-pill correct" style="display:inline-flex; align-items:center; gap:4px; padding:2px 10px; border-radius:12px; background:rgba(34,197,94,0.15); color:#16a34a; font-weight:700;">✓ ${esc(correctWord || chosenWord)}</span>`;
+    } else {
+      const wrongText = chosenWord ? `<span style="text-decoration:line-through; opacity:0.8;">${esc(chosenWord)}</span> ` : '';
+      replacement = `<span class="blank-pill wrong" style="display:inline-flex; align-items:center; gap:4px; padding:2px 10px; border-radius:12px; background:rgba(239,68,68,0.15); color:#dc2626; font-weight:700;">${wrongText}✓ ${esc(correctWord)}</span>`;
+    }
+  } else if (chosenWord) {
+    replacement = `<span class="blank-pill active" style="display:inline-block; padding:2px 10px; border-radius:12px; background:rgba(59,130,246,0.15); color:#2563eb; font-weight:700; border:1px solid rgba(59,130,246,0.3);">${esc(chosenWord)}</span>`;
+  } else {
+    replacement = `<span class="blank-pill empty" style="display:inline-block; padding:2px 14px; border-radius:12px; background:var(--color-surface-tint); color:var(--text-secondary); font-weight:700; border:1.5px dashed var(--color-warn);">______</span>`;
+  }
+
+  if (hasMatch) {
+    pattern.lastIndex = 0;
+    return sentenceText.replace(pattern, replacement);
+  }
+  return `${sentenceText} ${replacement}`;
+}
+
 function renderFillBlank(x) {
     const d = document.querySelector('#play');
     if (!x?.questions?.length) { d.innerHTML = '<div class="empty-state"><p>Không có câu hỏi.</p></div>'; return; }
     const isGraded = !!state.isGraded;
     const gameId = state.route;
 
-    let score = 0;
-    if (isGraded) {
-      x.questions.forEach((q, i) => {
-        let correctIdx = q.options.findIndex(o => typeof o === 'object' ? o.is_correct : false);
-        if (correctIdx === -1) correctIdx = q.correct_index;
-        if (state.answers[i] === correctIdx) score++;
-      });
-    }
+    let totalPoints = 0;
+    let correctCount = 0;
+
+    x.questions.forEach((q, i) => {
+      let correctIdx = q.options.findIndex(o => typeof o === 'object' ? o.is_correct : false);
+      if (correctIdx === -1) correctIdx = q.correct_index;
+      const chosen = state.answers[i];
+      const isCorrect = chosen === correctIdx;
+      const hLevel = window.HintSystem?.hintLevels?.[i] || q._hint_level || 0;
+      
+      let p = 0.0;
+      if (isCorrect) {
+        correctCount++;
+        if (hLevel === 0) p = 1.0;
+        else if (hLevel === 1) p = 0.75;
+        else if (hLevel === 2) p = 0.50;
+        else p = 0.0;
+      }
+      q._calculated_points = p;
+      q._hint_level = hLevel;
+      if (isGraded) totalPoints += p;
+    });
 
     const cardsHtml = x.questions.map((q, i) => {
       const chosen = state.answers[i];
+      const rawSentence = q.sentence_with_blank || q.sentence || '';
+      const correctOpt = q.options.find(o => typeof o === 'object' ? o.is_correct : false);
+      const correctWord = q.target_word || (correctOpt ? correctOpt.word : '');
+      const chosenOpt = (chosen !== undefined && q.options && q.options[chosen]);
+      const chosenWord = chosenOpt ? (typeof chosenOpt === 'object' ? chosenOpt.word : chosenOpt) : '';
+
+      const sentenceHtml = formatSentenceWithBlank(rawSentence, chosenWord, isGraded, (chosen === q.correct_index || (correctOpt && q.options.indexOf(correctOpt) === chosen)), correctWord);
+
       const optsHtml = q.options.map((o, idx) => {
         let cls = 'option-btn';
         let disabledAttr = '';
@@ -1387,11 +1438,23 @@ function renderFillBlank(x) {
         if (correctIdx === -1) correctIdx = q.correct_index;
         const isCorrect = chosen === correctIdx;
 
+        let hintNotice = '';
+        const hLevel = q._hint_level || 0;
+        if (hLevel === 1) {
+          hintNotice = `<div style="font-size:13px; font-weight:600; color:#ca8a04; margin-bottom:8px;">💡 Đã dùng Gợi ý Cấp 1 (-25% điểm) ➔ Đạt ${q._calculated_points ?? 0.75}/1.0 điểm</div>`;
+        } else if (hLevel === 2) {
+          hintNotice = `<div style="font-size:13px; font-weight:600; color:#ca8a04; margin-bottom:8px;">💡 Đã dùng Gợi ý Cấp 2 (-50% điểm) ➔ Đạt ${q._calculated_points ?? 0.5}/1.0 điểm</div>`;
+        } else if (hLevel >= 3) {
+          hintNotice = `<div style="font-size:13px; font-weight:600; color:#dc2626; margin-bottom:8px;">💡 Đã dùng Gợi ý Cấp 3 (Hiện đáp án) ➔ 0.0/1.0 điểm</div>`;
+        }
+
         feedbackHtml = `
           <div class="feedback ${isCorrect ? 'good' : 'bad'}" style="margin-top:16px; padding:16px; border-radius:8px;">
-            <div style="font-weight:700; font-size:16px; margin-bottom:12px; color:${isCorrect ? 'var(--success)' : 'var(--error)'};">
+            <div style="font-weight:700; font-size:16px; margin-bottom:8px; color:${isCorrect ? 'var(--success)' : 'var(--error)'};">
               ${isCorrect ? esc(t('feedback.exact', 'Chính xác! ✓')) : esc(t('feedback.incorrect_fill_blank', 'Chưa đúng ✕'))}
             </div>
+
+            ${hintNotice}
             
             <div class="mb-3">
               <b>🌐 ${esc(t('feedback.full_sentence_translation', 'Dịch câu hoàn chỉnh'))}:</b>
@@ -1412,7 +1475,7 @@ function renderFillBlank(x) {
       return `
         <div class="question-card" id="qcard-${i}">
           <div class="q-number">Câu ${i + 1}/${x.questions.length}</div>
-          <div class="q-text" style="font-size:16px; font-weight:600; margin-bottom:12px;">${esc(q.sentence || q.sentence_with_blank)}</div>
+          <div class="q-text" id="qtext-${i}" style="font-size:16px; font-weight:600; margin-bottom:12px;">${sentenceHtml}</div>
           <div class="options-grid" id="choices-${i}">
             ${optsHtml}
           </div>
@@ -1431,8 +1494,8 @@ function renderFillBlank(x) {
 
     const submitHtml = isGraded ? `
       <div id="fill-overall-feedback">
-        <div class="feedback ${score === x.questions.length ? 'good' : 'bad'} text-center mt-5">
-          <h3 class="mb-2">Kết quả: ${score}/${x.questions.length} câu đúng</h3>
+        <div class="feedback ${totalPoints > 0 ? 'good' : 'bad'} text-center mt-5">
+          <h3 class="mb-2">Kết quả: ${totalPoints % 1 === 0 ? totalPoints.toFixed(0) : totalPoints.toFixed(2)}/${x.questions.length} điểm (${correctCount}/${x.questions.length} câu đúng)</h3>
         </div>
       </div>
     ` : `
@@ -1456,6 +1519,16 @@ function renderFillBlank(x) {
           const choices = document.querySelectorAll(`#choices-${qIdx} [data-choice]`);
           choices.forEach(btn => btn.classList.remove('selected'));
           b.classList.add('selected');
+
+          // Dynamically fill the selected word into the blank pill in the question sentence
+          const q = x.questions[qIdx];
+          const rawSentence = q.sentence_with_blank || q.sentence || '';
+          const chosenOpt = q.options[cIdx];
+          const chosenWord = typeof chosenOpt === 'object' ? chosenOpt.word : chosenOpt;
+          const qTextEl = document.querySelector(`#qtext-${qIdx}`);
+          if (qTextEl) {
+            qTextEl.innerHTML = formatSentenceWithBlank(rawSentence, chosenWord, false, false, '');
+          }
         };
       });
 
@@ -1475,24 +1548,29 @@ function renderFillBlank(x) {
       if (gradeBtn) {
         gradeBtn.onclick = () => {
           state.isGraded = true;
-          let score = 0;
+          let finalScore = 0;
           x.questions.forEach((q, i) => {
             let correctIdx = q.options.findIndex(o => typeof o === 'object' ? o.is_correct : false);
             if (correctIdx === -1) correctIdx = q.correct_index;
-            const wasHinted = state.hintedQuestions && state.hintedQuestions.has(i);
-            const isCorrect = state.answers[i] === correctIdx && !wasHinted;
+            const isCorrect = state.answers[i] === correctIdx;
+            const hLevel = window.HintSystem?.hintLevels?.[i] || 0;
+            let p = 0.0;
             if (isCorrect) {
-              score++;
+              if (hLevel === 0) p = 1.0;
+              else if (hLevel === 1) p = 0.75;
+              else if (hLevel === 2) p = 0.50;
+              else p = 0.0;
             } else {
               const correctOpt = q.options[correctIdx];
               const termWord = typeof correctOpt === 'object' ? correctOpt.word : correctOpt;
               addWeakWord(termWord);
             }
+            finalScore += p;
           });
 
           if (state.currentHistoryItem) {
             state.currentHistoryItem.answers = { ...state.answers };
-            state.currentHistoryItem.score = score;
+            state.currentHistoryItem.score = finalScore;
           }
           saveHistory();
 

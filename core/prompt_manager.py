@@ -23,9 +23,11 @@ class PromptManager:
         **kwargs,
     ) -> str:
         filename = f"{gamemode}.txt"
-        filepath = os.path.join(self.prompts_dir, "common", filename)
-
+        # Language-specific prompt takes priority over common/en fallback
+        filepath = os.path.join(self.prompts_dir, language, filename)
         prompt = self._load(filepath)
+        if not prompt:
+            prompt = self._load(os.path.join(self.prompts_dir, "common", filename))
         if not prompt:
             prompt = self._load(os.path.join(self.prompts_dir, "en", filename))
         if not prompt:

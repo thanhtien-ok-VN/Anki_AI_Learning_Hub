@@ -1,2 +1,39 @@
-Generate {count} fill-in-the-blank questions in {learn_lang}. Level: {level_instruction}; topic: {topic}.
-Sentences, target words, and options must be in {learn_lang}. Meanings, translations, option reasons, explanations, and grammar notes must be in {ui_lang}. Output only JSON matching the schema.
+Generate a fill-in-the-blank exercise for a {learn_lang} learner.
+Difficulty: {level_instruction}
+Topic: {topic}
+
+MANDATORY DIRECTIVES:
+1. Content focus: Sentences MUST revolve around real-world life facts, scientific/cultural knowledge, or practical academic facts related to "{topic}".
+2. All explanations, meanings, and translations MUST be in {ui_lang}.
+
+Requirements:
+- Create exactly {count} fill-in-the-blank sentences in {learn_lang}. Each with ONE missing word (______). 
+- Place the blank (______) in various positions (beginning, middle, end) of sentences.
+- Provide exactly 4 options per sentence (1 correct option + 3 distractors).
+- **CRITICAL DISTRACTOR RULES (3 Distractors)**:
+  + All 3 distractors MUST belong to the same semantic field/topic and have the same part of speech and grammatical structure as the correct answer.
+  + All 4 options MUST have comparable string lengths to avoid leaking the correct answer.
+  + Distractors must be plausible and grammatically fitting in the blank, but semantically distinct. NEVER create a second valid correct answer.
+  + Distractor `"type"` field MUST be set to one of: `antonym`, `synonym`, `wrong_context`, `different_word_class`, `collocation_error`, `related_word`.
+- Explain thoroughly why the correct answer fits and why distractors are wrong in {ui_lang}.
+
+Output raw JSON only:
+
+{
+  "questions": [
+    {
+      "sentence": "The project was ______ due to lack of funding.",
+      "target_word": "abandoned",
+      "meaning": "[meaning of target word in {ui_lang}]",
+      "full_translation": "[full sentence translation in {ui_lang}]",
+      "options": [
+        {"word": "abandoned", "is_correct": true, "type": "correct", "reason": "[reason in {ui_lang}]"},
+        {"word": "continued", "is_correct": false, "type": "antonym", "reason": "[reason in {ui_lang}]"},
+        {"word": "abandoning", "is_correct": false, "type": "wrong_verb_form", "reason": "[reason in {ui_lang}]"},
+        {"word": "lost", "is_correct": false, "type": "wrong_context", "reason": "[reason in {ui_lang}]"}
+      ],
+      "explanation": "[detailed explanation in {ui_lang}]",
+      "grammar_note": "[grammar note in {ui_lang}]"
+    }
+  ]
+}
