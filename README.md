@@ -104,6 +104,9 @@ This is a pure Python + vanilla JS project. No build step is needed for the web 
 # Run tests
 python -m pytest tests/ -v
 
+# Run the browser bootstrap smoke test
+node tests/test_web_bootstrap.js
+
 # Lint Python
 python -m py_compile core/*.py gamemodes/*.py
 

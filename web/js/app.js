@@ -178,6 +178,8 @@ function loadPrefs() {
     if (typeof Bridge !== 'undefined' && Bridge.abortAll) {
       Bridge.abortAll();
     }
+  }
+
   function getSignal() {
     if (!currentAbortController || currentAbortController.signal.aborted) {
       currentAbortController = new AbortController();
@@ -3419,7 +3421,6 @@ async function testKeys(){
   const appObj = { start: startApp, navigate: nav, retry: () => { state.answers = {}; game(); } };
   window.App = appObj;
   return appObj;
-};
 })();
 
 if (document.readyState === 'loading') {
