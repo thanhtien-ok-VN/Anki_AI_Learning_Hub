@@ -36,20 +36,27 @@ def _plain(value: str) -> str:
     return " ".join(html.unescape(value).split())
 
 
-def _run_on_main(fn):
+import threading
+from concurrent.futures import Future
+
+
+def _run_on_main(fn, timeout: float = 10.0):
     from aqt import mw
+    if threading.current_thread() is threading.main_thread():
+        return fn()
+
     if mw and hasattr(mw, "taskman") and hasattr(mw.taskman, "run_on_main"):
-        result = []
-        exc = []
+        fut = Future()
+
         def wrapper():
             try:
-                result.append(fn())
-            except Exception as e:
-                exc.append(e)
+                fut.set_result(fn())
+            except BaseException as e:
+                fut.set_exception(e)
+
         mw.taskman.run_on_main(wrapper)
-        if exc:
-            raise exc[0]
-        return result[0] if result else None
+        return fut.result(timeout=timeout)
+
     return fn()
 
 

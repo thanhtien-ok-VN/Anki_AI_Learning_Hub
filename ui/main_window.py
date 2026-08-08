@@ -101,9 +101,11 @@ class AIHubView:
                         )
                     )
                 payload = json.dumps({"action": action, "data": msg.get("data", {})})
-                mw.taskman.run_in_background(
-                    lambda: self._safe_handle(payload),
-                    partial(self._background_complete, request_id),
+                mw.taskman.run_on_main(
+                    lambda: mw.taskman.run_in_background(
+                        lambda: self._safe_handle(payload),
+                        partial(self._background_complete, request_id),
+                    )
                 )
                 return json.dumps(
                     self._result(True, {"pending": True, "request_id": request_id})
