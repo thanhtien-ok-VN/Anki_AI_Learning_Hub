@@ -1,119 +1,98 @@
 # AI Learning Hub — Anki Add-on
 
-> An AI-powered vocabulary learning system for Anki with 8 interactive game modes, powered by Gemini API.
+> An AI-powered vocabulary learning system for Anki with 8 interactive game modes, powered by Google Gemini API.
 
 [![Python](https://img.shields.io/badge/Python-3.9+-blue.svg)](https://python.org)
-[![Anki](https://img.shields.io/badge/Anki-2.1.50+-green.svg)](https://apps.ankiweb.net)
-[![Gemini](https://img.shields.io/badge/AI-Gemini%20API-orange.svg)](https://ai.google.dev)
+[![Anki](https://img.shields.io/badge/Anki-2.1.50~25.05+-green.svg)](https://apps.ankiweb.net)
+[![Gemini](https://img.shields.io/badge/AI-Google%20Gemini%20API-orange.svg)](https://ai.google.dev)
+[![Tests](https://img.shields.io/badge/Tests-65%2F65%20PASS-brightgreen.svg)](tests/)
+
+---
 
 ## Overview
 
-AI Learning Hub transforms your existing Anki vocabulary decks into interactive AI-powered exercises. Instead of passive flashcard review, practice with 8 distinct game modes that generate personalized exercises from your own vocabulary.
+**AI Learning Hub** transforms your passive Anki flashcard review into an engaging, interactive learning experience. Utilizing cutting-edge Google Gemini AI, the add-on automatically generates context-rich exercises, provides 5-field granular error analysis, offers multi-tier hints, and supports full multilingual learning (English & Chinese target languages with English & Vietnamese UI).
 
-## Features
+---
 
-| Game Mode | Description |
-|---|---|
-| **Fill in the Blank** | AI generates fill-in-the-blank sentences using your vocabulary |
-| **Cloze Paragraph** | Practice words in a coherent paragraph context |
-| **Translation** | Translate sentences with AI grading and detailed feedback |
-| **Word Unscramble** | Reconstruct scrambled sentences by dragging/clicking words |
-| **Word Matching** | Match vocabulary words to their definitions in a 5-slot board |
-| **Story Generator** | Read an AI-generated story and answer comprehension questions |
-| **Sentence Transform** | Rewrite sentences using different grammatical structures |
-| **Taboo** | Describe a word without using forbidden related words |
+## Key Features & 8 Game Modes
 
-## Installation
+| Gamemode | Mode Type | Key Features & Description |
+|---|---|---|
+| **✏️ Fill in the Blank** | AI Online | Interactive Blank Pills, auto-masking target words in context sentences |
+| **📖 Cloze Test** | AI Online | Contextual topic paragraphs with multiple missing blank positions (`[BLANK_1]`, `[BLANK_2]`) |
+| **🌐 Sentence Translation** | AI Online | 0–10 score, 5-field granular error analysis (Name, Wrong, Reason, Suggestion, Rationale) |
+| **🧩 Word Unscramble** | AI Online | Reconstruct scrambled word tiles into grammatically correct sentences |
+| **📚 Story Generator** | AI Online | CEFR A1–C2 level reading passages with 4-choice comprehension questions |
+| **🔄 Sentence Transformation** | AI Online | Rewrite sentences with 4-block feedback & common/advanced suggestions |
+| **🚫 Taboo Word Guessing** | AI Online | Guess target words from AI clues without using forbidden (Taboo) words |
+| **🔗 Word Matching** | **100% Offline** | Instant 5-slot matching board extracted from user's Anki deck (no API needed) |
 
-1. **Download** this repository as a ZIP or clone it:
-   ```bash
-   git clone https://github.com/your-username/AI_Learning_Hub.git
-   ```
+### 💡 Pedagogical Multi-Tier Hint System
+- **Level 1 (Grammar Rule):** Provides the underlying grammatical structure or rule.
+- **Level 2 (First Letter & Meaning):** Reveals the first letter of the target word and its contextual meaning.
+- **Level 3 (Full Solution):** Reveals the complete correct solution.
+- **Tiered Score Penalty:** Automatically calculates tiered score deductions (L0: 100%, L1: 75%, L2: 50%, L3: 0%) to encourage active recall.
 
-2. **Copy** the folder to your Anki add-ons directory:
-   - **Windows**: `%APPDATA%\Anki2\addons21\AI_Learning_Hub\`
-   - **macOS**: `~/Library/Application Support/Anki2/addons21/AI_Learning_Hub/`
-   - **Linux**: `~/.local/share/Anki2/addons21/AI_Learning_Hub/`
+---
 
-3. **Restart Anki**. The add-on will appear in the Tools menu.
+## Quickstart & Setup Guide
 
-4. **Configure**: Tools → AI Learning Hub → Settings
-   - Enter your [Gemini API Key](https://aistudio.google.com/apikey)
-   - Select your learning language and UI language
-   - Choose the Anki deck to practice from
+### 1. Installation
+- **Option A (Via AnkiWeb Code):** In Anki Desktop, go to **Tools** ➔ **Add-ons** ➔ **Get Add-ons...** ➔ Enter Code ➔ Click **OK**.
+- **Option B (Via File):** In Anki Desktop, go to **Tools** ➔ **Add-ons** ➔ **Install from file...** ➔ Select `AI_Learning_Hub.ankiaddon`.
 
-## Requirements
+### 2. Gemini API Key Configuration
+1. Obtain a free API Key from [Google AI Studio](https://aistudio.google.com/app/apikey).
+2. Launch **Tools** ➔ **🚀 AI Learning Hub...** ➔ Click **⚙️ Settings** (top-right).
+3. Paste your API Key starting with `AQ...` (one key per line for automatic failover/rotation).
+4. Click **🧪 Test All Keys** to verify API connectivity.
+5. Select your preferred **Learning Language** (e.g. `English`, `Chinese (Mandarin)`) and **UI Language** (`English`, `Vietnamese`).
+6. Select your target **Anki Deck Source** to import vocabulary.
 
-- Anki 2.1.50 or newer
-- Python 3.9+ (bundled with Anki)
-- A free [Gemini API Key](https://aistudio.google.com/apikey)
-- No Node.js or npm required — pure Python + vanilla JS
+---
 
-## Project Architecture
+## Project Architecture & Directory Structure
 
-For a detailed sitemap of all 16 component groups, refer to [docs/ARCHITECTURE.md](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/docs/ARCHITECTURE.md).
+For complete component sitemaps and domain matrix, refer to [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ```text
-AI_Learning_Hub/
-├── __init__.py           # [Group 1] Anki add-on entry point & menu setup
-├── ui/                   # [Group 1, 2, 13] Qt Presentation Layer & Diagnostics
-│   ├── main_window.py   # Anki Qt Tab embedding & async task manager
-│   ├── settings_dialog.py # Settings Dialog (Keys, Model, Language, Logs)
-│   └── log_viewer.py    # Log Viewer & Diagnostic Bug Report GUI
-├── core/                 # [Group 1-6, 8, 10, 11, 13, 14] Domain Core & Bridge
-│   ├── engine.py         # AIEngine: JS Bridge Router (~20 Actions, 4-Phase Flow)
-│   ├── settings.py       # SettingsManager: persistent JSON storage
-│   ├── timer.py          # SessionTimer: elapsed practice time tracking
-│   ├── api_client.py     # Backward-compatible alias for llm/gemini.py
-│   ├── prompt_manager.py # Prompt loading & placeholder substitution
-│   ├── schema_registry.py# Pydantic schemas & Gemini JSON spec generators
-│   └── logger.py         # Thread-Safe Ring Buffer & Flow JSONL Logger
-├── llm/                  # [Group 7] Provider Abstraction Layer (DIP)
-│   ├── base.py           # BaseLLMProvider abstract interface
-│   └── gemini.py         # GeminiProvider (Rotation, backoff, waterfalls)
-├── gamemodes/            # [Group 9] 8 Interactive Gamemode Handlers
-├── prompts/              # [Group 3] System prompt templates (en, zh, common)
-├── lang/                 # [Group 3] i18n JSON Catalogs (en.json, vi.json)
-└── web/                  # [Group 4, 12, 15] Web SPA Frontend (HTML, CSS, JS)
-```
-│       ├── utils.js      # i18n, shuffle, debounce, formatTime
-│       └── app.js        # Main SPA (8 game renderers, routing, state)
-├── lang/
-│   ├── en.json           # English UI strings
-│   ├── vi.json           # Vietnamese UI strings
-│   └── languages.json    # Supported language registry
-├── tests/                # Python unit tests (pytest)
-└── docs/                 # Detailed documentation
+Anki_AI_Learning_Hub/
+├── __init__.py           # Anki add-on entry point & menu setup
+├── manifest.json         # AnkiWeb strict add-on package specification
+├── config.json           # Native Anki configuration schema
+├── config.md             # Native Anki in-app documentation guide
+├── core/                 # Engine, Settings, Prompts, Schema Registry, i18n, Logger
+├── gamemodes/            # 8 Interactive Gamemode implementations
+├── llm/                  # Gemini provider abstraction & waterfall rotation
+├── lang/                 # Multilingual UI catalogs (en.json, vi.json, languages.json)
+├── prompts/              # System prompt templates (en/, zh/, common/)
+├── ui/                   # Qt Presentation Layer & Diagnostic Log Viewer
+├── web/                  # Web SPA Frontend (HTML5, CSS3, Vanilla JS)
+├── scripts/              # Automated packaging script (build_addon.py)
+├── tests/                # Standalone unit test suite (65 unit tests)
+├── docs/                 # System architecture, guide & AnkiWeb descriptions
+└── dist/                 # Release packages (AI_Learning_Hub.ankiaddon & .zip)
 ```
 
-For the full data-flow diagram and extension guide, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+---
 
-## Supported Languages
+## Development & Testing
 
-**Learning languages**: English, Chinese (Simplified), Japanese, Korean, French, German, Spanish, Italian, Russian, Hindi
-
-**UI languages**: English (en), Vietnamese (vi)
-
-Adding a new language requires only a configuration entry in `core/languages.py` — no code changes.
-
-## Development
-
-This is a pure Python + vanilla JS project. No build step is needed for the web frontend.
+This project requires **Python 3.9+** and standard Anki Desktop. No Node.js build step is required for the web frontend.
 
 ```bash
-# Run tests
-python -m pytest tests/ -v
+# 1. Run full unit test suite (65 tests)
+python -m unittest discover -s tests -p "test_*.py" -v
 
-# Run the browser bootstrap smoke test
-node tests/test_web_bootstrap.js
-
-# Lint Python
-python -m py_compile core/*.py gamemodes/*.py
-
-# After editing, copy to Anki add-ons folder to test
-robocopy . "%APPDATA%\Anki2\addons21\AI_Learning_Hub" /E /XD .git node_modules
+# 2. Rebuild distribution packages (.ankiaddon and .zip)
+python scripts/build_addon.py
 ```
 
-## License
+---
 
-MIT License — see [LICENSE](LICENSE) for details.
+## Documentation Links
+
+- [System Architecture (docs/ARCHITECTURE.md)](docs/ARCHITECTURE.md)
+- [AnkiWeb Description (English)](docs/ANKIWEB_DESCRIPTION_EN.md)
+- [AnkiWeb Description (Vietnamese)](docs/ANKIWEB_DESCRIPTION.md)

@@ -1,19 +1,23 @@
 # AI Learning Hub — Complete System Architecture & Component Map
 
-Document version: 2.0 | Last updated: 2026-08-07
+Document version: 2.1 | Last updated: 2026-08-09
 
 This document provides a comprehensive architectural sitemap and component responsibilities matrix for the `Anki_AI_Learning_Hub` add-on codebase.
 
 ---
 
-## 🗺️ COMPONENT MAP (16 SYSTEM GROUPS)
+## 🗺️ COMPONENT MAP (18 SYSTEM GROUPS)
 
-```
+```text
 Anki_AI_Learning_Hub/
 ├── __init__.py                  # [Group 1] Anki Integration & Lifecycle Entry Point
+├── manifest.json                # [Group 1] AnkiWeb Strict Package Specification
+├── config.json                  # [Group 18] Native Anki Configuration Schema
+├── config.md                    # [Group 18] Native Anki In-App Guide
 ├── ui/                          # [Group 1, 2, 13] Presentation Layer
 │   ├── main_window.py           # Anki Tab Embedding & Async Worker Manager
 │   ├── settings_dialog.py       # Qt Config Dialog & Key Manager
+│   ├── bridge_server.py         # Local HTTP Bridge Server (127.0.0.1 CORS Handler)
 │   └── log_viewer.py            # System Log & Diagnostics GUI
 ├── core/                        # [Group 1, 2, 3, 5, 6, 8, 10, 11, 13, 14] Core Domain & Bridge Services
 │   ├── engine.py                # AIEngine Facade & JS Bridge Router (~20 Actions)
@@ -25,8 +29,8 @@ Anki_AI_Learning_Hub/
 │   ├── content_validation.py    # AI Exercise Structure Validation Rules
 │   ├── deck_source.py           # Anki Deck Vocabulary Reader & Weak-Word Sampler
 │   ├── ai_grader.py             # Pedagogical AI Feedback Prompts
-│   ├── languages.py             # Supported Language Definitions
-│   ├── i18n.py                  # Catalog Loader (lang/*.json)
+│   ├── languages.py             # Supported Language Definitions (EN, ZH)
+│   ├── i18n.py                  # Catalog Loader (lang/*.json with *args)
 │   ├── language_normalizer.py    # Legacy Schema Field Harmonizer
 │   ├── error_suppressor.py      # Anki Timeout Exception Interceptor
 │   ├── task_results.py          # Future Task Result Resolver
@@ -52,13 +56,18 @@ Anki_AI_Learning_Hub/
 │   ├── en.json                  # English UI String Catalog
 │   ├── vi.json                  # Vietnamese UI String Catalog
 │   └── languages.json           # 10 Supported Learning Languages Registry
-└── web/                         # [Group 4, 12, 15] Web SPA Frontend
-    ├── index.html               # SPA Container
-    ├── css/style.css            # Responsive Glassmorphism Styling
-    └── js/
-        ├── app.js               # Route Manager & Renderer
-        ├── bridge.js            # PyCmd Async RPC Layer
-        └── utils.js             # Front-end Helper Functions
+├── web/                         # [Group 4, 12, 15] Web SPA Frontend
+│   ├── index.html               # SPA Container
+│   ├── css/style.css            # Responsive Glassmorphism Styling
+│   └── js/
+│       ├── app.js               # Route Manager, 8 Game Renderers & History
+│       ├── bridge.js            # PyCmd & HTTP Async RPC Layer
+│       ├── hint_system.js       # Multi-Tier Hint Handler
+│       └── utils.js             # Front-end Helper Functions
+├── scripts/                     # [Group 17] Automated Build & Packaging Script
+│   └── build_addon.py           # Clean zip/ankiaddon packager
+├── tests/                       # [Group 16] Standalone Unit Test Suite (65 tests)
+└── dist/                        # [Group 17] Release Packages (.ankiaddon & .zip)
 ```
 
 ---
@@ -67,27 +76,29 @@ Anki_AI_Learning_Hub/
 
 ### GROUP 1. Anki Integration & Lifecycle Entry Point
 - [`__init__.py`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/__init__.py): Registers `open_hub()`, `open_settings()`, `init_addon()`, Anki menu entries, and Anki Browser context menu hooks.
+- [`manifest.json`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/manifest.json): Strict AnkiWeb package specification (`package: ai_learning_hub`).
 - [`ui/main_window.py`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/ui/main_window.py): `AIHubView` embeds WebView as a native Anki Qt Tab (`embed()`, `focus()`, `is_closed()`).
+- [`ui/bridge_server.py`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/ui/bridge_server.py): Local HTTP server fallback for Anki 25 QWebChannel bridge.
 - [`core/error_suppressor.py`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/core/error_suppressor.py): Suppresses known transient Anki Qt timeout exceptions.
 - [`core/task_results.py`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/core/task_results.py): Unwraps async background task futures across Anki versions.
 
 ### GROUP 2. Settings & Configuration Management
-- [`core/settings.py`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/core/settings.py): `SettingsManager` loads and saves `user_files/settings.json`. Handles dynamic API key retrieval, active filtering, and security masking.
+- [`core/settings.py`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/core/settings.py): `SettingsManager` loads and saves `user_files/settings.json`. Handles dynamic API key retrieval (`AQ...`), active filtering, and security masking.
 - [`ui/settings_dialog.py`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/ui/settings_dialog.py): Qt configuration GUI dialog for keys, models, temperature, language, and diagnostics.
-- [`core/engine.py`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/core/engine.py): Bridge handlers: `_handle_save_settings`, `_handle_get_settings`, `_handle_test_key`, etc.
+- [`core/engine.py`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/core/engine.py): Bridge handlers: `_handle_save_settings`, `_handle_get_settings`, `_handle_test_key`, `_handle_test_all_keys`.
 - [`core/constants.py`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/core/constants.py): Model chains, waterfall mappings, rate limit backoff constants.
 
 ### GROUP 3. Internationalization (i18n) & Prompt Loading
-- [`core/languages.py`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/core/languages.py): Registry of 10 supported learning languages.
-- [`core/i18n.py`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/core/i18n.py): Catalog strings loader with caching (`load_strings()`, `t()`).
+- [`core/languages.py`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/core/languages.py): Registry of 10 supported learning languages (with `zh` = `"Chinese (Mandarin)"`).
+- [`core/i18n.py`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/core/i18n.py): Catalog strings loader with caching and `*args` positional formatting.
 - [`core/language_normalizer.py`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/core/language_normalizer.py): Harmonizes legacy AI schema fields (`meaning_vi` -> `meaning`).
 - [`web/js/utils.js`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/web/js/utils.js): Front-end `Utils.i18n` and DOM translation interpolation.
 
 ### GROUP 4. Single Page Application (SPA Frontend)
-- [`web/index.html`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/web/index.html): Clean HTML5 shell.
+- [`web/index.html`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/web/index.html): Clean HTML5 shell with boot watchdog overlay.
 - [`web/css/style.css`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/web/css/style.css): Modern glassmorphism dark/light visual theme.
-- [`web/js/app.js`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/web/js/app.js): Route controller (`nav()`, `home()`, `game()`, `render()`), timer lifecycle manager (`disposeCurrentGame()`).
-- [`web/js/bridge.js`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/web/js/bridge.js): Async PyCmd RPC bridge sending JSON envelopes.
+- [`web/js/app.js`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/web/js/app.js): Route controller (`nav()`, `home()`, `game()`, `render()`), timer lifecycle manager, 4-block grader renderer.
+- [`web/js/bridge.js`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/web/js/bridge.js): Async PyCmd & HTTP RPC bridge sending JSON envelopes.
 
 ### GROUP 5. Bridge Message Routing
 - [`core/engine.py`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/core/engine.py): `handle_js_message()` dispatches ~20 RPC actions. Handles `log_event`, `cancel_gen`, `close_hub`.
@@ -104,20 +115,20 @@ Anki_AI_Learning_Hub/
 - [`llm/gemini.py`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/llm/gemini.py): `GeminiProvider` implementing exponential backoff, key rotation, model waterfall fallback, and user cancellation checks.
 
 ### GROUP 8. Anki Deck & Vocabulary Integration
-- [`core/deck_source.py`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/core/deck_source.py): Reads user's Anki collection, extracts target note fields, and samples vocabulary (prioritizing weak words).
+- [`core/deck_source.py`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/core/deck_source.py): Reads user's Anki collection on main thread, extracts target note fields, and samples vocabulary.
 
 ### GROUP 9. 8 Interactive Gamemodes
-1. **Fill in the Blank**: `gamemodes/fill_blank.py`
+1. **Fill in the Blank**: `gamemodes/fill_blank.py` (Interactive Blank Pills)
 2. **Cloze Passage**: `gamemodes/cloze.py`
-3. **Translation Practice**: `gamemodes/translation.py`
+3. **Translation Practice**: `gamemodes/translation.py` (5-Field Granular Error Analysis)
 4. **Word Unscramble**: `gamemodes/word_unscramble.py`
-5. **Word Matching**: `gamemodes/word_matching.py` (Offline local generation supported)
-6. **Story Generator**: `gamemodes/story_generator.py`
-7. **Sentence Transform**: `gamemodes/sentence_transform.py`
+5. **Word Matching**: `gamemodes/word_matching.py` (100% Offline Generation)
+6. **Story Generator**: `gamemodes/story_generator.py` (CEFR A1-C2 Passages)
+7. **Sentence Transform**: `gamemodes/sentence_transform.py` (4-Block Layout)
 8. **Taboo Word Game**: `gamemodes/taboo.py`
 
 ### GROUP 10. Pedagogical AI Grading
-- [`core/ai_grader.py`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/core/ai_grader.py): `GRADER_PROMPTS` generating detailed grammatical, semantic, and error feedback in user's UI language.
+- [`core/ai_grader.py`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/core/ai_grader.py): `GRADER_PROMPTS` generating detailed grammatical, semantic, and 5-field error feedback in user's UI language.
 
 ### GROUP 11. Anki Flashcard Export
 - [`gamemodes/base.py`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/gamemodes/base.py): `save_to_anki()` creates Anki checkpoint for Undo, checks duplicate notes, and inserts cards directly into collection.
@@ -127,7 +138,7 @@ Anki_AI_Learning_Hub/
 
 ### GROUP 13. System Observability & Logging
 - [`core/logger.py`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/core/logger.py): Thread-safe in-memory ring buffer (`collections.deque`), structured JSONL flow logger (`ai_hub_flow.jsonl`), and `FlowTimer`.
-- [`ui/log_viewer.py`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/ui/log_viewer.py): LogViewerDialog with monospace log viewer, real-time QLineEdit keyword search, multi-filter algorithm, log counter (`Showing X of Y logs`), 1-click Diagnostic Bug Report generation, and multi-tier Anki version detection.
+- [`ui/log_viewer.py`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/ui/log_viewer.py): LogViewerDialog with monospace log viewer, real-time QLineEdit keyword search, multi-filter algorithm, 1-click Diagnostic Bug Report generation.
 
 ### GROUP 14. Session & Timer Management
 - [`core/timer.py`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/core/timer.py): `SessionTimer` tracking total practice time and emitting Qt tick signals.
@@ -135,8 +146,23 @@ Anki_AI_Learning_Hub/
 ### GROUP 15. SPA State & Navigation
 - [`web/js/app.js`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/web/js/app.js): Route state manager, preferences persistence, request abort controller.
 
-### GROUP 16. Automated Test Suite
-- `tests/test_logger.py`: Main log tests.
-- `tests/test_flow_logger.py`: Thread-safety ring buffer and masking security unit tests.
+### GROUP 16. Automated Test Suite (65 Standalone Unit Tests)
+- `tests/test_engine_router.py`: Router RPC & AI generate language names tests.
+- `tests/test_ai_grader.py`: Grader prompt rendering tests.
+- `tests/test_hint_manager.py`: Hint multipliers & penalty scoring tests.
+- `tests/test_languages.py`: Language registry & i18n contract tests.
+- `tests/test_story_generator.py`: Story validation & options normalization tests.
+- `tests/test_word_matching.py`: Offline word matching tests.
+- `tests/test_schema_registry.py`: Pydantic schema validation tests.
+- `tests/test_settings.py`: Settings manager tests.
+- `tests/test_fill_blank.py`: Fill in blank logic tests.
+- `tests/test_logger.py` & `tests/test_flow_logger.py`: Logging & thread safety tests.
+- `tests/test_cancellation.py`: Cancellation isolation tests.
 - `tests/test_api_client.py`: Gemini client error handling tests.
-- `tests/test_languages.py`: Language registry tests.
+
+### GROUP 17. Automated Packaging & Release Pipeline
+- [`scripts/build_addon.py`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/scripts/build_addon.py): Automated test discovery & clean zip packager producing `dist/AI_Learning_Hub.zip` and `dist/AI_Learning_Hub.ankiaddon`.
+
+### GROUP 18. Native Anki Configuration
+- [`config.json`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/config.json): Default setting values exposed in Anki's native Add-on Config window.
+- [`config.md`](file:///D:/GithubDesktopClone/Anki_AI_Learning_Hub/config.md): Native documentation displayed inside Anki's Config dialog.
