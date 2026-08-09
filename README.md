@@ -6,6 +6,7 @@
 [![Anki](https://img.shields.io/badge/Anki-2.1.50~25.05+-green.svg)](https://apps.ankiweb.net)
 [![Gemini](https://img.shields.io/badge/AI-Google%20Gemini%20API-orange.svg)](https://ai.google.dev)
 [![Tests](https://img.shields.io/badge/Tests-65%2F65%20PASS-brightgreen.svg)](tests/)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 ---
 
@@ -96,3 +97,9 @@ python scripts/build_addon.py
 - [System Architecture (docs/ARCHITECTURE.md)](docs/ARCHITECTURE.md)
 - [AnkiWeb Description (English)](docs/ANKIWEB_DESCRIPTION_EN.md)
 - [AnkiWeb Description (Vietnamese)](docs/ANKIWEB_DESCRIPTION.md)
+
+---
+
+## License
+
+MIT License — see [LICENSE](LICENSE) for details. Copyright (c) 2026 Cornok.
