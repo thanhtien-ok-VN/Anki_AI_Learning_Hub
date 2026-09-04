@@ -1,0 +1,19 @@
+Generate a word matching game with Chinese (Mandarin) terms matched to {ui_lang} definitions for a {learn_lang} learner.
+Difficulty: {level_instruction}
+Topic: {topic}
+
+MANDATORY: Terms (left column) MUST be in Chinese (Mandarin).
+MANDATORY: Definitions (right column) MUST be in {ui_lang}.
+
+Generate exactly {count} matching pairs. Each item must have a unique id and pair_id linking term to definition.
+
+Output raw JSON only:
+
+{
+  "items": [
+    {"id": "item_1", "content": "苹果", "type": "term", "pair_id": "pair_1"},
+    {"id": "item_2", "content": "香蕉", "type": "term", "pair_id": "pair_2"},
+    {"id": "item_3", "content": "[definition of 苹果 in {ui_lang}]", "type": "definition", "pair_id": "pair_1"},
+    {"id": "item_4", "content": "[definition of 香蕉 in {ui_lang}]", "type": "definition", "pair_id": "pair_2"}
+  ]
+}

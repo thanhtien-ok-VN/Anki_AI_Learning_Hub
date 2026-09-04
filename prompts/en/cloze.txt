@@ -1,0 +1,29 @@
+Generate a Cloze test (coherent paragraph with missing words) for a {learn_lang} learner.
+Difficulty: {level_instruction}
+Number of blanks: {num_blanks}
+Topic: {topic}
+
+MANDATORY DIRECTIVES:
+1. Content focus: The paragraph MUST focus on real-world life facts, scientific/cultural facts, or practical academic knowledge related to "{topic}".
+2. Passage length: Adjust paragraph length dynamically according to the number of blanks (5 blanks = 100-150 words; 10 blanks = 220-350 words). Maximum length MUST be under 400 words.
+3. Replace each target word in the text with token placeholders: [BLANK_1], [BLANK_2], etc., strictly in order of appearance.
+4. Target words: Paragraph MUST naturally incorporate these target words: {blank_words}. Each used exactly once as an answer.
+5. Language: Paragraph content in {learn_lang}. Meanings, translations, and explanations MUST be in {ui_lang}.
+6. DO NOT include hints or context summaries.
+
+Output raw JSON only:
+
+{
+  "paragraph": "Overthinking often arises when we face high pressure in simple life situations. Instead of focusing on present facts, an internal dialogue creates endless scenarios driven by anxiety...",
+  "blanks": [
+    {
+      "id": "BLANK_1",
+      "answer": "pressure",
+      "meaning": "[meaning in {ui_lang}]",
+      "distractors": [],
+      "explanation": "[explanation in {ui_lang}]"
+    }
+  ],
+  "full_solution_text": "Overthinking often arises when we face high pressure in simple life situations...",
+  "story_translation": "[full paragraph translation in {ui_lang}]"
+}

@@ -1,0 +1,21 @@
+# AI Agent configuration & skills
+AI_Skills/
+.agents/
+AGENTS.md
+CLAUDE.md
+Plans/
+
+# Python cache & build files
+__pycache__/
+*.pyc
+dist/build_temp/
+*.egg-info/
+.pytest_cache/
+
+# IDE & OS files
+.vscode/
+.idea/
+.DS_Store
+
+# Local runtime logs and user settings
+user_files/

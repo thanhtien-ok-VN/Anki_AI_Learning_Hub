@@ -1,0 +1,2 @@
+Generate {count} Taboo cards in {learn_lang} about {topic}, at {level_instruction}.
+Target words, taboo words, clues, and example phrases must be in {learn_lang}. Meanings and all analysis must be in {ui_lang}. Output only JSON matching the schema.

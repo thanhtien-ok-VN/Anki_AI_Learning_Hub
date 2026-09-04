@@ -1,0 +1,2 @@
+Write a {learn_lang} paragraph ({paragraph_min_words}-{paragraph_max_words} words) about {topic}; remove exactly {num_blanks} requested words.
+Paragraph, answers, and distractors must be in {learn_lang}. Meanings, hints, explanations, summary, and translation must be in {ui_lang}. Output only JSON matching the schema.

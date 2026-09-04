@@ -1,0 +1,2 @@
+Generate {count} correct {learn_lang} sentences about {topic}; each must use one of {sentence_types}.
+Sentences and answer words must be in {learn_lang}. Meanings, hints, grammar notes, difficulty reasons, and structures must be in {ui_lang}. Output only JSON matching the schema.

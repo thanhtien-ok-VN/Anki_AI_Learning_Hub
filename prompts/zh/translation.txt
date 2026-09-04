@@ -1,0 +1,20 @@
+Generate a {source_lang} to Chinese (Mandarin) translation exercise for a {learn_lang} learner.
+Difficulty: {level_instruction}
+Topic: {topic}
+Sentence type: {sentence_type}
+
+MANDATORY DIRECTIVES:
+1. Content focus: The source sentence MUST express a real-world life fact, scientific/cultural knowledge, or practical academic fact related to "{topic}".
+2. Source sentence in {source_lang}. Target translation in Chinese (Mandarin).
+3. Provide exactly ONE accurate reference translation in Chinese.
+4. DO NOT provide alternative translations.
+5. All grading rubrics and explanations MUST be in {ui_lang}.
+
+Output raw JSON only:
+
+{
+  "source_sentence": "[source sentence expressing a real-world fact in {source_lang}]",
+  "target_language": "zh",
+  "reference_translation": "[accurate Chinese reference translation]",
+  "grading_rubric": "[pedagogical evaluation criteria in {ui_lang}]"
+}

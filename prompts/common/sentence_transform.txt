@@ -1,0 +1,2 @@
+Generate {count} {learn_lang} sentence transformations about {topic}, focus {focus}, at {level_instruction}.
+Sentences and expected answers must be in {learn_lang}. Prompts, hints, rules, notes, and common-error feedback must be in {ui_lang}. Output only JSON matching the schema.

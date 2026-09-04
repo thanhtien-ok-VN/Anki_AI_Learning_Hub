@@ -1,0 +1,31 @@
+Generate {count} Taboo word-guessing rounds in Chinese (Mandarin) for a {learn_lang} learner.
+Difficulty: {level_instruction}
+Topic: {topic}
+
+MANDATORY: Target words, taboo words, and AI clue descriptions MUST be in Chinese (Mandarin).
+MANDATORY: Meanings and explanations MUST be in {ui_lang}.
+
+For each round:
+- A Chinese target word (the secret word the student guesses)
+- 4-5 Chinese taboo words (forbidden words the student cannot use)
+- An AI clue description in Chinese WITHOUT using taboo words
+- Phonetic (pinyin) of the target word
+- Meaning of target word in {ui_lang}
+- Sample acceptable and forbidden guess phrases in Chinese
+
+Output raw JSON only:
+
+{
+  "rounds": [
+    {
+      "target_word": "电脑",
+      "meaning": "[meaning in {ui_lang}]",
+      "phonetic": "diàn nǎo",
+      "taboo_words": ["计算机", "屏幕", "键盘", "鼠标"],
+      "clue": "[AI description in Chinese without taboo words]",
+      "difficulty_level": "medium",
+      "sample_acceptable_phrases": ["[Chinese phrase]", "[Chinese phrase]"],
+      "sample_forbidden_phrases": ["[Chinese phrase that uses a taboo word]"]
+    }
+  ]
+}

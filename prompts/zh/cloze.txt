@@ -1,0 +1,29 @@
+Generate a Chinese (Mandarin) Cloze test (coherent paragraph with missing words) for a {learn_lang} learner.
+Difficulty: {level_instruction}
+Number of blanks: {num_blanks}
+Topic: {topic}
+
+MANDATORY DIRECTIVES:
+1. Content focus: The Chinese paragraph MUST focus on real-world life facts, scientific/cultural facts, or practical academic knowledge related to "{topic}".
+2. Passage length: Adjust paragraph length dynamically according to the number of blanks (5 blanks = 100-150 characters; 10 blanks = 220-350 characters). Maximum length MUST be strictly under 400 characters.
+3. Replace each target word in the text with token placeholders: [BLANK_1], [BLANK_2], etc., strictly in order of appearance.
+4. Target words: Paragraph MUST naturally incorporate these target words: {blank_words}. Each used exactly once as an answer.
+5. Language: Paragraph content in Chinese (Mandarin). Meanings, translations, and explanations MUST be in {ui_lang}.
+6. DO NOT include hints or context summaries.
+
+Output raw JSON only:
+
+{
+  "paragraph": "水在标准大气压下，加热到一百摄氏度就会[BLANK_1]...",
+  "blanks": [
+    {
+      "id": "BLANK_1",
+      "answer": "沸腾",
+      "meaning": "[meaning in {ui_lang}]",
+      "distractors": [],
+      "explanation": "[explanation in {ui_lang}]"
+    }
+  ],
+  "full_solution_text": "水在标准大气压下，加热到一百摄氏度就会沸腾...",
+  "story_translation": "[full paragraph translation in {ui_lang}]"
+}

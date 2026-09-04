@@ -1,0 +1,19 @@
+Generate a {source_lang} to {target_lang} translation exercise.
+Sentence complexity: {level_instruction}
+Topic: {topic}
+
+MANDATORY DIRECTIVES:
+1. Content focus: The source sentence MUST express a real-world life fact, scientific/cultural knowledge, or practical academic fact related to "{topic}".
+2. Grammar type: Sentence MUST strictly use this grammatical structure: {sentence_type}.
+3. Provide exactly ONE accurate reference translation in {target_lang}.
+4. DO NOT provide alternative translations.
+5. All grading rubrics and notes MUST be in {ui_lang}.
+
+Output raw JSON only:
+
+{
+  "source_sentence": "[source sentence expressing a real-world fact in {source_lang}]",
+  "target_language": "{target_lang}",
+  "reference_translation": "[accurate reference translation in {target_lang}]",
+  "grading_rubric": "[pedagogical grading rubric in {ui_lang}]"
+}

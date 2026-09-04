@@ -1,0 +1,32 @@
+Generate {count} sentence transformation exercises in {learn_lang}.
+Grammar focus: {focus}
+Difficulty: {level_instruction}
+Topic: {topic}
+
+MANDATORY DIRECTIVES:
+1. Content focus: Sentences MUST express real-world life facts, scientific/cultural knowledge, or practical academic facts related to "{topic}".
+2. All instructions, explanations, and grammar notes MUST be in {ui_lang}. Sentences in {learn_lang}.
+3. DO NOT provide acceptable variations. Provide exactly ONE standard `expected_answer`.
+
+Requirements:
+- `normalized_answer`: MUST be fully lowercase with NO punctuation (except apostrophes).
+- List common errors students make with this structure.
+- List forbidden words that must NOT appear in the answer.
+
+Output raw JSON only:
+
+{
+  "questions": [
+    {
+      "original": "Light travels faster than sound in any medium.",
+      "prompt": "Rewrite using 'not as... as'",
+      "expected_answer": "Sound does not travel as fast as light in any medium.",
+      "normalized_answer": "sound does not travel as fast as light in any medium",
+      "forbidden_words": ["faster"],
+      "grammar_rule": "not as + adjective/adverb + as...",
+      "common_errors": [
+        {"error": "Sound does not travel faster as light", "feedback": "[feedback in {ui_lang}]"}
+      ]
+    }
+  ]
+}
