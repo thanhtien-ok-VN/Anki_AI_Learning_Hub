@@ -1,9 +1,6 @@
-# AI Agent configuration & skills
+# Local workspace overrides
 AI_Skills/
-.agents/
-AGENTS.md
 CLAUDE.md
-Plans/
 
 # Python cache & build files
 __pycache__/
