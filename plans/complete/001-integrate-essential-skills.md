@@ -1,5 +1,7 @@
 # Kế hoạch Kỹ thuật: Tích hợp Bộ AI Skills Thiết yếu vào Anki AI Learning Hub
 
+- **Mã kế hoạch:** `PLAN-001`
+- **Tên tệp:** `001-integrate-essential-skills.md`
 - **Tên nhiệm vụ:** `integrate-essential-skills`
 - **Mã nhánh Git:** `feat/integrate-essential-skills`
 - **Ngày khởi tạo:** 2026-09-07

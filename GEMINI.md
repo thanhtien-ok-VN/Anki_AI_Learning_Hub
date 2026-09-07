@@ -6,5 +6,5 @@ Please refer to [.agents/AGENTS.md](.agents/AGENTS.md) for full workspace rules,
 - **Core Architecture**: 3-Tier Anki Add-on (Vanilla JS SPA ↔ PyCmd Async Bridge ↔ Python Core Engine).
 - **AI Engine**: 6-Tier Waterfall (`gemini-3.5-flash-lite`, `gemini-flash-lite-latest`, `gemini-3.5-flash`, `gemini-3.6-flash`, `gemini-3.1-flash-lite`, `gemini-3-flash-preview`).
 - **Tests**: `python -B -m unittest discover -s tests -p "test_*.py" -v` (65/65 PASS required).
-- **Packaging**: `python scripts/build_addon.py` -> `dist/AI_Learning_Hub.ankiaddon` and `.zip`.
-- **Sync**: Copy to `%APPDATA%\Anki2\addons21\AI_Learning_Hub\`.
+- **Sync for Testing (Default)**: Copy clean files to `%APPDATA%\Anki2\addons21\AI_Learning_Hub\` (Do NOT package unless requested).
+- **Packaging (On Request Only)**: `python scripts/build_addon.py` -> tạo thư mục `dist/l(số)/` kèm `.ankiaddon`, `.zip` và bộ tài liệu update AnkiWeb (mô tả, hướng dẫn).

@@ -17,6 +17,11 @@ Strictly follow these rules whenever developing, updating, or testing in this wo
 - **Clean Code (`clean_code.md`)**: Python PEP8, complete type hints, robust exception handling, structured flow logging.
 - **Git Governance (`git-conventions`)**: Branching strategy (`feat/`, `fix/`, `refactor/`), Atomic Conventional Commits (`<type>(<scope>): <summary>` + *Why*).
 - **Two-Phase Approval Gate**: Phase 1 Plan & Log in `plans/current/` -> HARD STOP -> User approval -> Phase 2 implementation.
+- **Sequential Plan Numbering**: Tất cả các kế hoạch kỹ thuật (trong `plans/current/` và `plans/complete/`) bắt buộc phải được đánh số thứ tự 3 chữ số tăng dần kèm prefix (`001-...`, `002-...`, ...). Mọi kế hoạch về sau đều phải tuân thủ nghiêm ngặt quy tắc này để đảm bảo truy vết lịch sử kiến trúc liên tục.
+- **Add-on Packaging & Release Protocol**: 
+  - CHỈ đóng gói khi có yêu cầu trực tiếp từ người dùng ("khi nào tôi yêu cầu đóng gói add-ons mới bắt đầu đóng gói").
+  - Khi thử nghiệm bình thường: KHÔNG đóng gói, chỉ sao chép (sync) file sạch vào thư mục Anki `%APPDATA%\Anki2\addons21\AI_Learning_Hub\`.
+  - Khi được yêu cầu đóng gói: Tạo thư mục mới tại `dist/` theo định dạng `l(số)` (với `số` là số lần phát hành, ví dụ `dist/l(3)/`, `dist/l(4)/`...). Đóng gói `.ankiaddon` + `.zip` và BẮT BUỘC tạo đầy đủ các tài liệu đi kèm trong thư mục đó để update lên AnkiWeb (`ankiweb_description.html`, `huong_dan_su_dung.md`, `release_notes.md`).
 - **Test-Driven Verification**: Every change must maintain 100% pass rate on `python -B -m unittest discover -s tests -p "test_*.py" -v` (65/65 tests) and browser/E2E validation via `playwright-mcp`.
 
 ## 3. Skills Directory Index (17 Skills in `.agents/skills/`)
@@ -54,7 +59,7 @@ Strictly follow these rules whenever developing, updating, or testing in this wo
 | **`playwright-mcp`** | `.agents/skills/playwright-mcp/SKILL.md` | On-demand browser E2E automation, DOM & form validation, game flow verification. |
 | **`front-end-checklist`** | `.agents/skills/front-end-checklist/SKILL.md` | Pre-launch frontend checklist (385 rules): a11y, performance, memory leaks. |
 
-## 4. Build & Anki Sync Commands
-- Run Tests: `python -B -m unittest discover -s tests -p "test_*.py" -v`
-- Build Packages: `python scripts/build_addon.py`
-- Sync to Anki: Copy clean files to `%APPDATA%\Anki2\addons21\AI_Learning_Hub\`
+## 4. Build, Packaging & Anki Sync Commands
+- **Run Tests**: `python -B -m unittest discover -s tests -p "test_*.py" -v`
+- **Sync for Testing (Default)**: Sao chép file sản phẩm vào `%APPDATA%\Anki2\addons21\AI_Learning_Hub\` (không đóng gói).
+- **Build Add-on Package (On Request Only)**: `python scripts/build_addon.py` -> tạo thư mục `dist/l(số)/` kèm package `.ankiaddon`, `.zip` và bộ tài liệu update AnkiWeb.
