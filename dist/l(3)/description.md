@@ -11,7 +11,7 @@ Powered by Google's smart Gemini AI, the add-on automatically creates real-life 
 
 - **⚡ Ready to Play Instantly:** No complicated setup. Just install, paste your free key, and start learning right away!
 - **🤖 Fast & Reliable AI:** Automatically chooses the fastest Google Gemini AI model so your exercises load instantly without interruption.
-- **🌐 1-Click Language Switcher (English / Tiếng Việt):** Switch the entire interface between English and Vietnamese with one click at the top bar (`🌐 VI / EN`).
+- **🌐 1-Click Language Switcher (English / Vietnamese):** Switch the entire interface between English and Vietnamese with one click on the top bar (`🌐 EN / VI`).
 - **⚡ Super Fast Loading:** Loads words from your decks in a split second — even if your deck has over 10,000 cards!
 - **🧠 Smart Review (Focus on Tricky Words):** Automatically detects words you frequently forget and prioritizes them in your practice sessions.
 - **🎨 Beautiful & Clean Design:** A modern, clean interface that feels great to use in both Dark Mode and Light Mode.
@@ -23,14 +23,14 @@ Powered by Google's smart Gemini AI, the add-on automatically creates real-life 
 
 Choose the way you want to practice each day:
 
-1. ✏️ **Fill in the Blank (Điền từ vào chỗ trống):** Guess the missing word in a natural sentence. Click easy multiple-choice options, with hints ready if you need help.
-2. 📖 **Cloze Test (Đoạn văn đục lỗ):** Read an interesting paragraph and pick the right words from the Word Bank to fill in the blanks.
-3. 🌐 **Sentence Translation (Dịch câu):** Practice translating sentences. The AI grades your answer from 0 to 10 and gives friendly, helpful advice on how to improve.
-4. 🧩 **Sentence Unscramble (Sắp xếp câu):** Put scrambled word puzzle pieces back into the correct grammatical order.
-5. 📚 **Story Generator (Kể chuyện & Đọc hiểu):** The AI weaves your deck's vocabulary into an engaging short story, followed by fun reading comprehension questions.
-6. 🔄 **Sentence Transformation (Viết lại câu):** Practice expressing the same idea in different ways (Passive voice, If conditionals...) with guided grammar tips.
-7. 🚫 **Taboo Word Guessing (Đoán từ cấm):** Read clues from the AI and guess the secret word without saying any of the forbidden "taboo" words!
-8. 🔗 **Word Matching (Nối từ vựng - 100% Offline):** A fast-paced card matching game that works **completely offline without internet**. Challenge yourself to beat your best speed!
+1. ✏️ **Fill in the Blank:** Guess the missing word in a natural sentence. Click easy multiple-choice options, with hints ready if you need help.
+2. 📖 **Cloze Test:** Read an interesting paragraph and pick the right words from the Word Bank to fill in the blanks.
+3. 🌐 **Sentence Translation:** Practice translating sentences. The AI grades your answer from 0 to 10 and gives friendly, helpful advice on how to improve.
+4. 🧩 **Sentence Unscramble:** Put scrambled word puzzle pieces back into the correct grammatical order.
+5. 📚 **Story Generator:** The AI weaves your deck's vocabulary into an engaging short story, followed by fun reading comprehension questions.
+6. 🔄 **Sentence Transformation:** Practice expressing the same idea in different ways (Passive voice, Conditionals, Reported speech) with guided grammar tips.
+7. 🚫 **Taboo Word Guessing:** Read clues from the AI and guess the secret word without saying any of the forbidden "taboo" words!
+8. 🔗 **Word Matching (100% Offline):** A fast-paced card matching game that works **completely offline without internet**. Challenge yourself to beat your best speed!
 
 ---
 
@@ -57,26 +57,26 @@ Choose the way you want to practice each day:
 The add-on uses Google Gemini AI to create exercises. The key is **100% free**:
 1. Visit Google AI Studio: [https://aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey)
 2. Sign in with your Google account (Gmail).
-3. Click **Create API key** ➔ Select any project name.
-4. Google will give you a key starting with `AQ...` ➔ Click **Copy**.
+3. Click **Create API key** ➔ Select or create a project.
+4. Google will display your API Key string starting with `AQ...` ➔ Click **Copy**.
 
 🎥 **Watch 3-Minute Video Guide:**  
 👉 [Step-by-Step Video Tutorial (3 Minutes)](https://drive.google.com/file/d/1VznGDIv_XdqI7MnVydXh9ubTv7gOZF9O/view?usp=sharing)
 
-### 3️⃣ Step 3: Paste Key & Test
+### 3️⃣ Step 3: Add API Key & Run Connection Test
 1. In Anki, click **Tools ➔ 🚀 AI Learning Hub...** (or press `Ctrl + H`).
 2. Click the **⚙️ Settings** icon in the top-right corner.
-3. In the **Gemini API Keys** box, paste your API Key starting with `AQ...` (one key per line if using multiple keys).
+3. In the **Gemini API Keys** box, paste your API Key starting with `AQ...` (one key per line if using multiple keys for automatic load balancing).
 4. Click **🧪 Test All Keys**:
    - 🟢 **Active (OK):** You're all set!
-   - 🔴 **Error:** Make sure you copied the whole key without extra spaces.
+   - 🔴 **Error:** Double check if any characters were missed during copy.
 5. Click **💾 Save Settings**.
 
 ### 4️⃣ Step 4: Choose Your Deck & Start Playing!
 1. Select your target language (English, Chinese...).
-2. Choose your interface language (English or Tiếng Việt).
+2. Choose your interface language (English or Vietnamese).
 3. Select your favorite vocabulary deck.
-4. Pick any of the 8 games and press **Tạo bài (Generate)** to start learning!
+4. Pick any of the 8 games and press **Generate** to start learning!
 
 ---
 
