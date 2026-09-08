@@ -55,5 +55,34 @@ class TestAIGraderPrompts(unittest.TestCase):
             self.assertTrue(len(rendered) > 50)
 
 
+class TestGradingServicePolymorphism(unittest.TestCase):
+    def test_ai_grade_polymorphic_prompt_data(self):
+        from unittest.mock import MagicMock
+        from core.services.grading_service import GradingService
+
+        service = GradingService()
+        mock_client = MagicMock()
+        mock_client.generate_text_result.return_value = {
+            "score": 10,
+            "feedback": "Great job!",
+            "errors": [],
+        }
+
+        mock_settings = {"ui_lang": "vi", "learn_lang": "en"}
+
+        for gamemode in ["fill_blank", "translation", "unscramble", "sentence_transform", "taboo"]:
+            data = {
+                "gamemode": gamemode,
+                "user_answer": "my answer",
+                "expected": "expected answer",
+                "hint_level": 1,
+            }
+            res = service.ai_grade(mock_client, data, mock_settings)
+            self.assertFalse(res.get("error"))
+            self.assertEqual(res.get("score"), 10)
+            mock_client.generate_text_result.assert_called()
+
+
 if __name__ == "__main__":
     unittest.main()
+

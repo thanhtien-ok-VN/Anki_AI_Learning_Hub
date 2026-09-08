@@ -1,11 +1,24 @@
 import random
 from typing import Any
 from .base import GameModeBase
+from gamemodes.manifest import GameModeManifest
 
 class WordUnscrambleMode(GameModeBase):
     name = "unscramble"
     display_name = "Word Unscramble"
     icon = "🧩"
+    manifest = GameModeManifest(
+        id="unscramble",
+        icon="🧩",
+        title_key="unscramble.title",
+        default_title="Word Unscramble",
+        desc_key="unscramble.desc",
+        default_desc="Arrange scrambled words into correct sentences",
+        min_items=1,
+        max_items=10,
+        default_items=5,
+        requires_anki_cards=False,
+    )
 
     def fisher_yates_shuffle(self, words: list[str]) -> list[str]:
         arr = list(words)
@@ -35,7 +48,7 @@ class WordUnscrambleMode(GameModeBase):
             ]
         }
 
-    def check_answer(self, user_input: Any, correct: Any) -> dict:
+    def check_answer(self, user_input: Any, correct: Any, hint_level: int = 0) -> dict:
         user_str = (
             " ".join(user_input) if isinstance(user_input, list) else str(user_input)
         )
@@ -59,6 +72,14 @@ class WordUnscrambleMode(GameModeBase):
             "correct_positions": correct_positions,
             "total_positions": len(correct_words),
             "points": 1 if is_correct else 0,
+        }
+
+    @staticmethod
+    def build_grading_prompt_data(data: dict, common: dict) -> dict:
+        return {
+            **common,
+            "correct_sentence": data.get("correct_sentence", data.get("expected", "")),
+            "user_sentence": data.get("user_answer", ""),
         }
 
     def _format_anki_note(self, data: dict) -> tuple:

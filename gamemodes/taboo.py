@@ -1,11 +1,24 @@
 from typing import Any
 from .base import GameModeBase
+from gamemodes.manifest import GameModeManifest
 
 
 class TabooMode(GameModeBase):
     name = "taboo"
     display_name = "AI Taboo"
     icon = "🚫"
+    manifest = GameModeManifest(
+        id="taboo",
+        icon="🚫",
+        title_key="taboo.title",
+        default_title="Taboo",
+        desc_key="taboo.desc",
+        default_desc="Guess the secret word without using forbidden taboo words",
+        min_items=1,
+        max_items=10,
+        default_items=5,
+        requires_anki_cards=False,
+    )
 
     def render_ui_data(self, raw_result: dict) -> dict:
         rounds = raw_result.get("rounds", [raw_result])
@@ -48,6 +61,18 @@ class TabooMode(GameModeBase):
             "hint_level": hint_level,
             "feedback": "Correct!" if is_correct else f"The word was: {correct}",
             "points": points,
+        }
+
+    @staticmethod
+    def build_grading_prompt_data(data: dict, common: dict) -> dict:
+        return {
+            **common,
+            "target_word": data.get("target_word", data.get("secret_word", "")),
+            "meaning": data.get("meaning", ""),
+            "taboo_words": data.get("taboo_words", "None"),
+            "sample_acceptable_phrases": data.get("sample_acceptable_phrases", "None"),
+            "sample_forbidden_phrases": data.get("sample_forbidden_phrases", "None"),
+            "user_input": data.get("user_answer", ""),
         }
 
     def generate_ai_guess(self, description: str, language: str = "en") -> str:

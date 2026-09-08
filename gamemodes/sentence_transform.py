@@ -1,11 +1,39 @@
 from typing import Any
 from .base import GameModeBase
+from gamemodes.manifest import GameControlField, GameModeManifest
 
 
 class SentenceTransformMode(GameModeBase):
     name = "sentence_transform"
     display_name = "Sentence Transformation"
     icon = "🔄"
+    manifest = GameModeManifest(
+        id="sentence_transform",
+        icon="🔄",
+        title_key="sentence_transform.title",
+        default_title="Sentence Transform",
+        desc_key="sentence_transform.desc",
+        default_desc="Rewrite sentences according to grammatical rules",
+        min_items=1,
+        max_items=1,
+        default_items=1,
+        requires_anki_cards=False,
+        custom_controls=[
+            GameControlField(
+                id="focus",
+                type="select",
+                label_key="controls.form_type",
+                default_label="Dạng",
+                default_value="voice",
+                options=[
+                    {"value": "voice", "label": "Voice (Câu bị động)"},
+                    {"value": "conditional", "label": "Conditional (Câu điều kiện)"},
+                    {"value": "reported", "label": "Reported (Câu tường thuật)"},
+                    {"value": "comparative", "label": "Comparative (So sánh)"},
+                ],
+            )
+        ],
+    )
 
     FOCUS_OPTIONS = ["voice", "conditional", "reported", "comparative"]
 
@@ -29,7 +57,7 @@ class SentenceTransformMode(GameModeBase):
         }
 
     def check_answer(self, user_input: Any, correct: Any, hint_level: int = 0) -> dict:
-        from core.engine import normalize_answer
+        from core.sanitizer import normalize_answer
         user_norm = normalize_answer(str(user_input or ""))
         expected_norm = normalize_answer(str(correct or ""))
         is_correct = user_norm == expected_norm
@@ -58,6 +86,19 @@ class SentenceTransformMode(GameModeBase):
                 else "Review the grammar rule and try again."
             ),
             "points": points,
+        }
+
+    @staticmethod
+    def build_grading_prompt_data(data: dict, common: dict) -> dict:
+        return {
+            **common,
+            "prompt": data.get("prompt", data.get("instruction", "")),
+            "original": data.get("original", ""),
+            "expected_answer": data.get("expected_answer", data.get("expected", "")),
+            "normalized_answer": data.get("normalized_answer", ""),
+            "forbidden_words": data.get("forbidden_words", "None"),
+            "acceptable_variations": data.get("acceptable_variations", "None"),
+            "user_answer": data.get("user_answer", ""),
         }
 
     def _format_anki_note(self, data: dict) -> tuple:

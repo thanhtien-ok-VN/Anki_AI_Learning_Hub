@@ -3,8 +3,7 @@ import os
 
 from core.languages import valid_ui_lang
 
-ADDON_PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-LANG_DIR = os.path.join(ADDON_PATH, "lang")
+from core.paths import ADDON_PATH, LANG_DIR
 
 DEFAULT_LANG = "en"
 _cache = {}

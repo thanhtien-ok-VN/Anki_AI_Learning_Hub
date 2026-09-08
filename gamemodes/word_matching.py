@@ -2,6 +2,7 @@ import random
 import uuid
 from typing import Any, Optional
 from .base import GameModeBase
+from gamemodes.manifest import GameModeManifest
 
 
 class WordMatchingMode(GameModeBase):
@@ -9,6 +10,18 @@ class WordMatchingMode(GameModeBase):
     display_name = "Word Matching"
     icon = "🔗"
     is_offline = True
+    manifest = GameModeManifest(
+        id="matching",
+        icon="🔗",
+        title_key="matching.title",
+        default_title="Word Matching",
+        desc_key="matching.desc",
+        default_desc="Match vocabulary terms with their definitions (Offline)",
+        min_items=5,
+        max_items=50,
+        default_items=10,
+        requires_anki_cards=True,
+    )
 
     BUILTIN_PAIRS = [
         ("ubiquitous", "present, appearing, or found everywhere"),
@@ -123,7 +136,7 @@ class WordMatchingMode(GameModeBase):
     def render_ui_data(self, raw_result: dict) -> dict:
         return raw_result
 
-    def check_answer(self, user_input: Any, correct: Any) -> dict:
+    def check_answer(self, user_input: Any, correct: Any, hint_level: int = 0) -> dict:
         selected_pair = user_input.get("pair_id", "") if isinstance(user_input, dict) else ""
         target_pair = correct.get("pair_id", "") if isinstance(correct, dict) else ""
         is_match = selected_pair == target_pair and selected_pair != ""

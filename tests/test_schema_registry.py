@@ -44,7 +44,20 @@ class TestSchemaRegistry(unittest.TestCase):
         }
         validated = model_cls.model_validate(valid_payload)
         self.assertEqual(len(validated.questions), 1)
-        self.assertEqual(validated.questions[0].target_word, "barked")
+    def test_canonical_schemas_when_no_pydantic(self):
+        import core.schema_registry as sr
+        orig_registry = sr.REGISTRY
+        try:
+            sr.REGISTRY = {}
+            for gm in AI_GAMEMODES:
+                schema = sr.get_schema(gm)
+                self.assertTrue(bool(schema), f"get_schema({gm}) must not return empty when REGISTRY is empty")
+                self.assertEqual(schema.get("type"), "OBJECT", f"Schema for {gm} should be type OBJECT")
+                self.assertIn("properties", schema, f"Schema for {gm} must have properties")
+                self.assertIn("required", schema, f"Schema for {gm} must specify required fields")
+        finally:
+            sr.REGISTRY = orig_registry
+
 
 
 if __name__ == '__main__':

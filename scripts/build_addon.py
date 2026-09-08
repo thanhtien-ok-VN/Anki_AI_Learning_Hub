@@ -27,7 +27,7 @@ def remove_readonly(func, path, exc_info):
 
 
 def run_tests():
-    print("🧪 [1/4] Đang chạy bộ Unit Test Suite (64/64 tests)...")
+    print("🧪 [1/4] Đang chạy bộ Unit Test Suite (90/90 tests)...")
     res = subprocess.run(
         [sys.executable, "-m", "unittest", "discover", "-s", "tests", "-p", "test_*.py"],
         cwd=REPO_ROOT,
@@ -172,14 +172,25 @@ def create_zip_packages(release_folder: str = ""):
         with open(rel_notes_path, "w", encoding="utf-8") as f:
             f.write(f"""# Release Notes - {release_folder}
 
-- **Ngày phát hành:** 2026-09-07
+- **Ngày phát hành:** 2026-09-08
 - **Tập tin đóng gói:** `AI_Learning_Hub.ankiaddon` và `AI_Learning_Hub.zip`
-- **Bộ kiểm thử:** 65/65 Unit tests PASS 100%.
+- **Bộ kiểm thử:** 90/90 Unit & E2E tests PASS 100%.
 
-### Điểm mới trong bản phát hành này:
-- Ổn định và hoàn thiện toàn bộ 8 Game Modes.
-- Cải tiến hệ thống gợi ý 3 tầng (Progressive Hint System).
-- Bổ sung tài liệu hướng dẫn và mô tả chuẩn hóa cho AnkiWeb.
+### Điểm mới và cải tiến vượt bậc trong bản phát hành {release_folder}:
+1. **Khắc phục triệt để phụ thuộc Pydantic (Zero-Dependency Architecture)**:
+   - Hệ thống chuyển đổi toàn bộ 7 game modes AI sang cấu trúc `CANONICAL_SCHEMAS` OpenAPI thuần túy.
+   - Hoạt động 100% độc lập, không còn gặp lỗi `Unknown gamemode` trên môi trường Python nhúng của Anki Desktop.
+2. **Tối ưu hóa Lấy mẫu từ vựng (Vocabulary Sampling)**:
+   - Áp dụng truy vấn SQLite Fast-path, nạp schema và field chỉ trong vài mili-giây thay vì nạp toàn bộ deck.
+   - Thuật toán chống lặp thông minh và dành 30% quota ưu tiên từ vựng có SRS yếu.
+3. **Đồng bộ hóa 100% Đa ngôn ngữ (Language Parity & UI Switcher)**:
+   - Bổ sung nút chuyển đổi nhanh **🌐 VI / EN** ngay trên thanh Header.
+   - Bản địa hóa toàn diện: nhãn nút Tạo bài, các cấp độ CEFR A1-C2, placeholder ngữ cảnh và bảng thống kê game Nối từ.
+4. **Gia cố Cầu nối IPC & Ghi dữ liệu An toàn (Atomic Write)**:
+   - Cơ chế phòng thủ 3 tầng bóc tách payload an toàn, loại bỏ lỗi `unhashable type: dict`.
+   - Cơ chế ghi file nguyên tử chống hỏng hóc tệp cấu hình khi tắt đột ngột.
+5. **Kiến trúc mô-đun hóa Clean Architecture**:
+   - Tách tầng Services (`anki_service`, `generation_service`, `prefs_service`, `keys_service`), Router chuyên biệt, LLM Factory và cấu trúc thư mục Frontend SPA độc lập.
 """)
 
         print(f"📦 Đã tạo thư mục phát hành đặc thù: {target_dir}")

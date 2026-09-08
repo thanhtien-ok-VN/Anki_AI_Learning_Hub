@@ -1,12 +1,25 @@
 import re
 from typing import Any, List
 from .base import GameModeBase
+from gamemodes.manifest import GameModeManifest
 
 
 class FillBlankMode(GameModeBase):
     name = "fill_blank"
     display_name = "Fill in the Blank"
     icon = "✍️"
+    manifest = GameModeManifest(
+        id="fill_blank",
+        icon="✍️",
+        title_key="fill_blank.title",
+        default_title="Fill in the Blank",
+        desc_key="fill_blank.desc",
+        default_desc="Choose the correct word to complete the sentence",
+        min_items=1,
+        max_items=10,
+        default_items=5,
+        requires_anki_cards=False,
+    )
 
     def render_ui_data(self, raw_result: dict) -> dict:
         import random
@@ -105,6 +118,17 @@ class FillBlankMode(GameModeBase):
             "correct_index": correct_idx,
             "hint_level": hint_level,
             "points": points,
+        }
+
+    @staticmethod
+    def build_grading_prompt_data(data: dict, common: dict) -> dict:
+        return {
+            **common,
+            "target_word": data.get("target_word", ""),
+            "meaning": data.get("meaning", ""),
+            "question": data.get("question", ""),
+            "expected": data.get("expected", data.get("target_word", "")),
+            "user_answer": data.get("user_answer", ""),
         }
 
     def _format_anki_note(self, data: dict) -> tuple:

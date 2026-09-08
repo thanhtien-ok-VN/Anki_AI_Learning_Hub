@@ -155,6 +155,10 @@ const Bridge = {
     },
 
     sendAsync(action, data = {}, opts = 90000) {
+        if (typeof action === 'object' && action !== null && action.action) {
+            data = action.data || data;
+            action = action.action;
+        }
         let timeoutMs = 90000;
         let signal = null;
 

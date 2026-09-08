@@ -17,20 +17,25 @@ from aqt.qt import QTabWidget, QUrl
 from aqt.webview import AnkiWebView
 
 from core.logger import log
+from core.paths import ADDON_PATH
 import ui.webview_bridge
 
 from ui.bridge_server import BridgeServer
 
-ADDON_PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-BACKGROUND_ACTIONS = {
+# Legacy constant pointing to known background actions for backward compatibility
+DEFAULT_BACKGROUND_ACTIONS = {
     "generate",
     "test_key",
     "test_all_keys",
     "ai_grade",
     "sample_vocab_pairs",
+    "get_source_models",
     "list_source_models",
+    "get_source_fields",
     "list_source_fields",
 }
+BACKGROUND_ACTIONS = DEFAULT_BACKGROUND_ACTIONS
+
 
 
 class AIHubView:
@@ -88,19 +93,28 @@ class AIHubView:
         try:
             msg = json.loads(cmd)
             action = msg.get("action", "")
+            data = msg.get("data", {})
+            if isinstance(action, dict):
+                data = action.get("data", data)
+                action = action.get("action", "")
             request_id = msg.get("request_id", "")
             log.info(f"Bridge cmd received: action={action}, request_id={request_id}")
             if action == "close_hub":
                 mw.taskman.run_on_main(self.close)
                 return json.dumps(self._result(True))
-            if action in BACKGROUND_ACTIONS:
+            is_bg = (
+                self.engine.router.is_background_action(action)
+                if hasattr(self.engine, "router")
+                else (action in DEFAULT_BACKGROUND_ACTIONS)
+            )
+            if is_bg:
                 if not request_id:
                     return json.dumps(
                         self._result(
                             False, code="E_REQUEST_ID", message="Missing request id."
                         )
                     )
-                payload = json.dumps({"action": action, "data": msg.get("data", {})})
+                payload = json.dumps({"action": action, "data": data})
                 mw.taskman.run_on_main(
                     lambda: mw.taskman.run_in_background(
                         lambda: self._safe_handle(payload),
@@ -112,7 +126,7 @@ class AIHubView:
                 )
             return json.dumps(
                 self.engine.handle_js_message(
-                    json.dumps({"action": action, "data": msg.get("data", {})})
+                    json.dumps({"action": action, "data": data})
                 )
             )
         except Exception as exc:

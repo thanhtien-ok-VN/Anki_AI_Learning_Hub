@@ -116,6 +116,42 @@ class TestEngineRouter(unittest.TestCase):
             self.assertEqual(call_kwargs.get("source_lang"), "English")
             self.assertEqual(call_kwargs.get("target_lang"), "English")
 
+    def test_ipc_action_specs_and_background_modes(self):
+        from core.router import IPCActionSpec
+        # Verify long-running actions are flagged as background
+        self.assertTrue(self.engine.router.is_background_action("generate"))
+        self.assertTrue(self.engine.router.is_background_action("test_key"))
+        self.assertTrue(self.engine.router.is_background_action("ai_grade"))
+        self.assertTrue(self.engine.router.is_background_action("sample_vocab_pairs"))
+
+        # Verify synchronous actions are flagged as main
+        self.assertFalse(self.engine.router.is_background_action("save_prefs"))
+        self.assertFalse(self.engine.router.is_background_action("check_answer"))
+
+        # Verify spec inspection
+        spec = self.engine.router.get_spec("generate")
+        self.assertIsNotNone(spec)
+        self.assertEqual(spec.name, "generate")
+        self.assertEqual(spec.execution_mode, "background")
+
+    def test_handle_js_message_sample_vocab_pairs_dispatch(self):
+        # 1. Missing deck_id returns error envelope
+        res = self.engine.handle_js_message(
+            '{"action": "sample_vocab_pairs", "data": {"model_id": 1, "term_field": "Front", "definition_field": "Back"}}'
+        )
+        self.assertFalse(res.get("success"))
+        self.assertEqual(res.get("error_code"), "E_DECK_REQUIRED")
+
+        # 2. Valid invocation forwarded to anki_service
+        mock_pairs = {"pairs": [{"id": 1, "term": "apple", "definition": "quả táo"}], "total": 1, "limit": 20}
+        with patch.object(self.engine.anki_service, 'sample_vocab_pairs', return_value={"success": True, "data": mock_pairs}):
+            res = self.engine.handle_js_message(
+                '{"action": "sample_vocab_pairs", "data": {"deck_id": 1, "model_id": 1, "term_field": "Front", "definition_field": "Back"}}'
+            )
+            self.assertTrue(res.get("success"))
+            self.assertEqual(res.get("data"), mock_pairs)
+
 
 if __name__ == '__main__':
     unittest.main()
+

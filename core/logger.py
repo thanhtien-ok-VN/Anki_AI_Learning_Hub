@@ -8,9 +8,7 @@ from datetime import datetime
 from collections import deque
 from typing import Optional, Any, Dict, List
 
-ADDON_PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-LOG_PATH = os.path.join(ADDON_PATH, "user_files", "ai_hub.log")
-FLOW_LOG_PATH = os.path.join(ADDON_PATH, "user_files", "ai_hub_flow.jsonl")
+from core.paths import ADDON_PATH, LOG_PATH, FLOW_LOG_PATH
 MAX_LOG_BYTES = 1 * 1024 * 1024
 SESSION_ID = uuid.uuid4().hex[:8]
 

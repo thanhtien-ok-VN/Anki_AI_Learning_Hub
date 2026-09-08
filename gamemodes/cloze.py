@@ -1,11 +1,34 @@
 import random
 from typing import Any
 from .base import GameModeBase
+from gamemodes.manifest import GameControlField, GameModeManifest
 
 class ClozeMode(GameModeBase):
     name = "cloze"
     display_name = "Cloze Paragraph"
     icon = "📖"
+    manifest = GameModeManifest(
+        id="cloze",
+        icon="📖",
+        title_key="cloze.title",
+        default_title="Cloze",
+        desc_key="cloze.desc",
+        default_desc="Fill in the missing words in the passage",
+        min_items=1,
+        max_items=1,
+        default_items=1,
+        requires_anki_cards=False,
+        custom_controls=[
+            GameControlField(
+                id="num_blanks",
+                type="select",
+                label_key="controls.num_blanks",
+                default_label="Số blank",
+                default_value=5,
+                options=[{"value": i, "label": str(i)} for i in range(5, 11)],
+            )
+        ],
+    )
 
     def render_ui_data(self, raw_result: dict) -> dict:
         blanks = []
@@ -33,7 +56,7 @@ class ClozeMode(GameModeBase):
             "context_summary": raw_result.get("context_summary", ""),
         }
 
-    def check_answer(self, user_input: Any, correct: Any) -> dict:
+    def check_answer(self, user_input: Any, correct: Any, hint_level: int = 0) -> dict:
         user_idx = int(user_input) if user_input is not None else -1
         correct_idx = int(correct) if correct is not None else -1
         return {

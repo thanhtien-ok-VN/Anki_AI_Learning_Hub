@@ -5,14 +5,17 @@ from typing import Any, Optional, Tuple, List
 from core.api_client import GeminiClient
 from core.prompt_manager import PromptManager
 from core.schema_registry import get_schema
+from gamemodes.manifest import GameModeManifest
+from llm.base import BaseLLMProvider
 
 
 class GameModeBase(ABC):
     name: str = ""
     display_name: str = ""
     icon: str = ""
+    manifest: Optional[GameModeManifest] = None
 
-    def __init__(self, api_client: Optional[GeminiClient] = None, prompt_mgr: Optional[PromptManager] = None):
+    def __init__(self, api_client: Optional[BaseLLMProvider] = None, prompt_mgr: Optional[PromptManager] = None):
         self.api = api_client
         self.prompts = prompt_mgr
 
@@ -55,37 +58,45 @@ class GameModeBase(ABC):
         pass
 
     @abstractmethod
-    def check_answer(self, user_input: Any, correct: Any) -> dict:
+    def check_answer(self, user_input: Any, correct: Any, hint_level: int = 0) -> dict:
         pass
+
+    @staticmethod
+    def build_grading_prompt_data(data: dict, common: dict) -> dict:
+        """Build prompt keyword arguments for AI grading."""
+        return {
+            **common,
+            "question": data.get("question", ""),
+            "expected": data.get("expected", ""),
+            "user_answer": data.get("user_answer", ""),
+        }
 
     @abstractmethod
     def _format_anki_note(self, data: dict) -> Tuple[str, str]:
         """Return (front, back) for a single Anki note from game data item."""
         pass
 
-
-
     def save_to_anki(self, items: List[dict], deck_name: str = "AI Learning") -> int:
+        import threading
+        from concurrent.futures import Future
         from aqt import mw
         from anki.notes import Note
 
-        if not mw.col:
+        if not mw or not getattr(mw, "col", None):
             return 0
 
-        saved_count = [0]
-
-        def _do_save():
+        def _do_save() -> int:
             mw.checkpoint("Save AI Learning Cards")
 
             model = mw.col.models.by_name("Basic")
             if not model:
                 model = mw.col.models.current()
             if not model or "flds" not in model:
-                return
+                return 0
 
             fields = [f["name"] for f in model.get("flds", [])]
             if not fields:
-                return
+                return 0
 
             # Heuristic Field Mapping for custom note types
             front_field = fields[0]
@@ -106,24 +117,36 @@ class GameModeBase(ABC):
             else:
                 deck_id = deck["id"]
 
-            # Single-pass O(1) Duplicate Scanning
+            # Targeted duplicate scanning: avoid O(D) full deck loading
+            clean_candidates = []
+            for item in items:
+                front, back = self._format_anki_note(item)
+                if front or back:
+                    clean_front = front.strip().lower()
+                    clean_candidates.append((front, back, clean_front))
+
             existing_fronts = set()
-            for nid in mw.col.find_notes(f"did:{deck_id}"):
+            for front, back, clean_front in clean_candidates:
+                if not clean_front:
+                    continue
+                # Sanitize search term for Anki query to avoid syntax errors
+                term_escaped = clean_front.replace('"', '').replace('\\', '').replace('*', '')
+                if not term_escaped:
+                    continue
                 try:
-                    n = mw.col.get_note(nid)
-                    val = n[front_field].strip().lower()
-                    if val:
-                        existing_fronts.add(val)
+                    matching_nids = mw.col.find_notes(f'did:{deck_id} "{term_escaped}"')
+                    for nid in matching_nids:
+                        n = mw.col.get_note(nid)
+                        existing_val = n[front_field].strip().lower()
+                        if existing_val:
+                            existing_fronts.add(existing_val)
                 except Exception:
                     pass
 
             count = 0
-            for item in items:
-                front, back = self._format_anki_note(item)
+            for front, back, clean_front in clean_candidates:
                 if not front and not back:
                     continue
-
-                clean_front = front.strip().lower()
                 if clean_front in existing_fronts:
                     continue
 
@@ -139,11 +162,21 @@ class GameModeBase(ABC):
             if count > 0:
                 mw.reset()
 
-            saved_count[0] = count
+            return count
 
-        if mw.taskman and hasattr(mw.taskman, "run_on_main"):
-            mw.taskman.run_on_main(_do_save)
-        else:
-            _do_save()
+        if threading.current_thread() is threading.main_thread():
+            return _do_save()
 
-        return saved_count[0]
+        if mw and hasattr(mw, "taskman") and hasattr(mw.taskman, "run_on_main"):
+            fut = Future()
+
+            def wrapper():
+                try:
+                    fut.set_result(_do_save())
+                except BaseException as e:
+                    fut.set_exception(e)
+
+            mw.taskman.run_on_main(wrapper)
+            return fut.result(timeout=10.0)
+
+        return _do_save()

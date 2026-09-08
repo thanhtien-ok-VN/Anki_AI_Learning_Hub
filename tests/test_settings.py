@@ -4,11 +4,17 @@ import tempfile
 import unittest
 from unittest.mock import patch, MagicMock
 
-# Mock dependencies
+# Save original core.logger if present
 import sys
+_orig_logger = sys.modules.get('core.logger')
 sys.modules['core.logger'] = MagicMock()
 
 from core.settings import SettingsManager, DEFAULT_SETTINGS
+
+if _orig_logger is not None:
+    sys.modules['core.logger'] = _orig_logger
+else:
+    sys.modules.pop('core.logger', None)
 
 class TestSettingsManager(unittest.TestCase):
     def setUp(self):
@@ -112,6 +118,21 @@ class TestSettingsManager(unittest.TestCase):
         self.assertEqual(masked[1], "ab****gh")
         self.assertEqual(masked[2], "long...2345")
         self.assertEqual(masked[3], "")
+
+    def test_get_all_set_api_keys_and_save(self):
+        sm = SettingsManager(self.settings_path)
+        all_settings = sm.get_all()
+        self.assertIsInstance(all_settings, dict)
+        self.assertEqual(all_settings.get("model"), "auto")
+
+        res = sm.set_api_keys(["keyA", "keyB"])
+        self.assertTrue(res.get("ok"))
+        self.assertEqual(sm.get("api_key1"), "keyA")
+        self.assertEqual(sm.get("api_key2"), "keyB")
+        self.assertEqual(sm.get("api_key3"), "")
+
+        saved = sm.save()
+        self.assertTrue(saved)
 
 if __name__ == '__main__':
     unittest.main()

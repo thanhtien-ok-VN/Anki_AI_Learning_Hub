@@ -1,10 +1,23 @@
 from typing import Any
 from .base import GameModeBase
+from gamemodes.manifest import GameModeManifest
 
 class StoryGeneratorMode(GameModeBase):
     name = "story"
     display_name = "Story Generator"
     icon = "📚"
+    manifest = GameModeManifest(
+        id="story",
+        icon="📚",
+        title_key="story.title",
+        default_title="Story",
+        desc_key="story.desc",
+        default_desc="Read AI-generated stories and answer comprehension questions",
+        min_items=3,
+        max_items=10,
+        default_items=5,
+        requires_anki_cards=False,
+    )
 
     def render_ui_data(self, raw_result: dict) -> dict:
         import random
@@ -64,7 +77,7 @@ class StoryGeneratorMode(GameModeBase):
             "discussion_prompt": raw_result.get("discussion_prompt", ""),
         }
 
-    def check_answer(self, user_input: Any, correct: Any) -> dict:
+    def check_answer(self, user_input: Any, correct: Any, hint_level: int = 0) -> dict:
         selected = int(user_input) if user_input is not None else -1
         correct_idx = -1
         options = correct if isinstance(correct, list) else []

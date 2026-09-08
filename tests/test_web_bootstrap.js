@@ -17,6 +17,7 @@ const makeElement = () => ({
   onclick: null,
   querySelector: () => makeElement(),
   querySelectorAll: () => [],
+  remove() {},
   removeEventListener() {},
   style: {},
   textContent: '',
@@ -66,6 +67,32 @@ async function run() {
     clearTimeout,
     window,
   };
+
+  const scriptsToLoad = [
+    ['utils.js'],
+    ['core', 'state.js'],
+    ['core', 'persistence.js'],
+    ['core', 'game_registry.js'],
+    ['core', 'manifest_client.js'],
+    ['hint_system.js'],
+    ['renderers', 'common.js'],
+    ['renderers', 'fill_blank.js'],
+    ['renderers', 'cloze.js'],
+    ['renderers', 'matching.js'],
+    ['renderers', 'unscramble.js'],
+    ['renderers', 'story.js'],
+    ['renderers', 'translation.js'],
+    ['renderers', 'sentence_transform.js'],
+    ['renderers', 'taboo.js'],
+    ['pages', 'source.js'],
+    ['pages', 'home.js'],
+  ];
+  for (const segs of scriptsToLoad) {
+    const sp = path.join(__dirname, '..', 'web', 'js', ...segs);
+    if (fs.existsSync(sp)) {
+      vm.runInNewContext(fs.readFileSync(sp, 'utf8'), context, { filename: sp });
+    }
+  }
 
   vm.runInNewContext(appSource, context, { filename: appPath });
 

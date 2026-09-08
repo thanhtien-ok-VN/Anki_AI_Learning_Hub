@@ -6,8 +6,7 @@ from typing import Any
 from core.logger import log
 from core.languages import DEFAULT_LEARN_LANG, DEFAULT_UI_LANG, valid_learn_lang, valid_ui_lang
 
-ADDON_PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SETTINGS_PATH = os.path.join(ADDON_PATH, "user_files", "settings.json")
+from core.paths import ADDON_PATH, SETTINGS_PATH
 
 DEFAULT_SETTINGS = {
     "api_key1": "",
@@ -194,3 +193,21 @@ class SettingsManager:
 
     def has_any_key(self) -> bool:
         return bool(self.get_active_keys())
+
+    def get_all(self) -> dict:
+        """Returns a shallow copy of all settings."""
+        with self._lock:
+            return dict(self._settings)
+
+    def set_api_keys(self, keys: list[str]) -> dict:
+        """Sets API keys sequentially from api_key1 to api_key10."""
+        with self._lock:
+            items = {}
+            for i in range(1, 11):
+                items[f"api_key{i}"] = keys[i - 1] if i - 1 < len(keys) else ""
+            return self.set_many(items)
+
+    def save(self) -> bool:
+        """Backward-compatible explicit save method."""
+        return self._save()
+

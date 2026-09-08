@@ -1,0 +1,54 @@
+<h1>🌟 Anki AI Learning Hub - Interactive Language Learning with Gemini AI</h1>
+
+<p><b>Anki AI Learning Hub</b> transforms traditional flashcard repetition into an engaging, gamified language learning experience directly inside Anki Desktop. Powered by Google Gemini AI, it generates contextual exercises, smart quizzes, stories, and sentence transformations dynamically using your own vocabulary decks!</p>
+
+<hr/>
+
+<h2>🎮 8 Interactive Game Modes</h2>
+<ul>
+  <li><b>1. Fill in the Blank (Điền từ vào chỗ trống):</b> AI generates natural sentences with 1 target blank and 4 smart distractors matching CEFR level. Includes progressive hints.</li>
+  <li><b>2. Cloze Test (Đoạn văn đục lỗ):</b> Multi-blank contextual paragraph with an interactive Word Bank and dropdown selections.</li>
+  <li><b>3. Sentence Translation (Dịch câu đa ngữ):</b> Translates source sentences between your native language and target learning language with AI semantic grading and feedback.</li>
+  <li><b>4. Word Matching (Nối từ vựng - 100% Offline):</b> Fast-paced vocabulary pairing game on a 5x5 board. Tracks speed, streaks, and accuracy without requiring an internet connection!</li>
+  <li><b>5. Word Unscramble (Sắp xếp câu):</b> Reconstruct scrambled words into grammatically correct sentences with drag-and-drop or click ordering.</li>
+  <li><b>6. Story Generator (Kể chuyện & Đọc hiểu):</b> AI weaves your deck vocabulary into an engaging bilingual story followed by comprehension quizzes.</li>
+  <li><b>7. Sentence Transform (Viết lại câu):</b> Practice advanced grammar transformations (Active/Passive, Reported Speech, Conditionals, Inversion).</li>
+  <li><b>8. Taboo Word Game (Đoán từ tránh từ cấm):</b> Guess the target word from AI clues without using 5 forbidden buzzwords.</li>
+</ul>
+
+<hr/>
+
+<h2>✨ Key Highlights & Architecture</h2>
+<ul>
+  <li><b>⚡ Zero-Dependency Architecture:</b> Built with pure Python canonical OpenAPI schemas. Does NOT require external packages like <code>pydantic</code>. Runs 100% out-of-the-box on any Anki Desktop installation!</li>
+  <li><b>🛡️ 6-Tier Waterfall AI Engine:</b> Failover resilience across multiple Gemini models (<code>gemini-3.5-flash-lite</code> &rarr; <code>gemini-flash-lite-latest</code> &rarr; <code>gemini-3.5-flash</code> &rarr; <code>gemini-3.6-flash</code> &rarr; <code>gemini-3.1-flash-lite</code> &rarr; <code>gemini-3-flash-preview</code>) with multi-key rotation and exponential backoff.</li>
+  <li><b>🌐 1-Click Bilingual Language Switcher:</b> Full Vietnamese and English parity across all cards, dialogs, buttons, and statistics with a single click (<b>🌐 VI / EN</b>).</li>
+  <li><b>🚀 Fast-Path SQLite Engine:</b> Instant vocabulary sampling without loading thousands of notes into RAM. Smart deduplication and 30% quota priority for weak/lapse cards.</li>
+  <li><b>🎨 Modern Glassmorphism UI:</b> Responsive, polished interface designed specifically for Anki Desktop's dark and light modes.</li>
+  <li><b>💡 3-Tier Progressive Hints:</b> Level 1: Part of Speech & Definition &rarr; Level 2: First letter & length &rarr; Level 3: Grammar context.</li>
+  <li><b>📥 1-Click Save to Anki:</b> Export generated sentences and new vocabulary directly back into your Anki decks.</li>
+</ul>
+
+<hr/>
+
+<h2>🚀 Quick Start Guide (3 Simple Steps)</h2>
+<ol>
+  <li><b>Get a Free Gemini API Key:</b> Visit <a href="https://aistudio.google.com/app/apikey">Google AI Studio</a> to generate your free API key.</li>
+  <li><b>Open AI Learning Hub:</b> In Anki Desktop, go to <b>Tools (Công cụ)</b> &rarr; <b>AI Learning Hub</b> (or press <code>Ctrl+H</code> / <code>Cmd+H</code>).</li>
+  <li><b>Configure & Play:</b> Click <b>Settings</b> to paste your API key. Select your Deck, pick a Game Mode, click <b>Lấy mẫu (Sample)</b> &rarr; <b>Tạo bài (Generate)</b> and enjoy!</li>
+</ol>
+
+<hr/>
+
+<h2>📋 What's New in Release l(3)</h2>
+<ul>
+  <li><b>Fixed Schema Dependency:</b> Resolved <code>Unknown gamemode</code> error on Anki Desktop by replacing external schema dependencies with 0-dependency native structures.</li>
+  <li><b>Fixed Vocabulary Sampling:</b> Resolved parameter mismatch in <code>sample_vocab_pairs</code>; sampling now hydrates smoothly.</li>
+  <li><b>Bilingual Localization Parity:</b> Added header UI language toggle and fully translated all game elements, levels, and modal views.</li>
+  <li><b>IPC Bridge Hardening:</b> 3-tier defense against unhashable payload objects and atomic file writes for preferences.</li>
+  <li><b>Comprehensive Testing:</b> 90/90 Unit, Integration, and Playwright E2E tests passing 100%.</li>
+</ul>
+
+<hr/>
+
+<p><b>Feedback & Support:</b> If you enjoy this add-on, please leave a rating or star on our project repository! Happy learning! 🎓</p>

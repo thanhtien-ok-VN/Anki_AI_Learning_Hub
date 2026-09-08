@@ -15,7 +15,9 @@ const Utils = {
     },
 
     t(key, fallback = '', ...args) {
-        let text = this.__[key];
+        let text = (this.__ && typeof this.__[key] === 'string' && this.__[key].length > 0)
+            ? this.__[key]
+            : null;
         let params = args;
         let defaultText = fallback;
 
@@ -24,7 +26,7 @@ const Utils = {
             defaultText = key;
         }
 
-        text = text || defaultText || key;
+        text = (text !== null) ? text : (defaultText || key);
 
         if (params.length > 0) {
             if (typeof params[0] === 'object' && params[0] !== null && !Array.isArray(params[0])) {
@@ -39,6 +41,44 @@ const Utils = {
             }
         }
         return text;
+    },
+
+    getLanguageName(code, uiLang) {
+        if (!code) return '';
+        const c = String(code).toLowerCase();
+        const state = window.HubState || {};
+        const curUiLang = uiLang || this.currentLang || state.userPrefs?.ui_lang || 'en';
+        const langs = state.supportedLanguages || [];
+        const found = langs.find(l => l.code === c);
+        if (found) {
+            return found.names?.[curUiLang] || found.names?.en || found.native || found.code;
+        }
+        const staticNames = {
+            vi: { en: 'Tiếng Anh', vi: 'Tiếng Việt', ja: 'Tiếng Nhật', zh: 'Tiếng Trung', ko: 'Tiếng Hàn', fr: 'Tiếng Pháp', de: 'Tiếng Đức', es: 'Tiếng Tây Ban Nha', it: 'Tiếng Ý', ru: 'Tiếng Nga', hi: 'Tiếng Ấn Độ' },
+            en: { en: 'English', vi: 'Vietnamese', ja: 'Japanese', zh: 'Chinese', ko: 'Korean', fr: 'French', de: 'German', es: 'Spanish', it: 'Italian', ru: 'Russian', hi: 'Hindi' }
+        };
+        return staticNames[curUiLang]?.[c] || staticNames.en?.[c] || c;
+    },
+
+    async switchUiLanguage(newLang) {
+        const lang = (newLang === 'vi' || newLang === 'en') ? newLang : 'en';
+        this.currentLang = lang;
+        try {
+            localStorage.setItem('ai_learning_hub_prefs_ui_lang', lang);
+        } catch (e) {}
+        document.documentElement.lang = lang;
+        const state = window.HubState || {};
+        if (state.userPrefs) state.userPrefs.ui_lang = lang;
+
+        if (window.Bridge && typeof window.Bridge.sendAsync === 'function') {
+            await window.Bridge.sendAsync('set_ui_lang', { lang }).catch(() => null);
+            await this.initI18n();
+        }
+
+        window.dispatchEvent(new CustomEvent('aihub:ui-lang-changed', { detail: { lang } }));
+        if (window.App && typeof window.App.navigate === 'function') {
+            window.App.navigate(state.route || 'home');
+        }
     },
 
     renderI18n() {

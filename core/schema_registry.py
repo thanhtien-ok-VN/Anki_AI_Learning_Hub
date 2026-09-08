@@ -139,18 +139,12 @@ if HAS_PYDANTIC:
 else:
     REGISTRY = {}
 
-# ===================== GEMINI SCHEMA CONVERTER =====================
-TYPE_MAP = {
-    "string": "STRING",
-    "integer": "INTEGER",
-    "number": "NUMBER",
-    "boolean": "BOOLEAN",
-    "array": "ARRAY",
-    "object": "OBJECT",
-}
+try:
+    from core.schema_compiler import compile_model_to_gemini_schema
+except ImportError:
+    compile_model_to_gemini_schema = None
 
-# Raw Dict Schemas Fallback when Pydantic is not installed
-RAW_DICT_SCHEMAS = {
+CANONICAL_SCHEMAS = {
     "fill_blank": {
         "type": "OBJECT",
         "properties": {
@@ -351,81 +345,28 @@ RAW_DICT_SCHEMAS = {
     }
 }
 
+RAW_DICT_SCHEMAS = CANONICAL_SCHEMAS
+
 
 def get_schema(gamemode: str) -> dict:
-    if gamemode in RAW_DICT_SCHEMAS:
-        return RAW_DICT_SCHEMAS[gamemode]
+    """Returns the Gemini OpenAPI JSON schema for the specified gamemode."""
+    if gamemode in CANONICAL_SCHEMAS:
+        return CANONICAL_SCHEMAS[gamemode]
+    model = REGISTRY.get(gamemode)
+    if model and compile_model_to_gemini_schema:
+        try:
+            return compile_model_to_gemini_schema(model)
+        except Exception:
+            pass
     return {}
 
 
 def get_pydantic_model(gamemode: str):
+    """Returns the Pydantic model class for the specified gamemode."""
     return REGISTRY.get(gamemode)
 
 
-def _pydantic_to_gemini_schema(model) -> dict:
-    if not HAS_PYDANTIC or model is None:
-        return {}
-
-    schema = model.schema()
-    defs = schema.get("$defs", schema.get("definitions", {}))
-
-    def resolve_ref(ref_str: str) -> dict:
-        def_name = ref_str.split("/")[-1]
-        return defs.get(def_name, {})
-
-    def convert_prop(prop_schema: dict) -> dict:
-        if "$ref" in prop_schema:
-            prop_schema = resolve_ref(prop_schema["$ref"])
-
-        p_type = prop_schema.get("type", "string")
-
-        if "anyOf" in prop_schema:
-            for item in prop_schema["anyOf"]:
-                if item.get("type") != "null":
-                    return convert_prop(item)
-            p_type = "string"
-
-        if p_type == "array":
-            items_schema = prop_schema.get("items", {})
-            return {
-                "type": "ARRAY",
-                "items": convert_prop(items_schema)
-            }
-        elif p_type == "object":
-            props = prop_schema.get("properties", {})
-            req = prop_schema.get("required", [])
-            converted_props = {}
-            for k, v in props.items():
-                converted_props[k] = convert_prop(v)
-            res = {
-                "type": "OBJECT",
-                "properties": converted_props
-            }
-            if req:
-                res["required"] = req
-            return res
-        else:
-            return {"type": TYPE_MAP.get(p_type, "STRING")}
-
-    props = schema.get("properties", {})
-    req = schema.get("required", [])
-    converted_props = {}
-    for k, v in props.items():
-        converted_props[k] = convert_prop(v)
-
-    res = {
-        "type": "OBJECT",
-        "properties": converted_props
-    }
-    if req:
-        res["required"] = req
-    return res
-
-
 def model_to_gemini_schema(gamemode: str) -> dict:
-    if HAS_PYDANTIC and gamemode in REGISTRY:
-        try:
-            return _pydantic_to_gemini_schema(REGISTRY[gamemode])
-        except Exception:
-            pass
+    """Convenience alias for get_schema."""
     return get_schema(gamemode)
+
