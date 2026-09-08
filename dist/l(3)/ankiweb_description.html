@@ -1,54 +1,121 @@
-<h1>🌟 Anki AI Learning Hub - Interactive Language Learning with Gemini AI</h1>
+<h1>🚀 AI Learning Hub for Anki</h1>
+<p><b>8 Gamified AI-Powered Language Learning Games (Powered by Google Gemini API)</b></p>
 
-<p><b>Anki AI Learning Hub</b> transforms traditional flashcard repetition into an engaging, gamified language learning experience directly inside Anki Desktop. Powered by Google Gemini AI, it generates contextual exercises, smart quizzes, stories, and sentence transformations dynamically using your own vocabulary decks!</p>
+<p><b>Anki AI Learning Hub</b> transforms your passive flashcard review into an engaging, interactive learning experience. Utilizing cutting-edge Google Gemini AI, the add-on automatically generates context-rich exercises, provides 5-field granular error analysis, offers 3-tier progressive hints, and supports full multilingual learning (English & Chinese target languages with English & Vietnamese UI).</p>
 
 <hr/>
 
-<h2>🎮 8 Interactive Game Modes</h2>
+<h2>🌟 Key Highlights & Architecture</h2>
 <ul>
-  <li><b>1. Fill in the Blank (Điền từ vào chỗ trống):</b> AI generates natural sentences with 1 target blank and 4 smart distractors matching CEFR level. Includes progressive hints.</li>
-  <li><b>2. Cloze Test (Đoạn văn đục lỗ):</b> Multi-blank contextual paragraph with an interactive Word Bank and dropdown selections.</li>
-  <li><b>3. Sentence Translation (Dịch câu đa ngữ):</b> Translates source sentences between your native language and target learning language with AI semantic grading and feedback.</li>
-  <li><b>4. Word Matching (Nối từ vựng - 100% Offline):</b> Fast-paced vocabulary pairing game on a 5x5 board. Tracks speed, streaks, and accuracy without requiring an internet connection!</li>
-  <li><b>5. Word Unscramble (Sắp xếp câu):</b> Reconstruct scrambled words into grammatically correct sentences with drag-and-drop or click ordering.</li>
-  <li><b>6. Story Generator (Kể chuyện & Đọc hiểu):</b> AI weaves your deck vocabulary into an engaging bilingual story followed by comprehension quizzes.</li>
-  <li><b>7. Sentence Transform (Viết lại câu):</b> Practice advanced grammar transformations (Active/Passive, Reported Speech, Conditionals, Inversion).</li>
-  <li><b>8. Taboo Word Game (Đoán từ tránh từ cấm):</b> Guess the target word from AI clues without using 5 forbidden buzzwords.</li>
+  <li><b>⚡ Zero-Dependency Native Architecture:</b> Built with pure Python canonical OpenAPI schemas. Does NOT require external packages like <code>pydantic</code>. Runs 100% reliably out-of-the-box on any Anki Desktop installation!</li>
+  <li><b>🤖 Intelligent 6-Tier AI Model Engine (Auto Waterfall):</b> Extreme failover resilience against API rate limits and model outages with multi-key rotation and exponential backoff.</li>
+  <li><b>🌐 1-Click Header Language Switcher (VI / EN):</b> Seamlessly toggle between Vietnamese and English interfaces directly from the top bar with instant DOM updates.</li>
+  <li><b>🚀 Fast-Path SQLite Engine:</b> High-speed vocabulary sampling without loading thousands of notes into RAM. Smart deduplication and 30% quota priority for weak/lapse cards.</li>
+  <li><b>🎨 Modern Glassmorphism UI:</b> Responsive, polished interface designed specifically for Anki Desktop's dark and light themes.</li>
+  <li><b>📥 1-Click Save to Anki:</b> Export generated sentences and new vocabulary directly back into your Anki collection.</li>
 </ul>
 
 <hr/>
 
-<h2>✨ Key Highlights & Architecture</h2>
+<h2>🤖 Intelligent 6-Tier AI Model Engine (Auto Waterfall)</h2>
+<p>The add-on features an advanced multi-tier model rotation system designed for maximum speed, zero quota lockouts, and deep academic accuracy:</p>
 <ul>
-  <li><b>⚡ Zero-Dependency Architecture:</b> Built with pure Python canonical OpenAPI schemas. Does NOT require external packages like <code>pydantic</code>. Runs 100% out-of-the-box on any Anki Desktop installation!</li>
-  <li><b>🛡️ 6-Tier Waterfall AI Engine:</b> Failover resilience across multiple Gemini models (<code>gemini-3.5-flash-lite</code> &rarr; <code>gemini-flash-lite-latest</code> &rarr; <code>gemini-3.5-flash</code> &rarr; <code>gemini-3.6-flash</code> &rarr; <code>gemini-3.1-flash-lite</code> &rarr; <code>gemini-3-flash-preview</code>) with multi-key rotation and exponential backoff.</li>
-  <li><b>🌐 1-Click Bilingual Language Switcher:</b> Full Vietnamese and English parity across all cards, dialogs, buttons, and statistics with a single click (<b>🌐 VI / EN</b>).</li>
-  <li><b>🚀 Fast-Path SQLite Engine:</b> Instant vocabulary sampling without loading thousands of notes into RAM. Smart deduplication and 30% quota priority for weak/lapse cards.</li>
-  <li><b>🎨 Modern Glassmorphism UI:</b> Responsive, polished interface designed specifically for Anki Desktop's dark and light modes.</li>
-  <li><b>💡 3-Tier Progressive Hints:</b> Level 1: Part of Speech & Definition &rarr; Level 2: First letter & length &rarr; Level 3: Grammar context.</li>
-  <li><b>📥 1-Click Save to Anki:</b> Export generated sentences and new vocabulary directly back into your Anki decks.</li>
+  <li>🥇 <b>gemini-3.5-flash-lite</b> &mdash; Ultra-fast primary tier for instant generation and quiz compilation.</li>
+  <li>🥇 <b>gemini-flash-lite-latest</b> &mdash; Latest stable flash-lite fallback for high-throughput generation.</li>
+  <li>🥈 <b>gemini-3.5-flash</b> &mdash; Balanced reasoning tier for nuanced grammar and reading tasks.</li>
+  <li>🧠 <b>gemini-3.6-flash</b> &mdash; Deep academic reasoning for complex translations and story comprehension.</li>
+  <li>🛡️ <b>gemini-3.1-flash-lite</b> &mdash; High-reliability failover tier.</li>
+  <li>🛡️ <b>gemini-3-flash-preview</b> &mdash; Ultimate safety net ensuring zero downtime.</li>
 </ul>
+<p><i>Supports automatic key rotation: Add multiple free Gemini API keys (one per line) for seamless round-robin load balancing!</i></p>
 
 <hr/>
 
-<h2>🚀 Quick Start Guide (3 Simple Steps)</h2>
+<h2>📌 Step-by-Step Setup Guide</h2>
+
+<h3>1️⃣ Step 1: Install the Add-on in Anki</h3>
 <ol>
-  <li><b>Get a Free Gemini API Key:</b> Visit <a href="https://aistudio.google.com/app/apikey">Google AI Studio</a> to generate your free API key.</li>
-  <li><b>Open AI Learning Hub:</b> In Anki Desktop, go to <b>Tools (Công cụ)</b> &rarr; <b>AI Learning Hub</b> (or press <code>Ctrl+H</code> / <code>Cmd+H</code>).</li>
-  <li><b>Configure & Play:</b> Click <b>Settings</b> to paste your API key. Select your Deck, pick a Game Mode, click <b>Lấy mẫu (Sample)</b> &rarr; <b>Tạo bài (Generate)</b> and enjoy!</li>
+  <li>Open Anki Desktop on your computer.</li>
+  <li>On the top menu bar, navigate to <b>Tools ➔ Add-ons</b> (or press <code>Ctrl + Shift + A</code> on Windows / <code>Cmd + Shift + A</code> on Mac).</li>
+  <li><b>Install via AnkiWeb Code:</b> Click <b>Get Add-ons...</b> ➔ Paste the add-on code ➔ Click <b>OK</b>.</li>
+  <li><b>Install via File (.ankiaddon):</b> Click <b>Install from file...</b> ➔ Select the <code>AI_Learning_Hub.ankiaddon</code> file.</li>
+  <li>Restart Anki to complete activation.</li>
+</ol>
+
+<h3>2️⃣ Step 2: Get a Free Gemini API Key (Google AI Studio)</h3>
+<p>The add-on connects directly to Google Gemini AI to generate dynamic exercises. You can obtain a <b>100% free API Key</b> in less than 1 minute:</p>
+<ol>
+  <li>Visit Google AI Studio: <a href="https://aistudio.google.com/app/apikey"><b>https://aistudio.google.com/app/apikey</b></a></li>
+  <li>Sign in with your Google account (Gmail).</li>
+  <li>Click the <b>Create API key</b> button.</li>
+  <li>Select or create a project ➔ Google will display a long API Key string starting with <code>AIzaSy...</code></li>
+  <li>Click <b>Copy</b> to copy your API key to clipboard.</li>
+</ol>
+<p>🎥 <b>Video Tutorial: How to Get Free Gemini API Key:</b><br/>
+<a href="https://drive.google.com/file/d/1VznGDIv_XdqI7MnVydXh9ubTv7gOZF9O/view?usp=sharing">Watch Step-by-Step Video Guide</a></p>
+
+<h3>3️⃣ Step 3: Add API Key & Run Connection Test</h3>
+<ol>
+  <li>In Anki, navigate to <b>Tools ➔ 🚀 AI Learning Hub...</b> (or press <code>Ctrl + H</code> / <code>Cmd + H</code>).</li>
+  <li>Once the Hub opens, click the <b>⚙️ Settings</b> button at the top right corner.</li>
+  <li>In the <b>Gemini API Keys</b> box, paste your API Key (one key per line if you have multiple keys for automatic load balancing).</li>
+  <li>Click <b>🧪 Test All Keys</b>:
+    <ul>
+      <li>🟢 <b>Active (OK):</b> Your key is valid and ready to use!</li>
+      <li>🔴 <b>Error:</b> Double check if any characters were missed during copy.</li>
+    </ul>
+  </li>
+  <li>Click <b>💾 Save Settings</b> to store your key securely.</li>
+</ol>
+
+<h3>4️⃣ Step 4: Configure Learning Language & Anki Deck Source</h3>
+<ul>
+  <li><b>Learning Language:</b> Select your target language (e.g., English, Chinese (Mandarin)). Generated exercises will be 100% aligned with this language.</li>
+  <li><b>UI & Feedback Language:</b> Choose English or Vietnamese, or toggle on-the-fly with the <b>🌐 VI / EN</b> header button. Interface labels, hint titles, and AI error explanations adapt dynamically.</li>
+  <li><b>Model Selection:</b> Leave on <code>auto</code> for smart 6-tier waterfall failover, or pin a specific Gemini model of your choice.</li>
+  <li><b>Anki Deck Source:</b> Select any vocabulary deck and note type from your collection. The fast-path SQLite engine extracts word pairs directly from your cards with 30% quota priority for weak/lapse cards!</li>
+</ul>
+
+<h3>5️⃣ Step 5: Practice Across 8 AI Game Modes</h3>
+<p>Choose any of the 8 game modes from the dashboard to begin practicing:</p>
+<ol>
+  <li>✏️ <b>Fill in the Blank (Điền từ vào chỗ trống):</b> Fill missing target words in context-rich sentences. Interactive blank pills allow smooth answer selection with 4 smart distractors and CEFR-tailored options.</li>
+  <li>📖 <b>Cloze Test (Đoạn văn đục lỗ):</b> Read coherent topic paragraphs and complete multiple blank positions (<code>[BLANK_1]</code>, <code>[BLANK_2]</code>...) using an interactive Word Bank and inline dropdowns.</li>
+  <li>🌐 <b>Sentence Translation (Dịch câu đa ngữ):</b> Translate sentences between your native language and target language. AI grades 0–10 and details 5 granular error fields (Category, Incorrect segment, Reason, Suggestion, Rationale).</li>
+  <li>🧩 <b>Sentence Unscramble (Sắp xếp câu):</b> Reorder scrambled word tiles into grammatically correct sentences with click or drag-and-drop ordering.</li>
+  <li>📚 <b>Story Generator (Kể chuyện & Đọc hiểu):</b> AI generates level-tailored reading passages (CEFR A1–C2) incorporating your deck vocabulary, followed by 4-choice reading comprehension questions.</li>
+  <li>🔄 <b>Sentence Transformation (Viết lại câu):</b> Rewrite sentences according to grammar prompts (Passive Voice, Conditionals, Reported Speech, Inversion). Provides unified 4-block feedback with common & advanced suggestions.</li>
+  <li>🚫 <b>Taboo Word Guessing (Đoán từ cấm):</b> Guess target words from AI descriptions without using 5 forbidden (Taboo) buzzwords.</li>
+  <li>🔗 <b>Word Matching (Nối từ vựng - 100% Offline):</b> Match terms and definitions extracted from your Anki deck on a 5x5 board. Operates 100% offline without API calls, tracking streaks and fastest completion speeds!</li>
 </ol>
 
 <hr/>
 
-<h2>📋 What's New in Release l(3)</h2>
+<h2>💡 Multi-Tier Hint System & Exercise History</h2>
 <ul>
-  <li><b>Fixed Schema Dependency:</b> Resolved <code>Unknown gamemode</code> error on Anki Desktop by replacing external schema dependencies with 0-dependency native structures.</li>
-  <li><b>Fixed Vocabulary Sampling:</b> Resolved parameter mismatch in <code>sample_vocab_pairs</code>; sampling now hydrates smoothly.</li>
-  <li><b>Bilingual Localization Parity:</b> Added header UI language toggle and fully translated all game elements, levels, and modal views.</li>
-  <li><b>IPC Bridge Hardening:</b> 3-tier defense against unhashable payload objects and atomic file writes for preferences.</li>
-  <li><b>Comprehensive Testing:</b> 90/90 Unit, Integration, and Playwright E2E tests passing 100%.</li>
+  <li><b>💡 Multi-Tier Progressive Hints:</b> 3-tier progressive hints:
+    <ul>
+      <li><b>Level 1 (75% Score):</b> Grammar Rule, Part of Speech & Definition.</li>
+      <li><b>Level 2 (50% Score):</b> First Letter, Word Length & Context Clue.</li>
+      <li><b>Level 3 (0% Score):</b> Full Solution & In-depth Explanation.</li>
+    </ul>
+    Automatically calculates tiered score penalties (100% ➔ 75% ➔ 50% ➔ 0%) to encourage active recall.
+  </li>
+  <li><b>📜 Exercise History & Analytics:</b> Review detailed past exercise attempts, scores, hint penalty badges, and AI explanations anytime.</li>
+  <li><b>📥 1-Click Save to Anki:</b> Easily export new vocabulary, context sentences, and explanations directly into your Anki decks as new cards.</li>
 </ul>
 
 <hr/>
 
-<p><b>Feedback & Support:</b> If you enjoy this add-on, please leave a rating or star on our project repository! Happy learning! 🎓</p>
+<h2>📋 What's New in Version l(3)</h2>
+<ul>
+  <li><b>Zero-Dependency Architecture:</b> Eliminated external dependencies on <code>pydantic</code> by adopting native OpenAPI canonical schemas, fixing the <code>Unknown gamemode</code> issue on Anki Desktop.</li>
+  <li><b>Fast-Path SQLite Sampling:</b> High-speed note sampling scaling effortlessly to 10,000+ cards, with intelligent deduplication and 30% quota priority for weak cards.</li>
+  <li><b>Full Bilingual Localization Parity:</b> Added 1-click header language switcher (<b>🌐 VI / EN</b>) and translated 100% of UI labels, CEFR levels, and modal statistics.</li>
+  <li><b>Defensive IPC Bridge:</b> 3-tier defense against unhashable payload objects and atomic file writes for preferences.</li>
+  <li><b>100% Test Coverage:</b> 90/90 Unit, Integration, and Playwright E2E tests passing.</li>
+</ul>
+
+<hr/>
+
+<p align="center"><b>AI Learning Hub — Elevate Your Anki Learning Experience with Artificial Intelligence 🚀</b></p>
